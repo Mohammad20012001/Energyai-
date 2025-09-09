@@ -1,4 +1,10 @@
+import DashboardLayout from "./(dashboard)/layout";
 import DashboardOverviewPage from "./(dashboard)/page";
 
-// The main entry point of the app is the dashboard overview.
-export default DashboardOverviewPage;
+export default function HomePage() {
+  return (
+    <DashboardLayout>
+      <DashboardOverviewPage />
+    </DashboardLayout>
+  );
+}
