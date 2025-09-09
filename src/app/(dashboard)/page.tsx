@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Settings, Calculator, Zap, Maximize, TrendingUp } from "lucide-react";
+import { ArrowRight, Settings, Calculator, Zap, Maximize, TrendingUp, DollarSign, FileText } from "lucide-react";
 
 export default function DashboardOverviewPage() {
   return (
@@ -92,20 +92,59 @@ export default function DashboardOverviewPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Zap className="text-primary" />
-              حجم الأسلاك والعاكس
+              حاسبة مقطع السلك
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-4">
-              حدد مقاطع الأسلاك المناسبة واختر أفضل عاكس لتحقيق أقصى كفاءة وأمان.
+              حدد مقاطع الأسلاك المناسبة لتحقيق أقصى كفاءة وأمان.
             </p>
-            <Button asChild variant="secondary">
+            <Button asChild>
               <Link href="/wire-sizing">
-                اذهب لأدوات الحجم <ArrowRight className="ml-2 h-4 w-4" />
+                اذهب للحاسبة <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
           </CardContent>
         </Card>
+        
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="text-primary" />
+              بيانات التسعير
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">
+              اطلع على أسعار تقديرية لمكونات أنظمة الطاقة الشمسية في السوق الأردني.
+            </p>
+            <Button asChild>
+              <Link href="/pricing">
+                عرض الأسعار <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="text-primary" />
+              التقرير الشامل
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">
+              جمع نتائجك من جميع الحاسبات في تقرير واحد متكامل (قيد التطوير).
+            </p>
+            <Button asChild>
+              <Link href="/report">
+                عرض التقرير <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
       </div>
     </div>
   );

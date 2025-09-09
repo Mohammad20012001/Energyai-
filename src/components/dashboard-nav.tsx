@@ -35,6 +35,8 @@ const navItems = [
 export function DashboardNav() {
   const pathname = usePathname();
 
+  const isDashboard = pathname === "/dashboard" || pathname === "/";
+
   return (
     <SidebarMenu className="p-2">
       {navItems.map((item) => (
@@ -42,7 +44,7 @@ export function DashboardNav() {
           <Link href={item.href} legacyBehavior passHref>
             <SidebarMenuButton
               asChild
-              isActive={pathname === item.href}
+              isActive={item.href === "/dashboard" ? isDashboard : pathname === item.href}
               tooltip={{ children: item.label }}
               className="justify-start"
             >
