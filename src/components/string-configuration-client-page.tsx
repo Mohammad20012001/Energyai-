@@ -1,0 +1,238 @@
+"use client";
+
+import { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { Loader2, AlertTriangle, ArrowRight, Sun } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
+import { suggestStringConfigurationAction } from "@/app/actions/solar";
+import type { SuggestStringConfigurationOutput } from "@/ai/flows/suggest-string-config";
+import { SystemVisualization } from "@/components/system-visualization";
+import { Separator } from "./ui/separator";
+
+const formSchema = z.object({
+  panelVoltage: z.coerce
+    .number({ invalid_type_error: "Must be a number" })
+    .positive("Voltage must be positive"),
+  panelCurrent: z.coerce
+    .number({ invalid_type_error: "Must be a number" })
+    .positive("Current must be positive"),
+  desiredVoltage: z.coerce
+    .number({ invalid_type_error: "Must be a number" })
+    .positive("Voltage must be positive"),
+  desiredCurrent: z.coerce
+    .number({ invalid_type_error: "Must be a number" })
+    .positive("Current must be positive"),
+});
+
+export function StringConfigurationClientPage() {
+  const [result, setResult] = useState<SuggestStringConfigurationOutput | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      panelVoltage: 24,
+      panelCurrent: 9.5,
+      desiredVoltage: 600,
+      desiredCurrent: 38,
+    },
+  });
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsLoading(true);
+    setResult(null);
+    try {
+      const response = await suggestStringConfigurationAction(values);
+      if (response.success) {
+        setResult(response.data);
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: response.error,
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "An unexpected error occurred",
+        description: "Please try again later.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  return (
+    <div className="grid gap-8 lg:grid-cols-5">
+      <Card className="lg:col-span-2 h-fit">
+        <CardHeader>
+          <CardTitle>System Parameters</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <fieldset disabled={isLoading} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="panelVoltage"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Panel Voltage (V)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., 24" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="panelCurrent"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Panel Current (A)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., 9.5" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="desiredVoltage"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Desired System Voltage (V)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., 600" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="desiredCurrent"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Desired System Current (A)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., 38" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </fieldset>
+              <Button type="submit" disabled={isLoading} className="w-full">
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Calculating...
+                  </>
+                ) : (
+                  <>
+                    Suggest Configuration <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+
+      <div className="lg:col-span-3">
+        {isLoading && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-muted-foreground">
+                <Sun className="h-6 w-6 animate-spin" /> AI Generating Suggestions...
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+               <div className="h-24 w-full animate-pulse rounded-md bg-muted"></div>
+               <div className="h-40 w-full animate-pulse rounded-md bg-muted"></div>
+            </CardContent>
+          </Card>
+        )}
+        
+        {result && (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>AI Recommended Configuration</CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-6 sm:grid-cols-2">
+                <div className="flex flex-col items-center justify-center rounded-lg border bg-card p-6">
+                  <span className="text-4xl font-bold text-primary">{result.panelsPerString}</span>
+                  <p className="text-muted-foreground mt-2 text-center">Panels per String</p>
+                </div>
+                <div className="flex flex-col items-center justify-center rounded-lg border bg-card p-6">
+                  <span className="text-4xl font-bold text-primary">{result.parallelStrings}</span>
+                  <p className="text-muted-foreground mt-2 text-center">Parallel Strings</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Common Wiring Errors to Avoid</AlertTitle>
+              <AlertDescription className="font-code text-sm">
+                {result.commonWiringErrors}
+              </AlertDescription>
+            </Alert>
+            
+            <Separator />
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>System Visualization</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <SystemVisualization 
+                  panelsPerString={result.panelsPerString} 
+                  parallelStrings={result.parallelStrings}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {!isLoading && !result && (
+           <Card className="flex flex-col items-center justify-center text-center p-8 lg:min-h-[400px]">
+             <CardHeader>
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                <Sun className="h-8 w-8 text-primary" />
+              </div>
+              <CardTitle className="mt-4">Ready for your Solar Plan?</CardTitle>
+             </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">
+                Enter your system parameters on the left and let our AI architect the optimal configuration for you.
+              </p>
+            </CardContent>
+           </Card>
+        )}
+      </div>
+    </div>
+  );
+}
