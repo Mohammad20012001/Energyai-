@@ -1,42 +1,78 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Send, User, Bot, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { sendMessage } from "@/app/actions/chat";
 
+// Define the message structure
 interface Message {
+  role: "user" | "model";
+  content: { text: string }[];
+}
+
+// Define the message component for rendering
+interface DisplayMessage {
   id: string;
-  text: string;
   role: "user" | "bot";
+  text: string;
 }
 
 export default function ChatPage() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || isLoading) return;
 
-    const userMessage: Message = { id: `user-${Date.now()}`, text: input, role: "user" };
+    const userMessage: DisplayMessage = { id: `user-${Date.now()}`, text: input, role: "user" };
     setMessages(prev => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
-    
-    // TODO: Connect to backend
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    const botMessage: Message = { id: `bot-${Date.now()}`, text: "مرحبًا! أنا هنا لمساعدتك في كل ما يخص الطاقة الشمسية. كيف يمكنني خدمتك اليوم؟ (ملاحظة: ما زلت قيد التطوير!)", role: "bot" };
-    setMessages(prev => [...prev, botMessage]);
 
+    try {
+      // Construct the history for the AI model
+      const history: Message[] = messages.map(msg => ({
+        role: msg.role === 'user' ? 'user' : 'model',
+        content: [{ text: msg.text }]
+      }));
 
-    setIsLoading(false);
+      const response = await sendMessage({ history, prompt: input });
+      
+      const botMessage: DisplayMessage = { id: `bot-${Date.now()}`, text: response.text, role: "bot" };
+      setMessages(prev => [...prev, botMessage]);
+
+    } catch (error) {
+      console.error("Error sending message:", error);
+      const errorMessage: DisplayMessage = {
+        id: `bot-error-${Date.now()}`,
+        role: "bot",
+        text: "عذراً، حدث خطأ أثناء معالجة طلبك. الرجاء المحاولة مرة أخرى."
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  // Auto-scroll to the bottom when messages change
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+        const scrollableView = scrollAreaRef.current.querySelector('div');
+        if(scrollableView) {
+           scrollableView.scrollTop = scrollableView.scrollHeight;
+        }
+    }
+  }, [messages]);
+  
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)]">
@@ -49,7 +85,7 @@ export default function ChatPage() {
        <Separator className="my-6" />
       <Card className="flex-1 flex flex-col">
         <CardContent className="flex-1 flex flex-col p-0">
-          <ScrollArea className="flex-1 p-6">
+          <ScrollArea className="flex-1 p-6" ref={scrollAreaRef}>
             <div className="space-y-6">
               {messages.map((message) => (
                 <div key={message.id} className={`flex items-start gap-4 ${message.role === 'user' ? 'justify-end' : ''}`}>
@@ -59,7 +95,7 @@ export default function ChatPage() {
                     </Avatar>
                   )}
                   <div className={`rounded-lg p-3 max-w-lg ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-                    <p className="text-sm">{message.text}</p>
+                    <p className="text-sm whitespace-pre-wrap">{message.text}</p>
                   </div>
                    {message.role === 'user' && (
                     <Avatar className="w-8 h-8 border">
@@ -85,7 +121,7 @@ export default function ChatPage() {
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="مثال: كم عدد الألواح التي أحتاجها لفاتورة شهرية قيمتها 50 دينار؟"
+                placeholder="مثال: ما هو حجم السلك المناسب لتيار 15 أمبير ومسافة 20 متر؟"
                 disabled={isLoading}
               />
               <Button type="submit" size="icon" disabled={isLoading}>
