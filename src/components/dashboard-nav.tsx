@@ -10,6 +10,7 @@ import {
   Zap,
   BatteryCharging,
   DollarSign,
+  Maximize,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -22,6 +23,7 @@ const navItems = [
   { href: "/dashboard", label: "لوحة التحكم", icon: LayoutDashboard },
   { href: "/string-configuration", label: "تهيئة السلاسل", icon: Settings },
   { href: "/panel-calculator", label: "حاسبة الألواح", icon: Calculator },
+  { href: "/area-calculator", label: "حاسبة المساحة", icon: Maximize },
   { href: "/wire-sizing", label: "حجم الأسلاك", icon: Zap },
   { href: "/inverter-sizing", label: "حجم العاكس", icon: BatteryCharging },
   { href: "/pricing", label: "بيانات التسعير", icon: DollarSign },

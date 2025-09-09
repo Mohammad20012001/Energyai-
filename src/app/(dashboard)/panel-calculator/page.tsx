@@ -74,7 +74,7 @@ export default function PanelCalculatorPage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight font-headline">حاسبة الألواح الشمسية</h1>
+        <h1 className="text-3xl font-bold tracking-tight font-headline">حاسبة الألواح الشمسية (حسب الاستهلاك)</h1>
         <p className="text-muted-foreground mt-2">
           احسب العدد المثالي للألواح الشمسية بناءً على احتياجاتك من الطاقة.
         </p>

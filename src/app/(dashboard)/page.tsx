@@ -1,14 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Settings, Calculator, Zap } from "lucide-react";
+import { ArrowRight, Settings, Calculator, Zap, Maximize } from "lucide-react";
 
 export default function DashboardOverviewPage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight font-headline">Welcome to Jordan Solar Architect</h1>
-        <p className="text-muted-foreground mt-2">Your all-in-one tool for designing solar energy systems in Jordan.</p>
+        <h1 className="text-3xl font-bold tracking-tight font-headline">أهلاً بك في مهندس الطاقة الشمسية الأردني</h1>
+        <p className="text-muted-foreground mt-2">الأداة الشاملة لتصميم أنظمة الطاقة الشمسية في الأردن.</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -16,16 +16,16 @@ export default function DashboardOverviewPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Settings className="text-primary" />
-              AI String Configuration
+              تهيئة السلاسل بالذكاء الاصطناعي
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-4">
-              Use AI to determine the optimal panel string configuration for your system, including common errors to avoid.
+              استخدم الذكاء الاصطناعي لتحديد أفضل تهيئة لسلاسل الألواح وتجنب الأخطاء الشائعة.
             </p>
             <Button asChild>
               <Link href="/string-configuration">
-                Start Calculation <ArrowRight className="ml-2 h-4 w-4" />
+                ابدأ الحساب <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
           </CardContent>
@@ -35,16 +35,35 @@ export default function DashboardOverviewPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calculator className="text-primary" />
-              Panel Calculator
+              حاسبة الألواح (حسب الاستهلاك)
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-4">
-              Calculate the ideal number of solar panels based on your energy needs and panel specifications.
+              احسب عدد الألواح المثالي بناءً على فاتورة الكهرباء واحتياجاتك من الطاقة.
             </p>
-            <Button asChild variant="secondary">
+            <Button asChild>
               <Link href="/panel-calculator">
-                Go to Calculator <ArrowRight className="ml-2 h-4 w-4" />
+                اذهب للحاسبة <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Maximize className="text-primary" />
+              حاسبة المساحة والإنتاج
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">
+              قدّر عدد الألواح التي يمكن وضعها في أرضك وكمية الطاقة التي يمكن إنتاجها.
+            </p>
+            <Button asChild>
+              <Link href="/area-calculator">
+                اذهب للحاسبة <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
           </CardContent>
@@ -54,16 +73,16 @@ export default function DashboardOverviewPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Zap className="text-primary" />
-              Wire & Inverter Sizing
+              حجم الأسلاك والعاكس
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-4">
-              Determine the correct wire gauges and select the best inverter for maximum efficiency and safety.
+              حدد مقاطع الأسلاك المناسبة واختر أفضل عاكس لتحقيق أقصى كفاءة وأمان.
             </p>
             <Button asChild variant="secondary">
               <Link href="/wire-sizing">
-                Go to Sizing Tools <ArrowRight className="ml-2 h-4 w-4" />
+                اذهب لأدوات الحجم <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
           </CardContent>
