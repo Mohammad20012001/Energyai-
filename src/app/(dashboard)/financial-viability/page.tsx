@@ -4,7 +4,8 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { TrendingUp, ArrowRight, Loader2, BarChart, DollarSign, Calendar, Zap, Sun } from "lucide-react";
+import { TrendingUp, ArrowRight, Loader2, BarChart, DollarSign, Calendar, Zap, Sun, PlusCircle } from "lucide-react";
+import { useReport } from "@/context/ReportContext";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +18,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
   investmentAmount: z.coerce.number({invalid_type_error: "يجب أن يكون رقماً"}).positive("يجب أن يكون مبلغ الاستثمار إيجابياً"),
@@ -40,6 +42,8 @@ interface CalculationResult {
 export default function FinancialViabilityPage() {
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { addReportCard } = useReport();
+  const { toast } = useToast();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -78,6 +82,26 @@ export default function FinancialViabilityPage() {
     });
     setIsLoading(false);
   }
+
+  const handleAddToReport = () => {
+    if (!result) return;
+    const formValues = form.getValues();
+    addReportCard({
+      id: `financial-${Date.now()}`,
+      type: "حاسبة الجدوى الاقتصادية",
+      summary: `فترة استرداد ${result.paybackPeriodYears.toFixed(1)} سنوات لاستثمار ${formValues.investmentAmount} دينار.`,
+      values: {
+        "مبلغ الاستثمار": `${formValues.investmentAmount} دينار`,
+        "حجم النظام": `${result.systemSizeKw.toFixed(2)} كيلوواط`,
+        "فترة الاسترداد": `${isFinite(result.paybackPeriodYears) ? result.paybackPeriodYears.toFixed(1) : "∞"} سنوات`,
+        "صافي الربح (25 سنة)": `${result.netProfit25Years.toFixed(0)} دينار`,
+      }
+    });
+    toast({
+      title: "تمت الإضافة بنجاح",
+      description: "تمت إضافة بطاقة الجدوى الاقتصادية إلى تقريرك.",
+    });
+  };
 
   return (
     <div className="flex flex-col gap-8">
@@ -261,7 +285,10 @@ export default function FinancialViabilityPage() {
                   </p>
                 </CardContent>
               </Card>
-
+              <Button onClick={handleAddToReport} className="w-full">
+                <PlusCircle className="ml-2 h-4 w-4" />
+                أضف إلى التقرير
+              </Button>
             </div>
           )}
 

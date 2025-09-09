@@ -4,10 +4,11 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Loader2, Zap, ArrowRight, Lightbulb, AlertTriangle } from "lucide-react";
+import { Loader2, Zap, ArrowRight, Lightbulb, AlertTriangle, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { SuggestWireSizeOutput } from "@/ai/flows/suggest-wire-size";
 import { suggestWireSize } from "@/ai/flows/suggest-wire-size";
+import { useReport } from "@/context/ReportContext";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -35,6 +36,7 @@ export default function WireSizingPage() {
   const [result, setResult] = useState<SuggestWireSizeOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { addReportCard } = useReport();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -63,6 +65,25 @@ export default function WireSizingPage() {
       setIsLoading(false);
     }
   }
+
+  const handleAddToReport = () => {
+    if (!result) return;
+    const formValues = form.getValues();
+    addReportCard({
+      id: `wire-${Date.now()}`,
+      type: "حاسبة مقطع السلك",
+      summary: `مقطع سلك ${result.recommendedWireSizeMM2} مم² لتيار ${formValues.current} أمبير ومسافة ${formValues.distance} م.`,
+      values: {
+        "مقطع السلك الموصى به": `${result.recommendedWireSizeMM2} mm²`,
+        "هبوط الجهد الفعلي": `${result.voltageDrop.toFixed(2)} V`,
+        "الطاقة المفقودة": `${result.powerLoss.toFixed(2)} W`,
+      }
+    });
+    toast({
+      title: "تمت الإضافة بنجاح",
+      description: "تمت إضافة بطاقة مقطع السلك إلى تقريرك.",
+    });
+  };
 
   return (
     <div className="flex flex-col gap-8">
@@ -202,6 +223,11 @@ export default function WireSizingPage() {
                   {result.reasoning}
                 </AlertDescription>
               </Alert>
+
+              <Button onClick={handleAddToReport} className="w-full">
+                <PlusCircle className="ml-2 h-4 w-4" />
+                أضف إلى التقرير
+              </Button>
 
             </div>
           )}

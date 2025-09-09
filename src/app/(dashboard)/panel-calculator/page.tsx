@@ -4,7 +4,8 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Calculator, Sun, Zap, ArrowRight, Loader2 } from "lucide-react";
+import { Calculator, Sun, Zap, ArrowRight, Loader2, PlusCircle } from "lucide-react";
+import { useReport } from "@/context/ReportContext";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
   monthlyBill: z.coerce.number({invalid_type_error: "يجب أن يكون رقماً"}).positive("يجب أن تكون قيمة الفاتورة إيجابية"),
@@ -38,6 +40,8 @@ interface CalculationResult {
 export default function PanelCalculatorPage() {
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { addReportCard } = useReport();
+  const { toast } = useToast();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -70,6 +74,24 @@ export default function PanelCalculatorPage() {
     });
     setIsLoading(false);
   }
+
+  const handleAddToReport = () => {
+    if (!result) return;
+    addReportCard({
+      id: `panel-calc-${Date.now()}`,
+      type: "حاسبة الألواح (حسب الاستهلاك)",
+      summary: `${result.requiredPanels} لوح شمسي لتغطية استهلاك يومي قدره ${result.dailyKwh.toFixed(2)} ك.و.س.`,
+      values: {
+        "الاستهلاك الشهري": `${result.totalKwh.toFixed(2)} ك.و.س`,
+        "متوسط الاستهلاك اليومي": `${result.dailyKwh.toFixed(2)} ك.و.س`,
+        "عدد الألواح المطلوب": `${result.requiredPanels} لوح`,
+      }
+    });
+    toast({
+      title: "تمت الإضافة بنجاح",
+      description: "تمت إضافة بطاقة حاسبة الألواح إلى تقريرك.",
+    });
+  };
 
   return (
     <div className="flex flex-col gap-8">
@@ -207,6 +229,11 @@ export default function PanelCalculatorPage() {
                   </ul>
                 </AlertDescription>
               </Alert>
+
+              <Button onClick={handleAddToReport} className="w-full">
+                <PlusCircle className="ml-2 h-4 w-4" />
+                أضف إلى التقرير
+              </Button>
             </div>
           )}
 

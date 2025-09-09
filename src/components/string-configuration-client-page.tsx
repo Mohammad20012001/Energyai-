@@ -4,7 +4,7 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Loader2, AlertTriangle, ArrowRight, Sun } from "lucide-react";
+import { Loader2, AlertTriangle, ArrowRight, Sun, PlusCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +24,8 @@ import { suggestStringConfigurationAction } from "@/app/actions/solar";
 import type { SuggestStringConfigurationOutput } from "@/ai/flows/suggest-string-config";
 import { SystemVisualization } from "@/components/system-visualization";
 import { Separator } from "./ui/separator";
+import { useReport } from "@/context/ReportContext";
+
 
 const formSchema = z.object({
   panelVoltage: z.coerce
@@ -44,6 +46,8 @@ export function StringConfigurationClientPage() {
   const [result, setResult] = useState<SuggestStringConfigurationOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { addReportCard } = useReport();
+
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -79,6 +83,23 @@ export function StringConfigurationClientPage() {
       setIsLoading(false);
     }
   }
+
+  const handleAddToReport = () => {
+    if (!result) return;
+    addReportCard({
+      id: `string-config-${Date.now()}`,
+      type: "تهيئة السلاسل بالذكاء الاصطناعي",
+      summary: `${result.panelsPerString} ألواح/سلسلة، ${result.parallelStrings} سلاسل متوازية.`,
+      values: {
+        "الألواح لكل سلسلة": `${result.panelsPerString} لوح`,
+        "عدد السلاسل المتوازية": `${result.parallelStrings} سلاسل`,
+      }
+    });
+    toast({
+      title: "تمت الإضافة بنجاح",
+      description: "تمت إضافة بطاقة تهيئة السلاسل إلى تقريرك.",
+    });
+  };
 
   return (
     <div className="grid gap-8 lg:grid-cols-5">
@@ -200,6 +221,11 @@ export function StringConfigurationClientPage() {
                 {result.commonWiringErrors}
               </AlertDescription>
             </Alert>
+
+            <Button onClick={handleAddToReport} className="w-full">
+              <PlusCircle className="ml-2 h-4 w-4" />
+              أضف إلى التقرير
+            </Button>
             
             <Separator />
             

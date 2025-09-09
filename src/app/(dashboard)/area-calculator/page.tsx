@@ -4,7 +4,8 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Calculator, Maximize, Zap, ArrowRight, Loader2, Sun } from "lucide-react";
+import { Calculator, Maximize, Zap, ArrowRight, Loader2, Sun, PlusCircle } from "lucide-react";
+import { useReport } from "@/context/ReportContext";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +18,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+
 
 const formSchema = z.object({
   landWidth: z.coerce.number({invalid_type_error: "يجب أن يكون رقماً"}).positive("يجب أن تكون قيمة العرض إيجابية"),
@@ -40,6 +43,8 @@ interface CalculationResult {
 export default function AreaCalculatorPage() {
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { addReportCard } = useReport();
+  const { toast } = useToast();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -80,6 +85,24 @@ export default function AreaCalculatorPage() {
     });
     setIsLoading(false);
   }
+
+  const handleAddToReport = () => {
+    if (!result) return;
+    addReportCard({
+      id: `area-${Date.now()}`,
+      type: "حاسبة المساحة والإنتاج",
+      summary: `إنتاج سنوي يبلغ ${result.yearlyEnergyKwh.toFixed(0)} ك.و.س من ${result.maxPanels} لوحًا.`,
+      values: {
+        "العدد الأقصى للألواح": `${result.maxPanels} لوح`,
+        "إجمالي قوة النظام": `${result.totalPowerKw.toFixed(2)} كيلوواط`,
+        "الإنتاج السنوي المقدر": `${result.yearlyEnergyKwh.toFixed(0)} ك.و.س`,
+      }
+    });
+    toast({
+      title: "تمت الإضافة بنجاح",
+      description: "تمت إضافة بطاقة حاسبة المساحة إلى تقريرك.",
+    });
+  };
 
   return (
     <div className="flex flex-col gap-8">
@@ -252,6 +275,10 @@ export default function AreaCalculatorPage() {
                   </p>
                 </CardContent>
               </Card>
+              <Button onClick={handleAddToReport} className="w-full">
+                <PlusCircle className="ml-2 h-4 w-4" />
+                أضف إلى التقرير
+              </Button>
             </div>
           )}
 

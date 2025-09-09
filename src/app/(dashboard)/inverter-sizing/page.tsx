@@ -4,7 +4,8 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { BatteryCharging, Zap, ArrowRight, Loader2, Lightbulb, ShieldCheck } from "lucide-react";
+import { BatteryCharging, Zap, ArrowRight, Loader2, Lightbulb, ShieldCheck, PlusCircle } from "lucide-react";
+import { useReport } from "@/context/ReportContext";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
 
 
 const formSchema = z.object({
@@ -41,6 +43,8 @@ interface CalculationResult {
 export default function InverterSizingPage() {
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { addReportCard } = useReport();
+  const { toast } = useToast();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -75,6 +79,25 @@ export default function InverterSizingPage() {
     });
     setIsLoading(false);
   }
+
+  const handleAddToReport = () => {
+    if (!result) return;
+    addReportCard({
+      id: `inverter-${Date.now()}`,
+      type: "أداة تحديد حجم العاكس",
+      summary: `عاكس بين ${result.minInverterSize.toFixed(2)}-${result.maxInverterSize.toFixed(2)} kW لنظام ${form.getValues().totalDcPower} kWp.`,
+      values: {
+        "حجم العاكس الموصى به": `بين ${result.minInverterSize.toFixed(2)} و ${result.maxInverterSize.toFixed(2)} kW`,
+        "الحد الأدنى لجهد العاكس": `${result.recommendedVoc.toFixed(0)} V`,
+        "الحد الأدنى لتيار العاكس": `${result.recommendedIsc.toFixed(2)} A`,
+        "نوع الشبكة": result.gridPhase,
+      }
+    });
+    toast({
+      title: "تمت الإضافة بنجاح",
+      description: "تمت إضافة بطاقة تحديد حجم العاكس إلى تقريرك.",
+    });
+  };
 
   return (
     <div className="flex flex-col gap-8">
@@ -236,6 +259,10 @@ export default function InverterSizingPage() {
                   </ul>
                 </AlertDescription>
               </Alert>
+              <Button onClick={handleAddToReport} className="w-full">
+                <PlusCircle className="ml-2 h-4 w-4" />
+                أضف إلى التقرير
+              </Button>
             </div>
           )}
 
