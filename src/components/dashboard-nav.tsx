@@ -23,7 +23,7 @@ import {
 
 const navItems = [
   { href: "/", label: "لوحة التحكم", icon: LayoutDashboard },
-  { href: "/chat", label: "المساعد الذكي", icon: MessageCircle },
+  // { href: "/chat", label: "المساعد الذكي", icon: MessageCircle },
   { href: "/string-configuration", label: "تهيئة السلاسل", icon: Settings },
   { href: "/panel-calculator", label: "حاسبة الألواح", icon: Calculator },
   { href: "/area-calculator", label: "حاسبة المساحة", icon: Maximize },
