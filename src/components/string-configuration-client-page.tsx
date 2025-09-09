@@ -27,17 +27,17 @@ import { Separator } from "./ui/separator";
 
 const formSchema = z.object({
   panelVoltage: z.coerce
-    .number({ invalid_type_error: "Must be a number" })
-    .positive("Voltage must be positive"),
+    .number({ invalid_type_error: "يجب أن يكون رقماً" })
+    .positive("يجب أن تكون قيمة الجهد إيجابية"),
   panelCurrent: z.coerce
-    .number({ invalid_type_error: "Must be a number" })
-    .positive("Current must be positive"),
+    .number({ invalid_type_error: "يجب أن يكون رقماً" })
+    .positive("يجب أن تكون قيمة التيار إيجابية"),
   desiredVoltage: z.coerce
-    .number({ invalid_type_error: "Must be a number" })
-    .positive("Voltage must be positive"),
+    .number({ invalid_type_error: "يجب أن يكون رقماً" })
+    .positive("يجب أن تكون قيمة الجهد إيجابية"),
   desiredCurrent: z.coerce
-    .number({ invalid_type_error: "Must be a number" })
-    .positive("Current must be positive"),
+    .number({ invalid_type_error: "يجب أن يكون رقماً" })
+    .positive("يجب أن تكون قيمة التيار إيجابية"),
 });
 
 export function StringConfigurationClientPage() {
@@ -65,15 +65,15 @@ export function StringConfigurationClientPage() {
       } else {
         toast({
           variant: "destructive",
-          title: "Error",
+          title: "خطأ",
           description: response.error,
         });
       }
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "An unexpected error occurred",
-        description: "Please try again later.",
+        title: "حدث خطأ غير متوقع",
+        description: "يرجى المحاولة مرة أخرى في وقت لاحق.",
       });
     } finally {
       setIsLoading(false);
@@ -84,18 +84,18 @@ export function StringConfigurationClientPage() {
     <div className="grid gap-8 lg:grid-cols-5">
       <Card className="lg:col-span-2 h-fit">
         <CardHeader>
-          <CardTitle>System Parameters</CardTitle>
+          <CardTitle>معلمات النظام</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 text-right">
               <fieldset disabled={isLoading} className="space-y-4">
                 <FormField
                   control={form.control}
                   name="panelVoltage"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Panel Voltage (V)</FormLabel>
+                      <FormLabel>جهد اللوح (فولت)</FormLabel>
                       <FormControl>
                         <Input placeholder="e.g., 24" {...field} />
                       </FormControl>
@@ -108,7 +108,7 @@ export function StringConfigurationClientPage() {
                   name="panelCurrent"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Panel Current (A)</FormLabel>
+                      <FormLabel>تيار اللوح (أمبير)</FormLabel>
                       <FormControl>
                         <Input placeholder="e.g., 9.5" {...field} />
                       </FormControl>
@@ -121,7 +121,7 @@ export function StringConfigurationClientPage() {
                   name="desiredVoltage"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Desired System Voltage (V)</FormLabel>
+                      <FormLabel>الجهد المطلوب للنظام (فولت)</FormLabel>
                       <FormControl>
                         <Input placeholder="e.g., 600" {...field} />
                       </FormControl>
@@ -134,7 +134,7 @@ export function StringConfigurationClientPage() {
                   name="desiredCurrent"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Desired System Current (A)</FormLabel>
+                      <FormLabel>التيار المطلوب للنظام (أمبير)</FormLabel>
                       <FormControl>
                         <Input placeholder="e.g., 38" {...field} />
                       </FormControl>
@@ -146,12 +146,12 @@ export function StringConfigurationClientPage() {
               <Button type="submit" disabled={isLoading} className="w-full">
                 {isLoading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Calculating...
+                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                    ...جاري الحساب
                   </>
                 ) : (
                   <>
-                    Suggest Configuration <ArrowRight className="ml-2 h-4 w-4" />
+                    اقترح التهيئة <ArrowRight className="mr-2 h-4 w-4" />
                   </>
                 )}
               </Button>
@@ -165,7 +165,7 @@ export function StringConfigurationClientPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-muted-foreground">
-                <Sun className="h-6 w-6 animate-spin" /> AI Generating Suggestions...
+                <Sun className="h-6 w-6 animate-spin" /> ...الذكاء الاصطناعي يولد الاقتراحات
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -179,23 +179,23 @@ export function StringConfigurationClientPage() {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>AI Recommended Configuration</CardTitle>
+                <CardTitle>التهيئة الموصى بها من الذكاء الاصطناعي</CardTitle>
               </CardHeader>
               <CardContent className="grid gap-6 sm:grid-cols-2">
                 <div className="flex flex-col items-center justify-center rounded-lg border bg-card p-6">
                   <span className="text-4xl font-bold text-primary">{result.panelsPerString}</span>
-                  <p className="text-muted-foreground mt-2 text-center">Panels per String</p>
+                  <p className="text-muted-foreground mt-2 text-center">لوح لكل سلسلة</p>
                 </div>
                 <div className="flex flex-col items-center justify-center rounded-lg border bg-card p-6">
                   <span className="text-4xl font-bold text-primary">{result.parallelStrings}</span>
-                  <p className="text-muted-foreground mt-2 text-center">Parallel Strings</p>
+                  <p className="text-muted-foreground mt-2 text-center">سلسلة متوازية</p>
                 </div>
               </CardContent>
             </Card>
 
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Common Wiring Errors to Avoid</AlertTitle>
+              <AlertTitle>أخطاء توصيل شائعة يجب تجنبها</AlertTitle>
               <AlertDescription className="font-code text-sm">
                 {result.commonWiringErrors}
               </AlertDescription>
@@ -205,7 +205,7 @@ export function StringConfigurationClientPage() {
             
             <Card>
               <CardHeader>
-                <CardTitle>System Visualization</CardTitle>
+                <CardTitle>عرض مرئي للنظام</CardTitle>
               </CardHeader>
               <CardContent>
                 <SystemVisualization 
@@ -223,11 +223,11 @@ export function StringConfigurationClientPage() {
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
                 <Sun className="h-8 w-8 text-primary" />
               </div>
-              <CardTitle className="mt-4">Ready for your Solar Plan?</CardTitle>
+              <CardTitle className="mt-4">جاهز لخطتك الشمسية؟</CardTitle>
              </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">
-                Enter your system parameters on the left and let our AI architect the optimal configuration for you.
+              <p className="text-muted-foreground max-w-md">
+                أدخل معلمات نظامك على اليمين ودع مهندسنا الذكي يصمم لك التهيئة المثلى.
               </p>
             </CardContent>
            </Card>

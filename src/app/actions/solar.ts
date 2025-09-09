@@ -23,8 +23,8 @@ export async function suggestStringConfigurationAction(
   } catch (error) {
     console.error("Error in suggestStringConfigurationAction:", error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: "Invalid input provided." };
+      return { success: false, error: "المدخلات المقدمة غير صالحة." };
     }
-    return { success: false, error: "Failed to get suggestion from AI." };
+    return { success: false, error: "فشل في الحصول على اقتراح من الذكاء الاصطناعي." };
   }
 }

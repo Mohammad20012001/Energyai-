@@ -12,10 +12,10 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const SuggestStringConfigurationInputSchema = z.object({
-  panelVoltage: z.number().describe('Voltage of a single solar panel (V).'),
-  panelCurrent: z.number().describe('Current of a single solar panel (A).'),
-  desiredVoltage: z.number().describe('Desired total voltage for the system (V).'),
-  desiredCurrent: z.number().describe('Desired total current for the system (A).'),
+  panelVoltage: z.number().describe('جهد اللوح الشمسي الواحد (فولت).'),
+  panelCurrent: z.number().describe('تيار اللوح الشمسي الواحد (أمبير).'),
+  desiredVoltage: z.number().describe('الجهد الإجمالي المطلوب للنظام (فولت).'),
+  desiredCurrent: z.number().describe('التيار الإجمالي المطلوب للنظام (أمبير).'),
 });
 export type SuggestStringConfigurationInput = z.infer<
   typeof SuggestStringConfigurationInputSchema
@@ -24,14 +24,14 @@ export type SuggestStringConfigurationInput = z.infer<
 const SuggestStringConfigurationOutputSchema = z.object({
   panelsPerString: z
     .number()
-    .describe('Recommended number of panels to connect in series per string.'),
+    .describe('العدد الموصى به من الألواح لتوصيلها على التوالي لكل سلسلة.'),
   parallelStrings: z
     .number()
-    .describe('Recommended number of parallel strings to connect.'),
+    .describe('العدد الموصى به من السلاسل المتوازية للتوصيل.'),
   commonWiringErrors: z
     .string()
     .describe(
-      'Common wiring errors to avoid, based on the suggested configuration.'
+      'أخطاء التوصيل الشائعة التي يجب تجنبها، بناءً على التهيئة المقترحة.'
     ),
 });
 export type SuggestStringConfigurationOutput = z.infer<
@@ -48,16 +48,16 @@ const prompt = ai.definePrompt({
   name: 'suggestStringConfigurationPrompt',
   input: {schema: SuggestStringConfigurationInputSchema},
   output: {schema: SuggestStringConfigurationOutputSchema},
-  prompt: `You are an expert solar panel installer. Given the following system requirements, determine the optimal configuration of panels in strings and parallel strings to maximize efficiency and safety.
+  prompt: `You are an expert solar panel installer. Given the following system requirements in Arabic, determine the optimal configuration of panels in strings and parallel strings to maximize efficiency and safety. Your response should also be in Arabic.
 
-Panel Voltage: {{{panelVoltage}}} V
-Panel Current: {{{panelCurrent}}} A
-Desired Voltage: {{{desiredVoltage}}} V
-Desired Current: {{{desiredCurrent}}} A
+جهد اللوح: {{{panelVoltage}}} فولت
+تيار اللوح: {{{panelCurrent}}} أمبير
+الجهد المطلوب: {{{desiredVoltage}}} فولت
+التيار المطلوب: {{{desiredCurrent}}} أمبير
 
-Consider common wiring errors that installers make and include these in the response.
+ضع في اعتبارك أخطاء التوصيل الشائعة التي يرتكبها القائمون على التركيب وقم بتضمينها في الرد.
 
-Provide the number of panels per string, number of parallel strings, and common wiring errors to avoid based on the provided system requirements.
+قدم عدد الألواح لكل سلسلة، وعدد السلاسل المتوازية، وأخطاء التوصيل الشائعة التي يجب تجنبها بناءً على متطلبات النظام المقدمة.
 `,
 });
 

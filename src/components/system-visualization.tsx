@@ -13,7 +13,7 @@ export function SystemVisualization({
   if (panelsPerString > 20 || parallelStrings > 20) {
     return (
       <div className="text-center text-muted-foreground p-4 border rounded-md">
-        Visualization is not available for configurations this large.
+        العرض المرئي غير متاح للتكوينات الكبيرة جدًا.
       </div>
     );
   }
@@ -23,13 +23,13 @@ export function SystemVisualization({
       <div className="flex justify-center gap-4 min-w-max">
         {strings.map((_, stringIndex) => (
           <div key={stringIndex} className="flex flex-col items-center gap-1">
-            <div className="font-code text-xs text-muted-foreground">String {stringIndex + 1}</div>
+            <div className="font-code text-xs text-muted-foreground">السلسلة {stringIndex + 1}</div>
             <div className="flex flex-col gap-1 p-2 border-2 border-dashed border-accent/50 rounded-md">
               {panels.map((_, panelIndex) => (
                 <div
                   key={panelIndex}
                   className="w-16 h-10 bg-accent/80 rounded flex items-center justify-center text-accent-foreground shadow-sm"
-                  title={`Panel ${panelIndex + 1}`}
+                  title={`اللوح ${panelIndex + 1}`}
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -52,7 +52,7 @@ export function SystemVisualization({
         ))}
       </div>
       <div className="text-center mt-4 text-xs text-muted-foreground font-code">
-        Showing {parallelStrings} parallel strings, each with {panelsPerString} panels in series.
+        يعرض {parallelStrings} سلاسل متوازية، كل منها يحتوي على {panelsPerString} ألواح موصولة على التوالي.
       </div>
     </div>
   );
