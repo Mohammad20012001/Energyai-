@@ -11,7 +11,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-const SuggestWireSizeInputSchema = z.object({
+export const SuggestWireSizeInputSchema = z.object({
   current: z.number().describe('تيار النظام (أمبير).'),
   voltage: z.number().describe('جهد النظام (فولت).'),
   distance: z.number().describe('طول السلك بالمتر (اتجاه واحد).'),
@@ -21,7 +21,7 @@ const SuggestWireSizeInputSchema = z.object({
 });
 export type SuggestWireSizeInput = z.infer<typeof SuggestWireSizeInputSchema>;
 
-const SuggestWireSizeOutputSchema = z.object({
+export const SuggestWireSizeOutputSchema = z.object({
   recommendedWireSizeMM2: z
     .number()
     .describe('مقطع السلك الموصى به بوحدة mm²'),

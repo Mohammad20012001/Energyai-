@@ -7,15 +7,16 @@
 import {ai} from '@/ai/genkit';
 import {
   suggestStringConfiguration,
-  SuggestStringConfigurationInput,
+  SuggestStringConfigurationInputSchema,
   SuggestStringConfigurationOutputSchema,
 } from './suggest-string-config';
 import {
   suggestWireSize,
-  SuggestWireSizeInput,
+  SuggestWireSizeInputSchema,
   SuggestWireSizeOutputSchema,
 } from './suggest-wire-size';
 import {z} from 'zod';
+import {content, Part} from 'genkit';
 
 // Define tools that the agent can use.
 const getStringConfig = ai.defineTool(
@@ -23,7 +24,7 @@ const getStringConfig = ai.defineTool(
     name: 'suggestStringConfiguration',
     description:
       'Suggests the optimal configuration of solar panels in strings and parallel strings based on system requirements. Use this when the user asks about panel configuration, stringing, or how to connect panels.',
-    inputSchema: SuggestStringConfigurationInput,
+    inputSchema: SuggestStringConfigurationInputSchema,
     outputSchema: SuggestStringConfigurationOutputSchema,
   },
   async input => suggestStringConfiguration(input)
@@ -34,7 +35,7 @@ const getWireSize = ai.defineTool(
     name: 'suggestWireSize',
     description:
       'Suggests the optimal wire size (in mm²) for a solar panel system based on current, voltage, distance, and allowed voltage drop. Use this when the user asks about wire gauge, cable size, or voltage drop.',
-    inputSchema: SuggestWireSizeInput,
+    inputSchema: SuggestWireSizeInputSchema,
     outputSchema: SuggestWireSizeOutputSchema,
   },
   async input => suggestWireSize(input)
@@ -82,11 +83,14 @@ export const conversationalAgent = ai.defineFlow(
       return 'No response from model.';
     }
 
-    if (output.content.every(part => part.toolRequest)) {
+    const toolRequests = output.content.filter(part => part.toolRequest);
+
+    if (toolRequests.length > 0) {
       const toolResponseParts = await Promise.all(
-        output.content.map(async part => {
+        toolRequests.map(async part => {
           if (!part.toolRequest) {
-            return;
+            // This condition is technically redundant due to the filter, but good for type safety
+            return content([]);
           }
           const tool = ai.lookupTool(part.toolRequest.name);
           const toolResult = await tool(part.toolRequest.input);
@@ -98,12 +102,10 @@ export const conversationalAgent = ai.defineFlow(
           };
         })
       );
+
       const finalResult = await ai.generate({
         model: llm,
-        prompt: {
-          role: 'user',
-          content: [{text: prompt}],
-        },
+        prompt: {role: 'user', content: [{text: prompt}]},
         history: [
           ...history,
           {
@@ -112,7 +114,7 @@ export const conversationalAgent = ai.defineFlow(
           },
           {
             role: 'tool',
-            content: toolResponseParts.filter(Boolean),
+            content: toolResponseParts.filter((p): p is Part => !!p),
           },
         ],
       });

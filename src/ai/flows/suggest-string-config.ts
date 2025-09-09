@@ -11,7 +11,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-const SuggestStringConfigurationInputSchema = z.object({
+export const SuggestStringConfigurationInputSchema = z.object({
   panelVoltage: z.number().describe('جهد اللوح الشمسي الواحد (فولت).'),
   panelCurrent: z.number().describe('تيار اللوح الشمسي الواحد (أمبير).'),
   desiredVoltage: z.number().describe('الجهد الإجمالي المطلوب للنظام (فولت).'),
@@ -21,7 +21,7 @@ export type SuggestStringConfigurationInput = z.infer<
   typeof SuggestStringConfigurationInputSchema
 >;
 
-const SuggestStringConfigurationOutputSchema = z.object({
+export const SuggestStringConfigurationOutputSchema = z.object({
   panelsPerString: z
     .number()
     .describe('العدد الموصى به من الألواح لتوصيلها على التوالي لكل سلسلة.'),
