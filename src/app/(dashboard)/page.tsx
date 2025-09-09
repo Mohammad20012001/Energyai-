@@ -156,7 +156,7 @@ export default function DashboardOverviewPage() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-4">
-              جمع نتائجك من جميع الحاسبات في تقرير واحد متكامل (قيد التطوير).
+              جمع نتائجك من جميع الحاسبات في تقرير واحد متكامل.
             </p>
             <Button asChild>
               <Link href="/report">
