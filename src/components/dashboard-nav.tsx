@@ -19,13 +19,13 @@ import {
 } from "@/components/ui/sidebar";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/string-configuration", label: "String Config", icon: Settings },
-  { href: "/panel-calculator", label: "Panel Calculator", icon: Calculator },
-  { href: "/wire-sizing", label: "Wire Sizing", icon: Zap },
-  { href: "/inverter-sizing", label: "Inverter Sizing", icon: BatteryCharging },
-  { href: "/pricing", label: "Pricing Data", icon: DollarSign },
-  { href: "/report", label: "Report", icon: FileText },
+  { href: "/dashboard", label: "لوحة التحكم", icon: LayoutDashboard },
+  { href: "/string-configuration", label: "تهيئة السلاسل", icon: Settings },
+  { href: "/panel-calculator", label: "حاسبة الألواح", icon: Calculator },
+  { href: "/wire-sizing", label: "حجم الأسلاك", icon: Zap },
+  { href: "/inverter-sizing", label: "حجم العاكس", icon: BatteryCharging },
+  { href: "/pricing", label: "بيانات التسعير", icon: DollarSign },
+  { href: "/report", label: "التقرير", icon: FileText },
 ];
 
 export function DashboardNav() {
