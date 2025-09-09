@@ -23,8 +23,8 @@ const getStringConfig = ai.defineTool(
     name: 'suggestStringConfiguration',
     description:
       'Suggests the optimal configuration of solar panels in strings and parallel strings based on system requirements. Use this when the user asks about panel configuration, stringing, or how to connect panels.',
-    input: {schema: SuggestStringConfigurationInput},
-    output: {schema: SuggestStringConfigurationOutputSchema},
+    inputSchema: SuggestStringConfigurationInput,
+    outputSchema: SuggestStringConfigurationOutputSchema,
   },
   async input => suggestStringConfiguration(input)
 );
@@ -34,8 +34,8 @@ const getWireSize = ai.defineTool(
     name: 'suggestWireSize',
     description:
       'Suggests the optimal wire size (in mm²) for a solar panel system based on current, voltage, distance, and allowed voltage drop. Use this when the user asks about wire gauge, cable size, or voltage drop.',
-    input: {schema: SuggestWireSizeInput},
-    output: {schema: SuggestWireSizeOutputSchema},
+    inputSchema: SuggestWireSizeInput,
+    outputSchema: SuggestWireSizeOutputSchema,
   },
   async input => suggestWireSize(input)
 );
@@ -112,7 +112,7 @@ export const conversationalAgent = ai.defineFlow(
           },
           {
             role: 'tool',
-            content: toolResponseParts,
+            content: toolResponseParts.filter(Boolean),
           },
         ],
       });

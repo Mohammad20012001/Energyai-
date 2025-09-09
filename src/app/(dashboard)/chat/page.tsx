@@ -35,6 +35,7 @@ export default function ChatPage() {
 
     const userMessage: DisplayMessage = { id: `user-${Date.now()}`, text: input, role: "user" };
     setMessages(prev => [...prev, userMessage]);
+    const currentInput = input;
     setInput("");
     setIsLoading(true);
 
@@ -45,9 +46,9 @@ export default function ChatPage() {
         content: [{ text: msg.text }]
       }));
 
-      const response = await sendMessage({ history, prompt: input });
+      const response = await sendMessage({ history, prompt: currentInput });
       
-      const botMessage: DisplayMessage = { id: `bot-${Date.now()}`, text: response.text, role: "bot" };
+      const botMessage: DisplayMessage = { id: `bot-${Date.now()}`, text: response, role: "bot" };
       setMessages(prev => [...prev, botMessage]);
 
     } catch (error) {
@@ -124,7 +125,7 @@ export default function ChatPage() {
                 placeholder="مثال: ما هو حجم السلك المناسب لتيار 15 أمبير ومسافة 20 متر؟"
                 disabled={isLoading}
               />
-              <Button type="submit" size="icon" disabled={isLoading}>
+              <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
                 <Send className="w-4 h-4" />
               </Button>
             </form>

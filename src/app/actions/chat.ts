@@ -19,8 +19,8 @@ const ChatRequestSchema = z.object({
 
 export async function sendMessage(
   request: z.infer<typeof ChatRequestSchema>
-): Promise<{text: string}> {
+): Promise<string> {
   const {history, prompt} = ChatRequestSchema.parse(request);
   const result = await conversationalAgent({history, prompt});
-  return {text: result};
+  return result;
 }
