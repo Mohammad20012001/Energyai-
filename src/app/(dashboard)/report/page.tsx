@@ -2,12 +2,51 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, PlusCircle, Trash2 } from "lucide-react";
+import { FileText, Copy, Trash2 } from "lucide-react";
 import { useReport } from "@/context/ReportContext";
+import { useToast } from "@/hooks/use-toast";
 
 
 export default function ReportPage() {
   const { reportCards, removeReportCard } = useReport();
+  const { toast } = useToast();
+
+  const handleExport = () => {
+    if (reportCards.length === 0) {
+        toast({
+            variant: "destructive",
+            title: "التقرير فارغ",
+            description: "لا يوجد شيء لتصديره. أضف بعض البطاقات أولاً.",
+        });
+        return;
+    }
+
+    const reportTitle = "ملخص تقرير نظام الطاقة الشمسية";
+    const separator = "=".repeat(reportTitle.length);
+
+    const reportString = reportCards.map(card => {
+        const values = Object.entries(card.values)
+            .map(([key, value]) => `- ${key}: ${value}`)
+            .join("\n");
+        return `## ${card.type} ##\n${card.summary}\n${values}`;
+    }).join("\n\n" + "-".repeat(30) + "\n\n");
+    
+    const fullReport = `${reportTitle}\n${separator}\n\n${reportString}`;
+
+    navigator.clipboard.writeText(fullReport).then(() => {
+        toast({
+            title: "تم النسخ بنجاح",
+            description: "تم نسخ التقرير إلى الحافظة الخاصة بك.",
+        });
+    }, (err) => {
+        console.error('Could not copy text: ', err);
+        toast({
+            variant: "destructive",
+            title: "فشل النسخ",
+            description: "لم نتمكن من نسخ التقرير. يرجى المحاولة مرة أخرى.",
+        });
+    });
+  };
 
   return (
     <div className="flex flex-col gap-8">
@@ -36,9 +75,9 @@ export default function ReportPage() {
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
                     <h2 className="text-2xl font-semibold">بطاقات المعلومات المحفوظة</h2>
-                    <Button variant="outline" disabled>
-                        <PlusCircle className="ml-2 h-4 w-4" />
-                        تصدير التقرير (قريباً)
+                    <Button variant="outline" onClick={handleExport} disabled={reportCards.length === 0}>
+                        <Copy className="ml-2 h-4 w-4" />
+                        نسخ التقرير إلى الحافظة
                     </Button>
                 </div>
                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
