@@ -23,6 +23,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import Link from "next/link";
 
 export default function DashboardLayout({
   children,
@@ -39,8 +40,11 @@ export default function DashboardLayout({
                 variant="ghost"
                 size="icon"
                 className="size-10 rounded-full text-primary hover:bg-primary/10 hover:text-primary"
+                asChild
               >
-                <Sun className="size-5" />
+                <Link href="/">
+                  <Sun className="size-5" />
+                </Link>
               </Button>
               <div className="flex flex-col group-data-[collapsible=icon]:hidden">
                 <h2 className="font-headline text-lg font-bold text-sidebar-foreground">

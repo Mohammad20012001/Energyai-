@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 
 const navItems = [
-  { href: "/dashboard", label: "لوحة التحكم", icon: LayoutDashboard },
+  { href: "/", label: "لوحة التحكم", icon: LayoutDashboard },
   { href: "/string-configuration", label: "تهيئة السلاسل", icon: Settings },
   { href: "/panel-calculator", label: "حاسبة الألواح", icon: Calculator },
   { href: "/area-calculator", label: "حاسبة المساحة", icon: Maximize },
@@ -35,8 +35,6 @@ const navItems = [
 export function DashboardNav() {
   const pathname = usePathname();
 
-  const isDashboard = pathname === "/dashboard" || pathname === "/";
-
   return (
     <SidebarMenu className="p-2">
       {navItems.map((item) => (
@@ -44,7 +42,7 @@ export function DashboardNav() {
           <Link href={item.href} legacyBehavior passHref>
             <SidebarMenuButton
               asChild
-              isActive={item.href === "/dashboard" ? isDashboard : pathname === item.href}
+              isActive={pathname === item.href}
               tooltip={{ children: item.label }}
               className="justify-start"
             >
