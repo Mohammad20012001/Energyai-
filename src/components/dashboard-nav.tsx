@@ -11,6 +11,7 @@ import {
   BatteryCharging,
   DollarSign,
   Maximize,
+  TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -24,6 +25,7 @@ const navItems = [
   { href: "/string-configuration", label: "تهيئة السلاسل", icon: Settings },
   { href: "/panel-calculator", label: "حاسبة الألواح", icon: Calculator },
   { href: "/area-calculator", label: "حاسبة المساحة", icon: Maximize },
+  { href: "/financial-viability", label: "الجدوى الاقتصادية", icon: TrendingUp },
   { href: "/wire-sizing", label: "حجم الأسلاك", icon: Zap },
   { href: "/inverter-sizing", label: "حجم العاكس", icon: BatteryCharging },
   { href: "/pricing", label: "بيانات التسعير", icon: DollarSign },

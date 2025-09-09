@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Settings, Calculator, Zap, Maximize } from "lucide-react";
+import { ArrowRight, Settings, Calculator, Zap, Maximize, TrendingUp } from "lucide-react";
 
 export default function DashboardOverviewPage() {
   return (
@@ -64,6 +64,25 @@ export default function DashboardOverviewPage() {
             <Button asChild>
               <Link href="/area-calculator">
                 اذهب للحاسبة <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+        
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="text-primary" />
+              حاسبة الجدوى الاقتصادية
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">
+              حلل العائد على الاستثمار في الطاقة الشمسية وفترة استرداد رأس المال.
+            </p>
+            <Button asChild>
+              <Link href="/financial-viability">
+                حلل الآن <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
           </CardContent>
