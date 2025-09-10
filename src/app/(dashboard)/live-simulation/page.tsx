@@ -107,7 +107,7 @@ export default function LiveSimulationPage() {
     // Then run every 1 minute
     simulationIntervalRef.current = setInterval(() => {
       runSimulationStep(values);
-    }, 60000 * 5); // 5 minutes for demo purposes to not exhaust API limits
+    }, 60000); // 1 minute
   };
 
   const stopSimulation = () => {
@@ -341,7 +341,7 @@ export default function LiveSimulationPage() {
                     <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 20 }}>
                             <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="time" />
+                            <XAxis dataKey="time" type="category" domain={['dataMin', 'dataMax']} />
                             <YAxis label={{ value: 'واط', angle: -90, position: 'insideLeft' }}/>
                             <Tooltip contentStyle={{ background: "hsl(var(--background))", direction: 'rtl' }}/>
                             <Legend verticalAlign="top" wrapperStyle={{top: -4, right: 20, direction: 'rtl' }}/>
@@ -359,5 +359,3 @@ export default function LiveSimulationPage() {
     </div>
   );
 }
-
-    
