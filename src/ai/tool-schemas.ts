@@ -95,10 +95,10 @@ export type OptimizeDesignOutput = z.infer<typeof OptimizeDesignOutputSchema>;
 
 // #region Performance Simulation Schemas
 export const SimulatePerformanceInputSchema = z.object({
-  systemSize: z.coerce.number({invalid_type_error: "يجب أن يكون حجم النظام رقمًا موجبًا"}).positive("يجب أن يكون حجم النظام إيجابياً").describe("The DC size of the solar system in kWp."),
-  location: z.enum(['amman', 'zarqa', 'irbid', 'aqaba'], { required_error: "يجب اختيار الموقع" }).describe("The city in Jordan for the simulation."),
-  panelTilt: z.coerce.number().min(0, "زاوية الميل لا يمكن أن تكون سالبة").max(90, "زاوية الميل لا يمكن أن تتجاوز 90").describe("The tilt angle of the solar panels."),
-  panelAzimuth: z.coerce.number().min(0, "زاوية الاتجاه يجب ان تكون بين 0 و 360").max(360, "زاوية الاتجاه يجب ان تكون بين 0 و 360").describe("The azimuth angle of the solar panels."),
+  systemSize: z.coerce.number().positive(),
+  location: z.enum(['amman', 'zarqa', 'irbid', 'aqaba']),
+  panelTilt: z.coerce.number().min(0).max(90),
+  panelAzimuth: z.coerce.number().min(0).max(360),
 });
 export type SimulatePerformanceInput = z.infer<typeof SimulatePerformanceInputSchema>;
 
