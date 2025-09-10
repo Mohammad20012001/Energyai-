@@ -79,43 +79,49 @@ export const conversationalAgent = ai.defineFlow(
         Do not make up answers. If you don't have a tool for a specific question, or if you don't have enough information to use a tool, politely ask the user for the missing information. Do not invent missing parameters.`,
       },
     });
-    
+
     const choice = result.choices[0];
-    const toolRequests = choice.toolRequests;
+    
+    // Check if the model decided to use a tool
+    if (choice.finishReason === 'toolCode') {
+        const toolRequest = choice.toolRequest;
+        if (!toolRequest) {
+            // This should not happen if finishReason is toolCode
+            return "حدث خطأ أثناء محاولة استخدام الأداة.";
+        }
 
-    if (toolRequests && toolRequests.length > 0) {
-       const toolResponseParts: Part[] = [];
-       for (const toolRequest of toolRequests) {
-         console.log('Executing tool:', toolRequest.name, 'with input:', toolRequest.input);
-         const tool = ai.lookupTool(toolRequest.name);
-         if (!tool) {
+        console.log('Executing tool:', toolRequest.name, 'with input:', toolRequest.input);
+        const tool = ai.lookupTool(toolRequest.name);
+        if (!tool) {
             throw new Error(`Tool ${toolRequest.name} not found.`);
-         }
-         const toolResult = await tool(toolRequest.input);
-         toolResponseParts.push({
-           toolResponse: {
-             name: toolRequest.name,
-             output: toolResult,
-           },
-         });
-       }
+        }
+        const toolResult = await tool(toolRequest.input);
 
-      // We need to add the original model response (with tool_code) and the tool responses to history
-      const newHistory = [
-        ...history,
-        { role: 'model' as const, content: choice.message.content },
-        { role: 'tool' as const, content: toolResponseParts }
-      ];
+        const toolResponsePart: Part = {
+          toolResponse: {
+            name: toolRequest.name,
+            output: toolResult,
+          },
+        };
 
-      const finalResult = await ai.generate({
-        model: llm,
-        prompt: { role: 'user', content: [{ text: prompt }] },
-        history: newHistory as any, // Cast to any to handle the wider type from the API
-      });
-      return finalResult.text;
+        // We need to add the original model response (with tool_code) and the tool response to history
+        const newHistory = [
+            ...history,
+            { role: 'user' as const, content: [{text: prompt}] },
+            { role: 'model' as const, content: choice.message.content },
+            { role: 'tool' as const, content: [toolResponsePart] }
+        ];
 
+        // Let the model generate a final response based on the tool's output
+        const finalResult = await ai.generate({
+            model: llm,
+            history: newHistory as any, // Cast to any to handle the wider type
+        });
+        
+        return finalResult.text;
     } else {
-      return choice.text;
+        // If no tool was used, just return the text response
+        return choice.text;
     }
   }
 );
