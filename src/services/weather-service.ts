@@ -12,28 +12,18 @@ interface WeatherData {
     current: {
         temperature: number;
         cloudCover: number;
-        solarIrradiance: number; // in W/m^2
-        uv: number;
+        solarIrradiance: number; // This will now be calculated by the AI
     },
     forecast: {
         temperature: number;
         cloudCover: number;
-        solarIrradiance: number; // in W/m^2
-        uv: number;
+        solarIrradiance: number; // This will now be calculated by the AI
     }
 }
 
-// Function to approximate Solar Irradiance from UV index
-const getIrradianceFromUv = (uv: number): number => {
-    // This is a simplified approximation.
-    // A UV index of 10-11+ is roughly equivalent to 1000-1100 W/m^2 in clear sky conditions.
-    // We'll use a factor of 100 as a simple approximation.
-    return uv * 100;
-};
-
-
 /**
  * Fetches live and forecast weather data for a given location from WeatherAPI.com.
+ * The solarIrradiance is set to the cloud cover percentage and will be properly calculated by the AI model.
  * @param location A string representing one of the predefined Jordanian cities.
  * @returns A promise that resolves to the live and forecast weather data.
  */
@@ -72,15 +62,13 @@ export async function getLiveAndForecastWeatherData(location: string): Promise<W
         const liveData = {
             temperature: current_weather.temp_c ?? 0,
             cloudCover: current_weather.cloud ?? 0,
-            uv: current_weather.uv ?? 0,
-            solarIrradiance: getIrradianceFromUv(current_weather.uv ?? 0),
+            solarIrradiance: current_weather.cloud ?? 0, // Pass cloud cover to AI
         };
 
         const forecastData = {
             temperature: current_hour_forecast.temp_c ?? 0,
             cloudCover: current_hour_forecast.cloud ?? 0,
-            uv: current_hour_forecast.uv ?? 0,
-            solarIrradiance: getIrradianceFromUv(current_hour_forecast.uv ?? 0),
+            solarIrradiance: current_hour_forecast.cloud ?? 0, // Pass cloud cover to AI
         };
 
         return {
@@ -88,13 +76,11 @@ export async function getLiveAndForecastWeatherData(location: string): Promise<W
                 temperature: parseFloat(liveData.temperature.toFixed(1)),
                 cloudCover: parseFloat(liveData.cloudCover.toFixed(1)),
                 solarIrradiance: parseFloat(liveData.solarIrradiance.toFixed(1)),
-                uv: liveData.uv
             },
             forecast: {
                 temperature: parseFloat(forecastData.temperature.toFixed(1)),
                 cloudCover: parseFloat(forecastData.cloudCover.toFixed(1)),
                 solarIrradiance: parseFloat(forecastData.solarIrradiance.toFixed(1)),
-                uv: forecastData.uv
             }
         };
     } catch (error) {

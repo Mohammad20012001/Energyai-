@@ -28,11 +28,9 @@ const prompt = ai.definePrompt({
     panelTilt: SimulatePerformanceInputSchema.shape.panelTilt,
     panelAzimuth: SimulatePerformanceInputSchema.shape.panelAzimuth,
     // Live weather data
-    liveIrradiance: z.number(),
     liveTemperature: z.number(),
     liveCloudCover: z.number(),
     // Forecast weather data
-    forecastIrradiance: z.number(),
     forecastTemperature: z.number(),
     forecastCloudCover: z.number(),
     currentTime: z.string(),
@@ -42,35 +40,38 @@ const prompt = ai.definePrompt({
 
 System Specifications:
 - System Size (DC): {{{systemSize}}} kWp
-- Location: {{{location}}}
+- Location: {{{location}}} (This is a city name in Jordan, use it to determine sun angle based on typical coordinates)
 - Panel Tilt Angle: {{{panelTilt}}} degrees
 - Panel Azimuth Angle: {{{panelAzimuth}}} degrees (180 = South)
 - Current Time: {{{currentTime}}}
 
+You must perform the following steps for each scenario:
+1.  Calculate the ideal, clear-sky Global Horizontal Irradiance (GHI) in W/m^2 for the given location and time. Use your knowledge of solar positioning and atmospheric models.
+2.  Adjust the calculated GHI based on the provided cloud cover percentage for the scenario. Higher cloud cover drastically reduces irradiance.
+3.  Factor in the panel's tilt and azimuth angles, and the sun's current position (calculated from location and time) to determine the Plane of Array (POA) irradiance.
+4.  Calculate the final power output in Watts, considering the system size, POA irradiance, and temperature effects on panel efficiency (assume a standard temperature coefficient of -0.35%/°C from a 25°C baseline).
+5.  Assume standard system losses (e.g., inverter efficiency, soiling, wiring) of about 15% in all final calculations.
+
 You must calculate three separate output power values based on the three weather scenarios provided below.
 
 Scenario 1: Live Real-Time Weather Conditions
-- Live Direct Normal Irradiance (DNI): {{{liveIrradiance}}} W/m^2
 - Live Ambient Temperature: {{{liveTemperature}}} °C
 - Live Cloud Cover: {{{liveCloudCover}}} %
 Calculate 'liveOutputPower' based on these live conditions.
 
 Scenario 2: Forecasted Weather Conditions
-- Forecasted DNI: {{{forecastIrradiance}}} W/m^2
 - Forecasted Ambient Temperature: {{{forecastTemperature}}} °C
 - Forecasted Cloud Cover: {{{forecastCloudCover}}} %
 Calculate 'forecastOutputPower' based on these forecasted conditions.
 
 Scenario 3: Ideal Clear Sky Conditions
-- Assume ideal DNI for the given location and time (you can estimate this based on the provided live irradiance, but assume 0% cloud cover).
 - Use the live ambient temperature: {{{liveTemperature}}} °C
 - Assume 0% cloud cover.
 Calculate 'clearSkyOutputPower' based on these ideal conditions.
 
 Instructions:
-- The location affects the sun's angle, which you must factor in along with the panel angles and weather for all calculations.
-- Assume standard system losses (e.g., inverter efficiency, soiling, wiring) of about 15% in all calculations.
-- Populate ALL fields in the output object, including all live and forecast weather data, and the three calculated power outputs in Watts.
+- Populate ALL fields in the output object.
+- For the 'liveSolarIrradiance' and 'forecastSolarIrradiance' fields in the output, provide your calculated, cloud-adjusted GHI for the Live and Forecast scenarios, respectively.
 `,
 });
 
@@ -90,16 +91,22 @@ const simulatePerformanceFlow = ai.defineFlow(
     const { output } = await prompt({
       ...input,
       // Live Data
-      liveIrradiance: weatherData.current.solarIrradiance,
       liveTemperature: weatherData.current.temperature,
       liveCloudCover: weatherData.current.cloudCover,
       // Forecast Data
-      forecastIrradiance: weatherData.forecast.solarIrradiance,
       forecastTemperature: weatherData.forecast.temperature,
       forecastCloudCover: weatherData.forecast.cloudCover,
       currentTime: currentTime,
     });
 
-    return output!;
+    // The AI now returns the calculated irradiances. We just need to add the other weather data back.
+    return {
+      ...output!,
+      time: currentTime,
+      liveTemperature: weatherData.current.temperature,
+      liveCloudCover: weatherData.current.cloudCover,
+      forecastTemperature: weatherData.forecast.temperature,
+      forecastCloudCover: weatherData.forecast.cloudCover,
+    };
   }
 );
