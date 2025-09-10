@@ -30,6 +30,9 @@ export async function startSimulationAction(
     const validatedInput = SimulatePerformanceInputSchema.parse(input);
     const result = await simulatePerformance(validatedInput);
 
+    // This service is now called inside the flow, but we can call it again
+    // to get the full weather data object for the client.
+    // In a production app, we might want to return this from the flow itself.
     const weatherService = await import('@/services/weather-service');
     const weatherData = await weatherService.getLiveAndForecastWeatherData(
       validatedInput.location

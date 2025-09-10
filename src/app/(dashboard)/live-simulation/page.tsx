@@ -67,6 +67,7 @@ import {
 const formSchema = SimulatePerformanceInputSchema;
 type FormValues = z.infer<typeof formSchema>;
 
+// Define the type for a single data point based on what the server action returns
 interface SimulationDataPoint extends SimulatePerformanceOutput {
     live: {
         temperature: number;
