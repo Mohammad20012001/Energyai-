@@ -4,7 +4,7 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Calculator, Maximize, Zap, ArrowRight, Loader2, Sun, PlusCircle } from "lucide-react";
+import { Calculator, Maximize, Zap, ArrowRight, Loader2, Sun, PlusCircle, Square } from "lucide-react";
 import { useReport } from "@/context/ReportContext";
 
 import { Button } from "@/components/ui/button";
@@ -33,9 +33,14 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+interface ResultState {
+  calculation: AreaCalculationResult;
+  totalArea: number;
+}
+
 
 export default function AreaCalculatorPage() {
-  const [result, setResult] = useState<AreaCalculationResult | null>(null);
+  const [result, setResult] = useState<ResultState | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { addReportCard } = useReport();
   const { toast } = useToast();
@@ -59,7 +64,10 @@ export default function AreaCalculatorPage() {
     await new Promise(resolve => setTimeout(resolve, 500));
 
     const calculationResult = calculateProductionFromArea(values);
-    setResult(calculationResult);
+    setResult({
+        calculation: calculationResult,
+        totalArea: values.landWidth * values.landLength,
+    });
 
     setIsLoading(false);
   }
@@ -69,11 +77,12 @@ export default function AreaCalculatorPage() {
     addReportCard({
       id: `area-${Date.now()}`,
       type: "حاسبة المساحة والإنتاج",
-      summary: `إنتاج سنوي يبلغ ${result.yearlyEnergyKwh.toFixed(0)} ك.و.س من ${result.maxPanels} لوحًا.`,
+      summary: `إنتاج سنوي يبلغ ${result.calculation.yearlyEnergyKwh.toFixed(0)} ك.و.س من ${result.calculation.maxPanels} لوحًا.`,
       values: {
-        "العدد الأقصى للألواح": `${result.maxPanels} لوح`,
-        "إجمالي قوة النظام": `${result.totalPowerKw.toFixed(2)} كيلوواط`,
-        "الإنتاج السنوي المقدر": `${result.yearlyEnergyKwh.toFixed(0)} ك.و.س`,
+        "إجمالي المساحة": `${result.totalArea.toFixed(1)} م²`,
+        "العدد الأقصى للألواح": `${result.calculation.maxPanels} لوح`,
+        "إجمالي قوة النظام": `${result.calculation.totalPowerKw.toFixed(2)} كيلوواط`,
+        "الإنتاج السنوي المقدر": `${result.calculation.yearlyEnergyKwh.toFixed(0)} ك.و.س`,
       }
     });
     toast({
@@ -208,6 +217,19 @@ export default function AreaCalculatorPage() {
 
           {result && (
             <div className="space-y-6">
+                <Card className="text-center">
+                    <CardHeader>
+                        <CardTitle className="text-2xl flex items-center justify-center gap-2">
+                            <Square className="text-primary"/>
+                            المساحة الإجمالية
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-6xl font-bold text-primary">{result.totalArea.toFixed(1)}</div>
+                        <p className="text-muted-foreground mt-2 text-lg">متر مربع</p>
+                    </CardContent>
+                </Card>
+
               <Card className="text-center">
                 <CardHeader>
                   <CardTitle className="text-2xl">العدد الأقصى للألواح</CardTitle>
@@ -216,7 +238,7 @@ export default function AreaCalculatorPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-6xl font-bold text-primary">{result.maxPanels}</div>
+                  <div className="text-6xl font-bold text-primary">{result.calculation.maxPanels}</div>
                   <p className="text-muted-foreground mt-2 text-lg">لوح شمسي</p>
                 </CardContent>
               </Card>
@@ -228,22 +250,22 @@ export default function AreaCalculatorPage() {
                 <CardContent>
                   <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-center">
                     <li className="border rounded-lg p-4">
-                      <div className="text-2xl font-bold">{result.totalPowerKw.toFixed(2)}</div>
+                      <div className="text-2xl font-bold">{result.calculation.totalPowerKw.toFixed(2)}</div>
                       <div className="text-muted-foreground">كيلوواط</div>
                       <div className="text-sm">إجمالي قوة النظام</div>
                     </li>
                     <li className="border rounded-lg p-4">
-                      <div className="text-2xl font-bold">{result.dailyEnergyKwh.toFixed(2)}</div>
+                      <div className="text-2xl font-bold">{result.calculation.dailyEnergyKwh.toFixed(2)}</div>
                       <div className="text-muted-foreground">كيلوواط/ساعة</div>
                        <div className="text-sm">الإنتاج اليومي</div>
                     </li>
                     <li className="border rounded-lg p-4">
-                      <div className="text-2xl font-bold">{result.monthlyEnergyKwh.toFixed(2)}</div>
+                      <div className="text-2xl font-bold">{result.calculation.monthlyEnergyKwh.toFixed(2)}</div>
                       <div className="text-muted-foreground">كيلوواط/ساعة</div>
                        <div className="text-sm">الإنتاج الشهري</div>
                     </li>
                     <li className="border rounded-lg p-4">
-                      <div className="text-2xl font-bold">{result.yearlyEnergyKwh.toFixed(2)}</div>
+                      <div className="text-2xl font-bold">{result.calculation.yearlyEnergyKwh.toFixed(2)}</div>
                       <div className="text-muted-foreground">كيلوواط/ساعة</div>
                        <div className="text-sm">الإنتاج السنوي</div>
                     </li>
