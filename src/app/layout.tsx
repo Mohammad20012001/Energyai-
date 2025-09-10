@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { Toaster } from "@/components/ui/toaster"
-import { AuthProvider } from '@/context/AuthContext';
 import './globals.css';
 import DashboardLayout from './(dashboard)/layout';
 
@@ -22,11 +21,9 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <AuthProvider>
-            <DashboardLayout>
-              {children}
-            </DashboardLayout>
-        </AuthProvider>
+        <DashboardLayout>
+          {children}
+        </DashboardLayout>
         <Toaster />
       </body>
     </html>

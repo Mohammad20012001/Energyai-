@@ -15,7 +15,6 @@ import {
   MessageCircle,
   Wind,
   Bot,
-  FolderKanban,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -26,7 +25,6 @@ import {
 
 const navItems = [
   { href: "/", label: "لوحة التحكم", icon: LayoutDashboard },
-  { href: "/projects", label: "مشاريعي", icon: FolderKanban },
   { type: 'divider', label: 'AI Tools'},
   { href: "/chat", label: "المساعد الذكي", icon: MessageCircle },
   { href: "/design-optimizer", label: "محسن التصميم", icon: Bot },
