@@ -4,39 +4,15 @@
  * @fileOverview AI-powered string configuration suggestion for solar panel systems.
  *
  * - suggestStringConfiguration - A function to determine the optimal configuration of solar panels in strings and parallel strings.
- * - SuggestStringConfigurationInput - The input type for the suggestStringConfiguration function.
- * - SuggestStringConfigurationOutput - The return type for the suggestStringConfiguration function.
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
-
-export const SuggestStringConfigurationInputSchema = z.object({
-  panelVoltage: z.number().describe('جهد اللوح الشمسي الواحد (فولت).'),
-  panelCurrent: z.number().describe('تيار اللوح الشمسي الواحد (أمبير).'),
-  desiredVoltage: z.number().describe('الجهد الإجمالي المطلوب للنظام (فولت).'),
-  desiredCurrent: z.number().describe('التيار الإجمالي المطلوب للنظام (أمبير).'),
-});
-export type SuggestStringConfigurationInput = z.infer<
-  typeof SuggestStringConfigurationInputSchema
->;
-
-export const SuggestStringConfigurationOutputSchema = z.object({
-  panelsPerString: z
-    .number()
-    .describe('العدد الموصى به من الألواح لتوصيلها على التوالي لكل سلسلة.'),
-  parallelStrings: z
-    .number()
-    .describe('العدد الموصى به من السلاسل المتوازية للتوصيل.'),
-  commonWiringErrors: z
-    .string()
-    .describe(
-      'أخطاء التوصيل الشائعة التي يجب تجنبها، بناءً على التهيئة المقترحة.'
-    ),
-});
-export type SuggestStringConfigurationOutput = z.infer<
-  typeof SuggestStringConfigurationOutputSchema
->;
+import {
+  SuggestStringConfigurationInputSchema,
+  SuggestStringConfigurationOutputSchema,
+  type SuggestStringConfigurationInput,
+  type SuggestStringConfigurationOutput,
+} from '@/ai/tool-schemas';
 
 export async function suggestStringConfiguration(
   input: SuggestStringConfigurationInput

@@ -7,14 +7,16 @@
 import {ai} from '@/ai/genkit';
 import {
   suggestStringConfiguration,
-  SuggestStringConfigurationInputSchema,
-  SuggestStringConfigurationOutputSchema,
 } from './suggest-string-config';
 import {
   suggestWireSize,
-  SuggestWireSizeInputSchema,
-  SuggestWireSizeOutputSchema,
 } from './suggest-wire-size';
+import {
+  SuggestStringConfigurationInputSchema,
+  SuggestStringConfigurationOutputSchema,
+  SuggestWireSizeInputSchema,
+  SuggestWireSizeOutputSchema
+} from '@/ai/tool-schemas';
 import {z} from 'zod';
 import {Part} from 'genkit';
 

@@ -3,9 +3,9 @@
 import { z } from "zod";
 import {
   suggestStringConfiguration,
-  SuggestStringConfigurationInputSchema,
 } from "@/ai/flows/suggest-string-config";
-import type { SuggestStringConfigurationInput } from "@/ai/flows/suggest-string-config";
+import { SuggestStringConfigurationInputSchema } from "@/ai/tool-schemas";
+import type { SuggestStringConfigurationInput } from "@/ai/tool-schemas";
 
 
 export async function suggestStringConfigurationAction(

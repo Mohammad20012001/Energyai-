@@ -21,10 +21,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { suggestStringConfigurationAction } from "@/app/actions/solar";
-import type { SuggestStringConfigurationOutput } from "@/ai/flows/suggest-string-config";
 import { SystemVisualization } from "@/components/system-visualization";
 import { Separator } from "./ui/separator";
 import { useReport } from "@/context/ReportContext";
+import type { SuggestStringConfigurationOutput } from "@/ai/tool-schemas";
 
 
 const formSchema = z.object({

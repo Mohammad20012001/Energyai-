@@ -6,7 +6,6 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Loader2, Zap, ArrowRight, Lightbulb, AlertTriangle, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { SuggestWireSizeOutput } from "@/ai/flows/suggest-wire-size";
 import { suggestWireSize } from "@/ai/flows/suggest-wire-size";
 import { useReport } from "@/context/ReportContext";
 
@@ -22,6 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import type { SuggestWireSizeOutput } from "@/ai/tool-schemas";
 
 const formSchema = z.object({
   current: z.coerce.number({invalid_type_error: "يجب أن يكون رقماً"}).positive("يجب أن يكون التيار إيجابياً"),

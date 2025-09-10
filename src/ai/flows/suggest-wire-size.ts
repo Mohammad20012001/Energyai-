@@ -4,36 +4,15 @@
  * @fileOverview AI-powered wire size suggestion for solar panel systems.
  *
  * - suggestWireSize - A function to determine the optimal wire size based on system parameters.
- * - SuggestWireSizeInput - The input type for the suggestWireSize function.
- * - SuggestWireSizeOutput - The return type for the suggestWireSize function.
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
-
-export const SuggestWireSizeInputSchema = z.object({
-  current: z.number().describe('تيار النظام (أمبير).'),
-  voltage: z.number().describe('جهد النظام (فولت).'),
-  distance: z.number().describe('طول السلك بالمتر (اتجاه واحد).'),
-  voltageDropPercentage: z
-    .number()
-    .describe('النسبة المئوية لهبوط الجهد المسموح به (%).'),
-});
-export type SuggestWireSizeInput = z.infer<typeof SuggestWireSizeInputSchema>;
-
-export const SuggestWireSizeOutputSchema = z.object({
-  recommendedWireSizeMM2: z
-    .number()
-    .describe('مقطع السلك الموصى به بوحدة mm²'),
-  voltageDrop: z.number().describe('قيمة هبوط الجهد الفعلية بالفولت.'),
-  powerLoss: z.number().describe('قيمة الطاقة المفقودة بالواط.'),
-  reasoning: z
-    .string()
-    .describe(
-      'شرح مفصل باللغة العربية عن سبب اختيار هذا المقطع، وأهمية اختيار الحجم الصحيح، والمخاطر المترتبة على استخدام مقطع أصغر.'
-    ),
-});
-export type SuggestWireSizeOutput = z.infer<typeof SuggestWireSizeOutputSchema>;
+import {
+  SuggestWireSizeInputSchema,
+  SuggestWireSizeOutputSchema,
+  type SuggestWireSizeInput,
+  type SuggestWireSizeOutput,
+} from '@/ai/tool-schemas';
 
 export async function suggestWireSize(
   input: SuggestWireSizeInput
