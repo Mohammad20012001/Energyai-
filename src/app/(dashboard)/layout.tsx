@@ -1,12 +1,9 @@
-"use client";
 
 import * as React from "react";
-import { Sun, PanelRight, User, Wind } from "lucide-react";
-import { ReportProvider } from "@/context/ReportContext";
-
+import { Sun, PanelRight } from "lucide-react";
+import { Providers } from "./providers";
 
 import {
-  SidebarProvider,
   Sidebar,
   SidebarHeader,
   SidebarContent,
@@ -26,8 +23,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <SidebarProvider>
-      <ReportProvider>
+    <Providers>
         <Sidebar side="left" collapsible="icon" className="border-r border-sidebar-border">
           <SidebarHeader className="h-16 items-center justify-center p-4">
             <div className="flex items-center gap-2">
@@ -66,7 +62,6 @@ export default function DashboardLayout({
           </header>
           <main className="flex-1 p-4 sm:p-6">{children}</main>
         </SidebarInset>
-      </ReportProvider>
-    </SidebarProvider>
+    </Providers>
   );
 }
