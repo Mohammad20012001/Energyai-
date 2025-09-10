@@ -24,6 +24,11 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  experimental: {
+    serverComponentsExternalPackages: [
+      '@opentelemetry/context-async-hooks'
+    ]
+  }
 };
 
 export default nextConfig;
