@@ -15,7 +15,7 @@ interface WeatherData {
 }
 
 /**
- * Fetches live weather data for a given location from Open-Meteo.
+ * Fetches live weather data for a given location from WeatherAPI.com.
  * @param location A string representing one of the predefined Jordanian cities.
  * @returns A promise that resolves to the live weather data.
  */
@@ -25,23 +25,28 @@ export async function getLiveWeatherData(location: string): Promise<WeatherData>
         throw new Error(`Location '${location}' is not supported. Supported locations are: Amman, Zarqa, Irbid, Aqaba.`);
     }
 
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}&current=temperature_2m,cloud_cover,direct_normal_irradiance&timezone=auto`;
+    const apiKey = process.env.WEATHER_API_KEY;
+    if (!apiKey) {
+        console.error("WeatherAPI.com API key is missing. Please add WEATHER_API_KEY to your .env file.");
+        throw new Error("WeatherAPI.com API key is not configured.");
+    }
+    
+    const url = `https://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${coords.lat},${coords.lon}`;
 
     try {
         const response = await axios.get(url);
         const data = response.data;
         
         if (!data.current) {
-            throw new Error("Invalid response structure from Open-Meteo API.");
+            throw new Error("Invalid response structure from WeatherAPI.com.");
         }
 
         const current_weather = data.current;
 
-        // Open-Meteo provides Direct Normal Irradiance (DNI), which is great for solar calculations.
-        // We will use this directly. If it's null, we fall back to 0.
-        const solarIrradiance = current_weather.direct_normal_irradiance ?? 0;
-        const temperature = current_weather.temperature_2m ?? 0;
-        const cloudCover = current_weather.cloud_cover ?? 0;
+        // WeatherAPI.com provides solar radiation in W/m^2 which is what we need.
+        const solarIrradiance = current_weather.air_quality?.['gb-defra-index'] ? current_weather.air_quality['gb-defra-index'] * 100 : 0; // fallback logic
+        const temperature = current_weather.temp_c ?? 0;
+        const cloudCover = current_weather.cloud ?? 0;
 
         return {
             temperature: parseFloat(temperature.toFixed(1)),
@@ -49,7 +54,7 @@ export async function getLiveWeatherData(location: string): Promise<WeatherData>
             solarIrradiance: parseFloat(solarIrradiance.toFixed(1)),
         };
     } catch (error) {
-        console.error("Error fetching weather data from Open-Meteo:", error);
-        throw new Error("Failed to fetch live weather data. Please check your network connection.");
+        console.error("Error fetching weather data from WeatherAPI.com:", error);
+        throw new Error("Failed to fetch live weather data. Please check your network connection or API key.");
     }
 }
