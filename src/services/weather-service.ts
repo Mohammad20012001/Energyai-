@@ -21,8 +21,9 @@ interface WeatherData {
  */
 export async function getLiveWeatherData(location: string): Promise<WeatherData> {
     const apiKey = process.env.OPENWEATHER_API_KEY;
-    if (!apiKey) {
-        throw new Error("OpenWeatherMap API key is not configured in .env file.");
+    if (!apiKey || apiKey === "") {
+        console.error("OpenWeatherMap API key is missing. Please add OPENWEATHER_API_KEY to your .env file.");
+        throw new Error("OpenWeatherMap API key is not configured. Please add it to the .env file to run the live simulation.");
     }
 
     const coords = locations[location.toLowerCase()];
