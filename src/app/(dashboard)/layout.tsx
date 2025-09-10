@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Sun, PanelRight, User } from "lucide-react";
+import { Sun, PanelRight, User, Wind } from "lucide-react";
 import { ReportProvider } from "@/context/ReportContext";
 
 import {

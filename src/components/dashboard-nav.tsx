@@ -13,6 +13,7 @@ import {
   Maximize,
   TrendingUp,
   MessageCircle,
+  Wind,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -23,6 +24,7 @@ import {
 
 const navItems = [
   { href: "/", label: "لوحة التحكم", icon: LayoutDashboard },
+  { href: "/live-simulation", label: "المحاكاة الحية", icon: Wind },
   // { href: "/chat", label: "المساعد الذكي", icon: MessageCircle },
   { href: "/string-configuration", label: "تهيئة السلاسل", icon: Settings },
   { href: "/panel-calculator", label: "حاسبة الألواح", icon: Calculator },
