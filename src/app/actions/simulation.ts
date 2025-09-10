@@ -10,25 +10,15 @@ import {
   type SimulatePerformanceInput,
 } from '@/ai/tool-schemas';
 
-const SimulationDataPointSchema = SimulatePerformanceOutputSchema.extend({
-  // Live Data
-  liveTemperature: z
-    .number()
-    .describe('Live ambient temperature in degrees Celsius.'),
-  liveCloudCover: z.number().describe('Live cloud cover percentage (0-100).'),
+const WeatherDataSchema = z.object({
+  temperature: z.number(),
+  cloudCover: z.number(),
+  uvIndex: z.number(),
+});
 
-  // Forecast Data
-  forecastUvIndex: z
-    .number()
-    .describe('Forecasted UV index from the weather service.'),
-  forecastTemperature: z
-    .number()
-    .describe(
-      'Forecasted ambient temperature in degrees Celsius for the same instant.'
-    ),
-  forecastCloudCover: z
-    .number()
-    .describe('Forecasted cloud cover percentage (0-100) for the same instant.'),
+const SimulationDataPointSchema = SimulatePerformanceOutputSchema.extend({
+  live: WeatherDataSchema,
+  forecast: WeatherDataSchema,
 });
 
 type SimulationDataPoint = z.infer<typeof SimulationDataPointSchema>;
@@ -40,7 +30,6 @@ export async function startSimulationAction(
     const validatedInput = SimulatePerformanceInputSchema.parse(input);
     const result = await simulatePerformance(validatedInput);
 
-    // The flow returns a partial result, so we need to fetch weather data again to have the full datapoint for the UI
     const weatherService = await import('@/services/weather-service');
     const weatherData = await weatherService.getLiveAndForecastWeatherData(
       validatedInput.location
@@ -48,11 +37,8 @@ export async function startSimulationAction(
 
     const fullDataPoint: SimulationDataPoint = {
       ...result,
-      liveTemperature: weatherData.current.temperature,
-      liveCloudCover: weatherData.current.cloudCover,
-      forecastUvIndex: weatherData.forecast.uvIndex,
-      forecastTemperature: weatherData.forecast.temperature,
-      forecastCloudCover: weatherData.forecast.cloudCover,
+      live: weatherData.current,
+      forecast: weatherData.forecast,
     };
 
     return {success: true, data: fullDataPoint};

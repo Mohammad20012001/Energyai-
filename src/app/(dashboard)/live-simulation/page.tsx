@@ -68,12 +68,18 @@ const formSchema = SimulatePerformanceInputSchema;
 type FormValues = z.infer<typeof formSchema>;
 
 const SimulationDataPointSchema = SimulatePerformanceOutputSchema.extend({
-  liveTemperature: z.number(),
-  liveCloudCover: z.number(),
-  forecastUvIndex: z.number(),
-  forecastTemperature: z.number(),
-  forecastCloudCover: z.number(),
+  live: z.object({
+    temperature: z.number(),
+    cloudCover: z.number(),
+    uvIndex: z.number(),
+  }),
+  forecast: z.object({
+    temperature: z.number(),
+    cloudCover: z.number(),
+    uvIndex: z.number(),
+  }),
 });
+
 type SimulationDataPoint = z.infer<typeof SimulationDataPointSchema>;
 
 export default function LiveSimulationPage() {
@@ -99,13 +105,26 @@ export default function LiveSimulationPage() {
   const runSimulationStep = async (values: FormValues) => {
     try {
       const result = await startSimulationAction(values);
+      
       if (result.success && result.data) {
-        setCurrentDataPoint(result.data);
-        setSimulationData(prevData => {
-          const newData = [...prevData, result.data!];
-          // Keep only the last 15 minutes (assuming 1 data point per minute)
-          return newData.slice(-15);
-        });
+        // Validate the received data against the client-side schema
+        const validation = SimulationDataPointSchema.safeParse(result.data);
+        if (validation.success) {
+          setCurrentDataPoint(validation.data);
+          setSimulationData(prevData => {
+            const newData = [...prevData, validation.data];
+            // Keep only the last 15 minutes (assuming 1 data point per minute)
+            return newData.slice(-15);
+          });
+        } else {
+            toast({
+              variant: 'destructive',
+              title: 'خطأ في بيانات المحاكاة',
+              description: 'تم استلام بيانات غير متوقعة من الخادم.',
+            });
+            console.error("Zod validation error:", validation.error.flatten());
+            stopSimulation();
+        }
       } else {
         toast({
           variant: 'destructive',
@@ -415,7 +434,7 @@ export default function LiveSimulationPage() {
                     <SunDim className="h-6 w-6 text-yellow-500" />
                     <div>
                       <div className="font-bold">
-                        {currentDataPoint?.liveUvIndex ?? '...'}
+                        {currentDataPoint?.live.uvIndex ?? '...'}
                       </div>
                       <div className="text-xs text-muted-foreground">
                         مؤشر UV
@@ -426,7 +445,7 @@ export default function LiveSimulationPage() {
                     <Thermometer className="h-6 w-6 text-red-500" />
                     <div>
                       <div className="font-bold">
-                        {currentDataPoint?.liveTemperature ?? '...'}
+                        {currentDataPoint?.live.temperature ?? '...'}
                       </div>
                       <div className="text-xs text-muted-foreground">°C</div>
                     </div>
@@ -435,7 +454,7 @@ export default function LiveSimulationPage() {
                     <Cloudy className="h-6 w-6 text-gray-500" />
                     <div>
                       <div className="font-bold">
-                        {currentDataPoint?.liveCloudCover ?? '...'}
+                        {currentDataPoint?.live.cloudCover ?? '...'}
                       </div>
                       <div className="text-xs text-muted-foreground">% غيوم</div>
                     </div>
