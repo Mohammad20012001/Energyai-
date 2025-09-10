@@ -52,6 +52,7 @@ export default function WireSizingPage() {
     setIsLoading(true);
     setResult(null);
     try {
+      // The suggestWireSize flow now uses the hybrid model (Physics + AI)
       const response = await suggestWireSize(values);
       setResult(response);
     } catch (error) {
@@ -88,7 +89,7 @@ export default function WireSizingPage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight font-headline">حاسبة مقطع السلك بالذكاء الاصطناعي</h1>
+        <h1 className="text-3xl font-bold tracking-tight font-headline">حاسبة مقطع السلك (نموذج هجين: فيزياء + AI)</h1>
         <p className="text-muted-foreground mt-2">
           احسب حجم السلك (الكابل) الأمثل لتركيبات الطاقة الشمسية لضمان الأمان وتقليل فاقد الطاقة.
         </p>
@@ -178,7 +179,7 @@ export default function WireSizingPage() {
              <Card className="flex items-center justify-center p-8 lg:min-h-[400px]">
               <div className="flex flex-col items-center gap-4 text-muted-foreground">
                 <Zap className="h-12 w-12 animate-pulse" />
-                <p>...الذكاء الاصطناعي يحلل الدارة الكهربائية</p>
+                <p>...النموذج الهجين يعمل: حسابات دقيقة مع تحليل ذكي</p>
               </div>
             </Card>
           )}
@@ -187,7 +188,7 @@ export default function WireSizingPage() {
             <div className="space-y-6">
               <Card className="text-center">
                 <CardHeader>
-                  <CardTitle className="text-2xl">مقطع السلك الموصى به</CardTitle>
+                  <CardTitle className="text-2xl">مقطع السلك الموصى به (فيزيائيًا)</CardTitle>
                   <CardDescription>
                     أقرب حجم قياسي يفي بالمتطلبات
                   </CardDescription>
@@ -200,7 +201,7 @@ export default function WireSizingPage() {
 
               <Card>
                  <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><Lightbulb className="text-primary"/> تفاصيل الأداء</CardTitle>
+                  <CardTitle className="flex items-center gap-2"><Lightbulb className="text-primary"/> تفاصيل الأداء (فيزيائيًا)</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-center">
@@ -218,7 +219,7 @@ export default function WireSizingPage() {
               
                <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>تحليل وتوصيات الخبير</AlertTitle>
+                <AlertTitle>تحليل وتوصيات الخبير (AI)</AlertTitle>
                 <AlertDescription className="mt-2 prose prose-sm max-w-none text-destructive-foreground/90">
                   {result.reasoning}
                 </AlertDescription>

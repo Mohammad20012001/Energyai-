@@ -1,7 +1,8 @@
 'use server';
 
 /**
- * @fileOverview AI-powered wire size suggestion for solar panel systems.
+ * @fileOverview AI-powered wire size suggestion for solar panel systems. This is a hybrid model.
+ * It uses a physics-based calculation service for numerical accuracy and an AI model for reasoning.
  *
  * - suggestWireSize - A function to determine the optimal wire size based on system parameters.
  */
@@ -13,6 +14,8 @@ import {
   type SuggestWireSizeInput,
   type SuggestWireSizeOutput,
 } from '@/ai/tool-schemas';
+import { calculateWireSize } from '@/services/calculations';
+
 
 export async function suggestWireSize(
   input: SuggestWireSizeInput
@@ -20,11 +23,20 @@ export async function suggestWireSize(
   return suggestWireSizeFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'suggestWireSizePrompt',
-  input: {schema: SuggestWireSizeInputSchema},
-  output: {schema: SuggestWireSizeOutputSchema},
-  prompt: `أنت مهندس كهربائي خبير في تصميم أنظمة الطاقة الشمسية. بناءً على المدخلات التالية باللغة العربية، قم بحساب وتوصية مقطع السلك المناسب (mm²) للتيار المستمر (DC) بين الألواح والعاكس.
+// 1. Get the accurate, physics-based calculation result first.
+const physicsResult = calculateWireSize(input);
+
+// 2. Define a prompt that takes the accurate data and generates only the reasoning.
+const reasoningPrompt = ai.definePrompt({
+  name: 'generateWireSizeReasoningPrompt',
+  input: { schema: z.object({
+    ...SuggestWireSizeInputSchema.shape,
+    ...SuggestWireSizeOutputSchema.omit({ reasoning: true }).shape,
+  })},
+  output: { schema: z.object({
+    reasoning: SuggestWireSizeOutputSchema.shape.reasoning,
+  })},
+  prompt: `أنت مهندس كهربائي خبير في تصميم أنظمة الطاقة الشمسية. لقد قمنا بإجراء الحسابات التالية لتحديد حجم السلك:
 
 المعطيات:
 - تيار النظام: {{{current}}} أمبير
@@ -32,22 +44,16 @@ const prompt = ai.definePrompt({
 - المسافة (اتجاه واحد): {{{distance}}} متر
 - نسبة هبوط الجهد المسموح بها: {{{voltageDropPercentage}}}%
 
-المهام:
-1.  احسب هبوط الجهد الأقصى المسموح به بالفولت.
-2.  استخدم قانون حساب مقطع السلك للتيار المستمر:
-    مقطع السلك (mm²) = (2 * ρ * L * I) / Vd_max
-    حيث:
-    - ρ (المقاومة النوعية للنحاس) = 0.0172 Ω·mm²/m
-    - L = المسافة بالمتر ({{{distance}}})
-    - I = التيار بالأمبير ({{{current}}})
-    - Vd_max = أقصى هبوط جهد مسموح به بالفولت.
-3.  قرّب مساحة المقطع الناتجة إلى أقرب حجم قياسي متوفر في السوق (e.g., 1.5, 2.5, 4, 6, 10, 16, 25, 35, 50 mm²). اختر القيمة الأكبر أو المساوية للنتيجة المحسوبة.
-4.  احسب هبوط الجهد الفعلي (Vd) باستخدام الحجم القياسي الذي اخترته.
-5.  احسب الطاقة المفقودة (Power Loss) بالواط: P_loss = Vd * I.
-6.  قدم شرحاً (reasoning) مفصلاً باللغة العربية يوضح أهمية اختيار الحجم الصحيح للسلك، والمخاطر المترتبة على استخدام سلك أصغر من الموصى به (مثل فقدان الطاقة، ارتفاع درجة الحرارة، وخطر الحريق)، ولماذا تم اختيار هذا الحجم συγκεκριμένα.
+النتائج المحسوبة:
+- مقطع السلك الموصى به: {{{recommendedWireSizeMM2}}} مم²
+- هبوط الجهد الفعلي: {{{voltageDrop}}} فولت
+- الطاقة المفقودة: {{{powerLoss}}} واط
 
-يجب أن يكون الرد كاملاً باللغة العربية.`,
+مهمتك هي كتابة شرح (reasoning) مفصل باللغة العربية. يجب أن يوضح هذا الشرح أهمية اختيار الحجم الصحيح للسلك، والمخاطر المترتبة على استخدام سلك أصغر من الموصى به (مثل فقدان الطاقة، ارتفاع درجة الحرارة، وخطر الحريق)، ولماذا تم اختيار هذا الحجم على وجه الخصوص بناءً على النتائج.
+
+الرد يجب أن يكون فقط نص الشرح باللغة العربية.`,
 });
+
 
 const suggestWireSizeFlow = ai.defineFlow(
   {
@@ -55,8 +61,24 @@ const suggestWireSizeFlow = ai.defineFlow(
     inputSchema: SuggestWireSizeInputSchema,
     outputSchema: SuggestWireSizeOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  async (input) => {
+    // Step 1: Get the definitive calculation from the physics-based service.
+    const calculatedData = calculateWireSize(input);
+
+    // Step 2: Call the AI model with the input AND the calculated data to generate the reasoning.
+    const { output: reasoningOutput } = await reasoningPrompt({
+      ...input,
+      ...calculatedData,
+    });
+    
+    if (!reasoningOutput) {
+        throw new Error("AI failed to generate reasoning.");
+    }
+
+    // Step 3: Combine the physics-based calculation with the AI-generated reasoning.
+    return {
+      ...calculatedData,
+      reasoning: reasoningOutput.reasoning,
+    };
   }
 );
