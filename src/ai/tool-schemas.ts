@@ -1,4 +1,4 @@
-import {z} from 'genkit';
+import {z} from 'zod';
 
 // #region String Configuration Schemas
 export const SuggestStringConfigurationInputSchema = z.object({

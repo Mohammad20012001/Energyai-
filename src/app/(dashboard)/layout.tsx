@@ -1,7 +1,6 @@
-
-import * as React from "react";
-import { Sun, PanelRight } from "lucide-react";
-import { Providers } from "./providers";
+import * as React from 'react';
+import {Sun, PanelRight} from 'lucide-react';
+import {Providers} from './providers';
 
 import {
   Sidebar,
@@ -10,12 +9,11 @@ import {
   SidebarFooter,
   SidebarTrigger,
   SidebarInset,
-} from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
-import { DashboardNav } from "@/components/dashboard-nav";
+} from '@/components/ui/sidebar';
+import {Button} from '@/components/ui/button';
+import {DashboardNav} from '@/components/dashboard-nav';
 
-import Link from "next/link";
-
+import Link from 'next/link';
 
 export default function DashboardLayout({
   children,
@@ -24,44 +22,46 @@ export default function DashboardLayout({
 }) {
   return (
     <Providers>
-        <Sidebar side="left" collapsible="icon" className="border-r border-sidebar-border">
-          <SidebarHeader className="h-16 items-center justify-center p-4">
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-10 rounded-full text-primary hover:bg-primary/10 hover:text-primary"
-                asChild
-              >
-                <Link href="/">
-                  <Sun className="size-5" />
-                </Link>
-              </Button>
-              <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-                <h2 className="font-headline text-lg font-bold text-sidebar-foreground">
-                  Jordan Solar Architect
-                </h2>
-              </div>
+      <Sidebar
+        side="left"
+        collapsible="icon"
+        className="border-r border-sidebar-border"
+      >
+        <SidebarHeader className="h-16 items-center justify-center p-4">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-10 rounded-full text-primary hover:bg-primary/10 hover:text-primary"
+              asChild
+            >
+              <Link href="/">
+                <Sun className="size-5" />
+              </Link>
+            </Button>
+            <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+              <h2 className="font-headline text-lg font-bold text-sidebar-foreground">
+                Jordan Solar Architect
+              </h2>
             </div>
-          </SidebarHeader>
-          <SidebarContent>
-            <DashboardNav />
-          </SidebarContent>
-          <SidebarFooter>
-            {/* Footer content if needed */}
-          </SidebarFooter>
-        </Sidebar>
-        <SidebarInset>
-          <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
-            <SidebarTrigger>
-              <PanelRight />
-            </SidebarTrigger>
-            <div className="flex items-center gap-4">
-               {/* User menu can be re-added here later if needed */}
-            </div>
-          </header>
-          <main className="flex-1 p-4 sm:p-6">{children}</main>
-        </SidebarInset>
+          </div>
+        </SidebarHeader>
+        <SidebarContent>
+          <DashboardNav />
+        </SidebarContent>
+        <SidebarFooter>{/* Footer content if needed */}</SidebarFooter>
+      </Sidebar>
+      <SidebarInset>
+        <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
+          <SidebarTrigger>
+            <PanelRight />
+          </SidebarTrigger>
+          <div className="flex items-center gap-4">
+            {/* User menu can be re-added here later if needed */}
+          </div>
+        </header>
+        <main className="flex-1 p-4 sm:p-6">{children}</main>
+      </SidebarInset>
     </Providers>
   );
 }
