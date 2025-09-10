@@ -4,9 +4,11 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Bot, Sparkles, ArrowRight, Loader2, Sun, DollarSign, Maximize, FileText, CheckCircle, Settings, Zap, BatteryCharging } from "lucide-react";
+import { Bot, Sparkles, ArrowRight, Loader2, Sun, DollarSign, Maximize, FileText, CheckCircle, Settings, Zap, BatteryCharging, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useReport } from "@/context/ReportContext";
+import { useAuth } from "@/context/AuthContext";
+
 
 import { Button } from "@/components/ui/button";
 import {
@@ -27,7 +29,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { optimizeDesignAction } from "@/app/actions/optimizer";
-import type { OptimizeDesignOutput } from "@/ai/flows/optimize-design";
+import { saveProjectAction } from "@/app/actions/projects";
+import type { OptimizeDesignOutput } from "@/ai/tool-schemas";
 
 
 const formSchema = z.object({
@@ -42,8 +45,11 @@ type FormValues = z.infer<typeof formSchema>;
 export default function DesignOptimizerPage() {
   const [result, setResult] = useState<OptimizeDesignOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   const { addReportCard } = useReport();
+  const { user } = useAuth();
+
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -72,6 +78,34 @@ export default function DesignOptimizerPage() {
     }
     
     setIsLoading(false);
+  }
+
+  const handleSaveProject = async () => {
+    if (!result || !user) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: !user ? "يجب عليك تسجيل الدخول أولاً لحفظ المشروع." : "لا توجد نتائج لحفظها.",
+      });
+      return;
+    }
+    setIsSaving(true);
+    const projectName = `مشروع ${form.getValues().location} - ${result.summary.optimizedSystemSize.toFixed(1)}kWp`;
+    const response = await saveProjectAction({ name: projectName, design: result, userId: user.uid });
+
+    if (response.success) {
+      toast({
+        title: "تم الحفظ بنجاح",
+        description: `تم حفظ "${projectName}" في مشاريعك.`,
+      });
+    } else {
+       toast({
+        variant: "destructive",
+        title: "فشل الحفظ",
+        description: response.error || "حدث خطأ أثناء حفظ المشروع.",
+      });
+    }
+    setIsSaving(false);
   }
 
   return (
@@ -186,6 +220,15 @@ export default function DesignOptimizerPage() {
 
           {result && (
             <div className="space-y-6">
+               {user && (
+                <Button onClick={handleSaveProject} disabled={isSaving} className="w-full">
+                  {isSaving ? (
+                    <><Loader2 className="ml-2 h-4 w-4 animate-spin" /> ...جاري الحفظ</>
+                  ) : (
+                    <><Save className="ml-2 h-4 w-4" /> حفظ المشروع</>
+                  )}
+                </Button>
+              )}
               <Card className="bg-primary/5 border-primary">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3 text-primary">
