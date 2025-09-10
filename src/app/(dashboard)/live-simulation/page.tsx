@@ -36,14 +36,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { startSimulationAction } from "@/app/actions/simulation";
-import type { SimulationDataPoint } from "@/ai/flows/simulate-performance";
+import type { SimulationDataPoint } from "@/ai/types";
+import { SimulatePerformanceInputSchema } from "@/ai/types";
 
-const formSchema = z.object({
-  systemSize: z.coerce.number().positive("يجب أن يكون حجم النظام إيجابياً"),
-  location: z.string({ required_error: "يجب اختيار الموقع" }),
-  panelTilt: z.coerce.number().min(0, "زاوية الميل لا يمكن أن تكون سالبة").max(90, "زاوية الميل لا يمكن أن تتجاوز 90"),
-  panelAzimuth: z.coerce.number().min(0).max(360),
-});
+
+const formSchema = SimulatePerformanceInputSchema;
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -135,7 +132,7 @@ export default function LiveSimulationPage() {
   
   const chartData = simulationData.map(d => ({
       time: d.time,
-      output: d.outputPower.toFixed(2),
+      output: parseFloat(d.outputPower.toFixed(2)),
   }));
 
   return (
@@ -163,7 +160,7 @@ export default function LiveSimulationPage() {
                       <FormItem>
                         <FormLabel>حجم النظام (kWp)</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., 5" {...field} />
+                          <Input type="number" placeholder="e.g., 5" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

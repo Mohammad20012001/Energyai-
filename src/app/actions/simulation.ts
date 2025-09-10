@@ -3,11 +3,11 @@
 import { z } from "zod";
 import {
   simulatePerformance,
-  SimulatePerformanceInputSchema,
 } from "@/ai/flows/simulate-performance";
+import { SimulatePerformanceInputSchema, type SimulatePerformanceInput } from "@/ai/types";
 
 export async function startSimulationAction(
-  input: z.infer<typeof SimulatePerformanceInputSchema>
+  input: SimulatePerformanceInput
 ) {
   try {
     const validatedInput = SimulatePerformanceInputSchema.parse(input);
