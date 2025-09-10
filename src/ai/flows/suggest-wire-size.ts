@@ -8,6 +8,7 @@
  */
 
 import {ai} from '@/ai/genkit';
+import { z } from 'zod';
 import {
   SuggestWireSizeInputSchema,
   SuggestWireSizeOutputSchema,
@@ -23,8 +24,6 @@ export async function suggestWireSize(
   return suggestWireSizeFlow(input);
 }
 
-// 1. Get the accurate, physics-based calculation result first.
-const physicsResult = calculateWireSize(input);
 
 // 2. Define a prompt that takes the accurate data and generates only the reasoning.
 const reasoningPrompt = ai.definePrompt({
