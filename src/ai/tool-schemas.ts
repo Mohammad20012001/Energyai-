@@ -103,7 +103,6 @@ export const SimulatePerformanceInputSchema = z.object({
 export type SimulatePerformanceInput = z.infer<typeof SimulatePerformanceInputSchema>;
 
 export const SimulatePerformanceOutputSchema = z.object({
-  time: z.string().describe('The current timestamp for the data point (e.g., "14:32").'),
   liveOutputPower: z.number().describe('The calculated output power of the system in Watts at this instant based on LIVE weather.'),
   forecastOutputPower: z.number().describe('The calculated output power of the system in Watts for the same instant based on FORECASTED weather.'),
   clearSkyOutputPower: z.number().describe('The calculated output power of the system in Watts for the same instant assuming ideal, clear sky conditions (1000 W/m^2 irradiance, 25°C).'),

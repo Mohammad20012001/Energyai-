@@ -106,9 +106,6 @@ const simulatePerformanceFlow = ai.defineFlow(
     // 1. Fetch real-world weather data
     const weatherData = await getLiveAndForecastWeatherData(input.location);
     
-    const now = new Date();
-    const currentTime = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-
     // 2. Call the AI prompt with data for all scenarios
     const { output } = await prompt({
       systemSize: input.systemSize,
@@ -128,7 +125,6 @@ const simulatePerformanceFlow = ai.defineFlow(
 
     // 3. Combine AI results with weather data for the final response
     return {
-      time: currentTime,
       // AI calculated power outputs
       liveOutputPower: output.liveOutputPower,
       forecastOutputPower: output.forecastOutputPower,

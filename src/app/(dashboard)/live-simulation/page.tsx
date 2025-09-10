@@ -67,18 +67,17 @@ import {
 const formSchema = SimulatePerformanceInputSchema;
 type FormValues = z.infer<typeof formSchema>;
 
+interface WeatherData {
+    temperature: number;
+    cloudCover: number;
+    uvIndex: number;
+}
+
 // Define the type for a single data point based on what the server action returns
 interface SimulationDataPoint extends SimulatePerformanceOutput {
-    live: {
-        temperature: number;
-        cloudCover: number;
-        uvIndex: number;
-    };
-    forecast: {
-        temperature: number;
-        cloudCover: number;
-        uvIndex: number;
-    };
+    time: string;
+    live: WeatherData;
+    forecast: WeatherData;
 }
 
 
@@ -107,7 +106,12 @@ export default function LiveSimulationPage() {
       const result = await startSimulationAction(values);
       
       if (result.success && result.data) {
-          const dataPoint = result.data as SimulationDataPoint;
+          const now = new Date();
+          const time = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+          const dataPoint: SimulationDataPoint = {
+              ...result.data,
+              time: time,
+          };
           setCurrentDataPoint(dataPoint);
           setSimulationData(prevData => {
             const newData = [...prevData, dataPoint];
