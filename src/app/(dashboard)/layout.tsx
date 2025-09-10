@@ -26,7 +26,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 
 function UserMenu() {
@@ -77,7 +77,7 @@ function UserMenu() {
 function InnerLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const pathname = React.usePathname();
+  const pathname = usePathname();
 
   React.useEffect(() => {
     if (!loading && !user && pathname !== '/login' && pathname !== '/signup') {
