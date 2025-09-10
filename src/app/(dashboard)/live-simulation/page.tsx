@@ -39,14 +39,10 @@ import {
 import { startSimulationAction } from "@/app/actions/simulation";
 import type { SimulationDataPoint, SimulatePerformanceInput } from "@/ai/types";
 import { cn } from "@/lib/utils";
+import { SimulatePerformanceInputSchema } from "@/ai/tool-schemas";
 
 
-const formSchema = z.object({
-  systemSize: z.coerce.number({invalid_type_error: "يجب أن يكون حجم النظام رقمًا موجبًا"}).positive("يجب أن يكون حجم النظام إيجابياً"),
-  location: z.string({ required_error: "يجب اختيار الموقع" }),
-  panelTilt: z.coerce.number().min(0, "زاوية الميل لا يمكن أن تكون سالبة").max(90, "زاوية الميل لا يمكن أن تتجاوز 90"),
-  panelAzimuth: z.coerce.number().min(0, "زاوية الاتجاه يجب ان تكون بين 0 و 360").max(360, "زاوية الاتجاه يجب ان تكون بين 0 و 360"),
-});
+const formSchema = SimulatePerformanceInputSchema;
 
 
 type FormValues = z.infer<typeof formSchema>;
