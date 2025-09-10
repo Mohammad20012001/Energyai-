@@ -26,19 +26,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { optimizeDesignAction } from "@/app/actions/optimizer";
+import type { OptimizeDesignOutput } from "@/ai/flows/optimize-design";
 
 
 const formSchema = z.object({
   budget: z.coerce.number().positive("يجب أن تكون الميزانية إيجابية"),
   surfaceArea: z.coerce.number().positive("يجب أن تكون المساحة إيجابية"),
   monthlyBill: z.coerce.number().positive("يجب أن تكون الفاتورة إيجابية"),
-  location: z.string({ required_error: "يجب اختيار الموقع" }),
+  location: z.enum(['amman', 'zarqa', 'irbid', 'aqaba'], { required_error: "يجب اختيار الموقع" }),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
 export default function DesignOptimizerPage() {
-  const [result, setResult] = useState<any | null>(null);
+  const [result, setResult] = useState<OptimizeDesignOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { addReportCard } = useReport();
@@ -57,38 +59,18 @@ export default function DesignOptimizerPage() {
     setIsLoading(true);
     setResult(null);
 
-    // Placeholder for AI call
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    const response = await optimizeDesignAction(values);
 
-    // Dummy result for now
-    const dummyResult = {
-      summary: {
-        optimizedSystemSize: 8.2,
-        totalCost: 6890,
-        paybackPeriod: 5.8,
-        twentyFiveYearProfit: 21500,
-      },
-      panelConfig: {
-        panelCount: 15,
-        panelWattage: 550,
-        totalDcPower: 8.25,
-        tilt: 30,
-        azimuth: 180,
-      },
-      inverterConfig: {
-        recommendedSize: "8 kW",
-        phase: "Three-Phase",
-        mpptVoltage: "300-800 V"
-      },
-      wiringConfig: {
-        panelsPerString: 15,
-        parallelStrings: 1,
-        wireSize: 6
-      },
-      reasoning: "This design maximizes energy output for your surface area while staying within budget. The chosen inverter is a perfect match for the panel array, ensuring high efficiency. The payback period is excellent, leading to significant long-term profit."
+    if (response.success && response.data) {
+      setResult(response.data);
+    } else {
+      toast({
+        variant: "destructive",
+        title: "خطأ في التحسين",
+        description: response.error || "فشل في الحصول على تصميم محسن. الرجاء المحاولة مرة أخرى.",
+      });
     }
-
-    setResult(dummyResult);
+    
     setIsLoading(false);
   }
 
@@ -214,19 +196,19 @@ export default function DesignOptimizerPage() {
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                     <div className="border rounded-lg p-3">
-                      <div className="text-2xl font-bold">{result.summary.optimizedSystemSize}</div>
+                      <div className="text-2xl font-bold">{result.summary.optimizedSystemSize.toFixed(1)}</div>
                       <div className="text-sm text-muted-foreground">كيلوواط</div>
                     </div>
                      <div className="border rounded-lg p-3">
-                      <div className="text-2xl font-bold">{result.summary.totalCost}</div>
+                      <div className="text-2xl font-bold">{result.summary.totalCost.toFixed(0)}</div>
                       <div className="text-sm text-muted-foreground">دينار</div>
                     </div>
                      <div className="border rounded-lg p-3">
-                      <div className="text-2xl font-bold">{result.summary.paybackPeriod}</div>
+                      <div className="text-2xl font-bold">{result.summary.paybackPeriod.toFixed(1)}</div>
                       <div className="text-sm text-muted-foreground">سنوات</div>
                     </div>
                      <div className="border rounded-lg p-3">
-                      <div className="text-2xl font-bold">{result.summary.twentyFiveYearProfit}</div>
+                      <div className="text-2xl font-bold">{result.summary.twentyFiveYearProfit.toFixed(0)}</div>
                       <div className="text-sm text-muted-foreground">أرباح 25 سنة</div>
                     </div>
                   </div>
@@ -240,7 +222,7 @@ export default function DesignOptimizerPage() {
                 <CardContent className="space-y-2">
                    <div className="flex justify-between items-center p-2 rounded-md hover:bg-muted/50"><span>عدد الألواح:</span> <span className="font-bold">{result.panelConfig.panelCount}</span></div>
                    <div className="flex justify-between items-center p-2 rounded-md hover:bg-muted/50"><span>قوة اللوح:</span> <span className="font-bold">{result.panelConfig.panelWattage} واط</span></div>
-                   <div className="flex justify-between items-center p-2 rounded-md hover:bg-muted/50"><span>إجمالي قوة DC:</span> <span className="font-bold">{result.panelConfig.totalDcPower} kWp</span></div>
+                   <div className="flex justify-between items-center p-2 rounded-md hover:bg-muted/50"><span>إجمالي قوة DC:</span> <span className="font-bold">{result.panelConfig.totalDcPower.toFixed(2)} kWp</span></div>
                    <div className="flex justify-between items-center p-2 rounded-md hover:bg-muted/50"><span>زاوية الميل:</span> <span className="font-bold">{result.panelConfig.tilt}°</span></div>
                    <div className="flex justify-between items-center p-2 rounded-md hover:bg-muted/50"><span>الاتجاه:</span> <span className="font-bold">{result.panelConfig.azimuth}° (جنوب)</span></div>
                 </CardContent>

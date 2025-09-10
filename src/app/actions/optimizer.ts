@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { optimizeDesign } from "@/ai/flows/optimize-design";
-import type { OptimizeDesignInput } from "@/ai/flows/optimize-design";
+import type { OptimizeDesignInput, OptimizeDesignOutput } from "@/ai/flows/optimize-design";
 
 // This schema is a re-definition for server action validation.
 const OptimizeDesignActionSchema = z.object({
@@ -15,7 +15,7 @@ const OptimizeDesignActionSchema = z.object({
 
 export async function optimizeDesignAction(
   input: OptimizeDesignInput
-) {
+): Promise<{ success: boolean; data?: OptimizeDesignOutput; error?: string }> {
   try {
     const validatedInput = OptimizeDesignActionSchema.parse(input);
     const result = await optimizeDesign(validatedInput);
@@ -25,6 +25,8 @@ export async function optimizeDesignAction(
     if (error instanceof z.ZodError) {
       return { success: false, error: "المدخلات المقدمة غير صالحة." };
     }
-    return { success: false, error: "فشل في الحصول على اقتراح التصميم من الذكاء الاصطناعي." };
+    // Check if error is an object and has a message property
+    const errorMessage = (error instanceof Error) ? error.message : "فشل في الحصول على اقتراح التصميم من الذكاء الاصطناعي.";
+    return { success: false, error: errorMessage };
   }
 }
