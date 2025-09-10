@@ -33,55 +33,66 @@ const prompt = ai.definePrompt({
       liveOutputPower: z.number().describe('Calculated output power in Watts for the LIVE scenario.'),
       forecastOutputPower: z.number().describe('Calculated output power in Watts for the FORECAST scenario.'),
       clearSkyOutputPower: z.number().describe('Calculated output power in Watts for the CLEAR SKY scenario.'),
+      performanceAnalysis: z.string().describe('A concise, one-sentence analysis in Arabic of the system\'s current performance, comparing live to ideal and forecast, and considering weather conditions.'),
   }) },
-  prompt: `You are a sophisticated solar energy calculation engine. Your task is to calculate the power output of a solar PV system for three different scenarios.
+  prompt: `You are a sophisticated solar energy calculation engine and performance analyst. Your task is to calculate the power output of a solar PV system for three different scenarios and then provide a concise analysis.
 
 System Specifications:
 - System Size (DC): {{{systemSize}}} kWp
 
+---
+Part 1: Power Calculation
+
 Formula to use for each scenario:
-Power Output (Watts) = (System Size in Watts) * (Solar Irradiance / 1000) * (1 - (Temperature - 25) * 0.0035) * 0.85
+Power Output (Watts) = (System Size in Watts) * (Estimated Solar Irradiance / 1000) * (1 - (Temperature - 25) * 0.0035) * 0.85
 
 Where:
 - System Size in Watts = {{{systemSize}}} * 1000
-- Solar Irradiance is the value you must first estimate for each specific scenario (in W/m^2).
+- Estimated Solar Irradiance is the value you must first estimate for each specific scenario (in W/m^2).
 - Temperature is the value for the specific scenario (in °C).
 - 0.0035 is the temperature coefficient.
 - 0.85 represents total system losses (e.g., inverter, dirt, wiring).
 
 ---
 
-Task: Calculate the output for all three scenarios independently.
+Task 1: Calculate the output for all three scenarios independently.
 
 Scenario 1: Live Real-Time Weather Conditions
 - UV Index: {{{liveUvIndex}}}
 - Cloud Cover: {{{liveCloudCover}}}%
 - Ambient Temperature: {{{liveTemperature}}} °C
-- Step 1: Estimate the 'liveSolarIrradiance' in W/m^2. A UV index of 1 is very low irradiance (~100 W/m^2), while 10+ is very high (~1000 W/m^2). Use the cloud cover to reduce the irradiance. High cloud cover should significantly decrease the value.
-- Step 2: Calculate 'liveOutputPower' using the formula and your estimated 'liveSolarIrradiance'.
-
----
+- Step 1: Estimate the 'liveSolarIrradiance' in W/m^2. A UV index of 1 is low irradiance (~100 W/m^2), while 10+ is high (~1000 W/m^2). Reduce the irradiance based on cloud cover.
+- Step 2: Calculate 'liveOutputPower' using the formula.
 
 Scenario 2: Forecasted Weather Conditions
 - UV Index: {{{forecastUvIndex}}}
 - Cloud Cover: {{{forecastCloudCover}}}%
 - Ambient Temperature: {{{forecastTemperature}}} °C
-- Step 1: Estimate the 'forecastSolarIrradiance' in W/m^2 using the same logic as the live scenario.
-- Step 2: Calculate 'forecastOutputPower' using the formula and your estimated 'forecastSolarIrradiance'.
-
----
+- Step 1: Estimate the 'forecastSolarIrradiance' in W/m^2 using the same logic.
+- Step 2: Calculate 'forecastOutputPower' using the formula.
 
 Scenario 3: Ideal Clear Sky Conditions
-- For this scenario, assume ideal conditions.
-- Solar Irradiance: 1000 W/m^2 (This is the ideal maximum)
-- Ambient Temperature: 25 °C (This is the ideal temperature for panel efficiency)
+- Solar Irradiance: 1000 W/m^2
+- Ambient Temperature: 25 °C
 - Step 1: Use these ideal values directly.
 - Step 2: Calculate 'clearSkyOutputPower' using the formula.
 
 ---
+Part 2: Performance Analysis
+
+Task 2: Based on the three power values you just calculated, provide a single, concise sentence in ARABIC for 'performanceAnalysis'.
+- Compare 'liveOutputPower' to 'clearSkyOutputPower' to get a sense of efficiency.
+- Mention the reason for any significant drop (e.g., cloud cover).
+- If performance is low but matches the forecast, state that it's expected.
+- If performance is much lower than forecast, suggest checking the system.
+- Example 1 (cloudy): "الأداء الحالي متوقع نظرًا لوجود غطاء سحابي بنسبة {{{liveCloudCover}}}%، مما يقلل الإنتاج مقارنة بالظروف المثالية."
+- Example 2 (clear sky, good performance): "أداء ممتاز، النظام يعمل بكفاءة عالية قريبًا من الأداء المثالي في ظل الظروف الجوية الحالية."
+- Example 3 (clear sky, low performance): "ملاحظة: الأداء الحالي أقل من المتوقع في هذه الظروف الصافية، قد تحتاج الألواح إلى فحص أو تنظيف."
+
+---
 
 Instructions:
-- Populate ALL fields in the output object with the calculated wattages. Do not add any extra text or explanations.
+- Populate ALL fields in the output object, including the analysis. Do not add extra text.
 `,
 });
 
@@ -122,6 +133,8 @@ const simulatePerformanceFlow = ai.defineFlow(
       liveOutputPower: output.liveOutputPower,
       forecastOutputPower: output.forecastOutputPower,
       clearSkyOutputPower: output.clearSkyOutputPower,
+      // AI generated analysis
+      performanceAnalysis: output.performanceAnalysis,
       // Weather data used for the calculations
       liveUvIndex: weatherData.current.uvIndex,
       liveTemperature: weatherData.current.temperature,

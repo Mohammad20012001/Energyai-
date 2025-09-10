@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Wind, ArrowRight, Loader2, Zap, Sun, Cloudy, BarChart, Thermometer, BrainCircuit, ShieldCheck, TrendingUp, SunDim } from "lucide-react";
+import { Wind, ArrowRight, Loader2, Zap, Sun, Cloudy, BarChart, Thermometer, BrainCircuit, ShieldCheck, TrendingUp, SunDim, Lightbulb } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   LineChart,
@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import {
   Select,
   SelectContent,
@@ -303,6 +304,16 @@ export default function LiveSimulationPage() {
                       </div>
                   </CardContent>
                 </Card>
+
+                {currentDataPoint?.performanceAnalysis && (
+                  <Alert>
+                    <Lightbulb className="h-4 w-4" />
+                    <AlertTitle>تحليل وتوصيات الخبير</AlertTitle>
+                    <AlertDescription>
+                      {currentDataPoint.performanceAnalysis}
+                    </AlertDescription>
+                  </Alert>
+                )}
                 
                 <Card>
                   <CardHeader>

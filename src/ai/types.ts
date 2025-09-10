@@ -28,5 +28,8 @@ export const SimulationDataPointSchema = z.object({
   
   // Ideal (Clear Sky) Data
   clearSkyOutputPower: z.number().describe('The calculated output power of the system in Watts for the same instant assuming ideal, clear sky conditions (1000 W/m^2 irradiance, 25°C).'),
+
+  // AI Generated Analysis
+  performanceAnalysis: z.string().describe('A concise, one-sentence analysis of the system\'s current performance.'),
 });
 export type SimulationDataPoint = z.infer<typeof SimulationDataPointSchema>;
