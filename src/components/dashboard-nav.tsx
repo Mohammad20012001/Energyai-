@@ -15,6 +15,7 @@ import {
   MessageCircle,
   Wind,
   Bot,
+  Combine,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -30,6 +31,7 @@ const navItems = [
   { href: "/design-optimizer", label: "محسن التصميم", icon: Bot },
   { href: "/live-simulation", label: "المحاكاة الحية", icon: Wind },
   { type: 'divider', label: 'Calculators'},
+  { href: "/system-sizer", label: "حاسبة النظام المتكامل", icon: Combine },
   { href: "/string-configuration", label: "تهيئة السلاسل", icon: Settings },
   { href: "/panel-calculator", label: "حاسبة الألواح", icon: Calculator },
   { href: "/area-calculator", label: "حاسبة المساحة", icon: Maximize },
