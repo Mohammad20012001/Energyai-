@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Settings, Calculator, Zap, Maximize, TrendingUp, DollarSign, FileText, BatteryCharging, Wind, Bot } from "lucide-react";
+import { ArrowRight, Settings, Calculator, Zap, Maximize, TrendingUp, DollarSign, FileText, BatteryCharging, Wind, Bot, Combine, MessageCircle } from "lucide-react";
 
 export default function DashboardOverviewPage() {
   return (
@@ -14,20 +14,20 @@ export default function DashboardOverviewPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="hover:shadow-lg transition-shadow border-primary/20 bg-primary/5">
+        <Card className="hover:shadow-lg transition-shadow border-primary/20 bg-primary/5 col-span-1 md:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Bot className="text-primary" />
-              محسن التصميم بالذكاء الاصطناعي
+              <MessageCircle className="text-primary" />
+              المساعد الذكي (الآن مع محسن التصميم)
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-4">
-              أدخل أهدافك ودع الذكاء الاصطناعي يصمم لك النظام الأمثل من الألف إلى الياء.
+              اسأل أي شيء، من حجم السلك المناسب إلى تصميم نظام كامل بناءً على ميزانيتك واحتياجك.
             </p>
             <Button asChild>
-              <Link href="/design-optimizer">
-                ابدأ الآن <ArrowRight className="ml-2 h-4 w-4" />
+              <Link href="/chat">
+                ابدأ المحادثة <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
           </CardContent>
@@ -51,6 +51,25 @@ export default function DashboardOverviewPage() {
             </Button>
           </CardContent>
         </Card>
+        
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Combine className="text-primary" />
+              حاسبة النظام المتكامل
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">
+              حدد حجم نظام الألواح وحجم العاكس المناسب له في خطوة واحدة.
+            </p>
+            <Button asChild>
+              <Link href="/system-sizer">
+                اذهب للحاسبة <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
 
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader>
@@ -66,25 +85,6 @@ export default function DashboardOverviewPage() {
             <Button asChild>
               <Link href="/string-configuration">
                 ابدأ الحساب <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calculator className="text-primary" />
-              حاسبة الألواح (حسب الاستهلاك)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              احسب عدد الألواح المثالي بناءً على فاتورة الكهرباء واحتياجاتك من الطاقة.
-            </p>
-            <Button asChild>
-              <Link href="/panel-calculator">
-                اذهب للحاسبة <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
           </CardContent>
@@ -142,25 +142,6 @@ export default function DashboardOverviewPage() {
             <Button asChild>
               <Link href="/wire-sizing">
                 اذهب للحاسبة <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-        
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BatteryCharging className="text-primary" />
-              أداة تحديد حجم العاكس
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              اختر العاكس الأنسب لمصفوفة الطاقة الشمسية لديك لضمان أقصى أداء وأمان.
-            </p>
-            <Button asChild>
-              <Link href="/inverter-sizing">
-                اختر الآن <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
           </CardContent>
