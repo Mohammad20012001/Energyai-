@@ -8,17 +8,15 @@ const locations: Record<string, { lat: number; lon: number }> = {
     aqaba: { lat: 29.53, lon: 35.01 },
 };
 
-interface WeatherData {
-    current: {
-        temperature: number;
-        cloudCover: number;
-        uvIndex: number;
-    },
-    forecast: {
-        temperature: number;
-        cloudCover: number;
-        uvIndex: number;
-    }
+interface WeatherPoint {
+    temperature: number;
+    cloudCover: number;
+    uvIndex: number;
+}
+
+export interface WeatherData {
+    current: WeatherPoint,
+    forecast: WeatherPoint,
 }
 
 /**

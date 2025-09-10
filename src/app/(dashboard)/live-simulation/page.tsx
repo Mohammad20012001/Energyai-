@@ -67,17 +67,9 @@ import {
 const formSchema = SimulatePerformanceInputSchema;
 type FormValues = z.infer<typeof formSchema>;
 
-interface WeatherData {
-    temperature: number;
-    cloudCover: number;
-    uvIndex: number;
-}
-
-// Define the type for a single data point based on what the server action returns
+// This type now represents the full data point, including the time added on the client-side.
 interface SimulationDataPoint extends SimulatePerformanceOutput {
     time: string;
-    live: WeatherData;
-    forecast: WeatherData;
 }
 
 
@@ -108,10 +100,13 @@ export default function LiveSimulationPage() {
       if (result.success && result.data) {
           const now = new Date();
           const time = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+          
+          // The server now returns the complete, structured data. We just add the time.
           const dataPoint: SimulationDataPoint = {
               ...result.data,
               time: time,
           };
+
           setCurrentDataPoint(dataPoint);
           setSimulationData(prevData => {
             const newData = [...prevData, dataPoint];
@@ -428,7 +423,7 @@ export default function LiveSimulationPage() {
                     <SunDim className="h-6 w-6 text-yellow-500" />
                     <div>
                       <div className="font-bold">
-                        {currentDataPoint?.liveUvIndex ?? '...'}
+                        {currentDataPoint?.weather.current.uvIndex ?? '...'}
                       </div>
                       <div className="text-xs text-muted-foreground">
                         مؤشر UV
@@ -439,7 +434,7 @@ export default function LiveSimulationPage() {
                     <Thermometer className="h-6 w-6 text-red-500" />
                     <div>
                       <div className="font-bold">
-                        {currentDataPoint?.live.temperature ?? '...'}
+                        {currentDataPoint?.weather.current.temperature ?? '...'}
                       </div>
                       <div className="text-xs text-muted-foreground">°C</div>
                     </div>
@@ -448,7 +443,7 @@ export default function LiveSimulationPage() {
                     <Cloudy className="h-6 w-6 text-gray-500" />
                     <div>
                       <div className="font-bold">
-                        {currentDataPoint?.live.cloudCover ?? '...'}
+                        {currentDataPoint?.weather.current.cloudCover ?? '...'}
                       </div>
                       <div className="text-xs text-muted-foreground">% غيوم</div>
                     </div>

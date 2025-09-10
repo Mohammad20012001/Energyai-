@@ -102,12 +102,21 @@ export const SimulatePerformanceInputSchema = z.object({
 });
 export type SimulatePerformanceInput = z.infer<typeof SimulatePerformanceInputSchema>;
 
+const WeatherPointSchema = z.object({
+    temperature: z.number(),
+    cloudCover: z.number(),
+    uvIndex: z.number(),
+});
+
 export const SimulatePerformanceOutputSchema = z.object({
   liveOutputPower: z.number().describe('The calculated output power of the system in Watts at this instant based on LIVE weather.'),
   forecastOutputPower: z.number().describe('The calculated output power of the system in Watts for the same instant based on FORECASTED weather.'),
   clearSkyOutputPower: z.number().describe('The calculated output power of the system in Watts for the same instant assuming ideal, clear sky conditions (1000 W/m^2 irradiance, 25°C).'),
   performanceAnalysis: z.string().describe('A concise, one-sentence analysis of the system\'s current performance.'),
-  liveUvIndex: z.number().describe('Live UV index from the weather service.'),
+  weather: z.object({
+      current: WeatherPointSchema,
+      forecast: WeatherPointSchema,
+  }).describe('The full weather data object used for the simulation.'),
 });
 export type SimulatePerformanceOutput = z.infer<typeof SimulatePerformanceOutputSchema>;
 // #endregion
