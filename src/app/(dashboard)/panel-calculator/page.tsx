@@ -20,6 +20,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
+import { calculatePanelsFromConsumption, type PanelCalculationResult } from "@/services/calculations";
+
 
 const formSchema = z.object({
   monthlyBill: z.coerce.number({invalid_type_error: "يجب أن يكون رقماً"}).positive("يجب أن تكون قيمة الفاتورة إيجابية"),
@@ -31,14 +33,8 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-interface CalculationResult {
-  requiredPanels: number;
-  totalKwh: number;
-  dailyKwh: number;
-}
-
 export default function PanelCalculatorPage() {
-  const [result, setResult] = useState<CalculationResult | null>(null);
+  const [result, setResult] = useState<PanelCalculationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { addReportCard } = useReport();
   const { toast } = useToast();
@@ -58,20 +54,11 @@ export default function PanelCalculatorPage() {
     setIsLoading(true);
     setResult(null);
 
-    // Simulate a short delay for calculation
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    const totalKwh = values.monthlyBill / values.kwhPrice;
-    const dailyKwh = totalKwh / 30;
-    const dailyProductionPerPanel = (values.panelWattage * values.sunHours) / 1000;
-    const effectiveProductionPerPanel = dailyProductionPerPanel * (1 - values.systemLoss / 100);
-    const requiredPanels = Math.ceil(dailyKwh / effectiveProductionPerPanel);
+    const calculationResult = calculatePanelsFromConsumption(values);
+    setResult(calculationResult);
 
-    setResult({
-      requiredPanels,
-      totalKwh,
-      dailyKwh,
-    });
     setIsLoading(false);
   }
 

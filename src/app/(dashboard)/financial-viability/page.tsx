@@ -19,28 +19,21 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { calculateFinancialViability, type FinancialViabilityResult } from "@/services/calculations";
 
 const formSchema = z.object({
   investmentAmount: z.coerce.number({invalid_type_error: "يجب أن يكون رقماً"}).positive("يجب أن يكون مبلغ الاستثمار إيجابياً"),
   costPerWatt: z.coerce.number({invalid_type_error: "يجب أن يكون رقماً"}).positive("يجب أن تكون التكلفة إيجابية"),
   kwhPrice: z.coerce.number({invalid_type_error: "يجب أن يكون رقماً"}).positive("يجب أن يكون السعر إيجابياً"),
   sunHours: z.coerce.number({invalid_type_error: "يجب أن يكون رقماً"}).min(1, "يجب أن تكون ساعة واحدة على الأقل").max(24, "لا يمكن أن يتجاوز 24 ساعة"),
-  panelWattage: z.coerce.number({invalid_type_error: "يجب أن يكون رقماً"}).positive("يجب أن تكون القوة الكهربائية إيجابية"),
   systemLoss: z.coerce.number({invalid_type_error: "يجب أن يكون رقماً"}).min(0).max(99),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-interface CalculationResult {
-  systemSizeKw: number;
-  annualProductionKwh: number;
-  annualRevenue: number;
-  paybackPeriodYears: number;
-  netProfit25Years: number;
-}
 
 export default function FinancialViabilityPage() {
-  const [result, setResult] = useState<CalculationResult | null>(null);
+  const [result, setResult] = useState<FinancialViabilityResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { addReportCard } = useReport();
   const { toast } = useToast();
@@ -52,7 +45,6 @@ export default function FinancialViabilityPage() {
       costPerWatt: 0.7,
       kwhPrice: 0.1,
       sunHours: 5.5,
-      panelWattage: 550,
       systemLoss: 15,
     },
   });
@@ -62,24 +54,12 @@ export default function FinancialViabilityPage() {
     setResult(null);
 
     await new Promise(resolve => setTimeout(resolve, 500));
-
-    const systemSizeWatts = values.investmentAmount / values.costPerWatt;
-    const systemSizeKw = systemSizeWatts / 1000;
     
-    const dailyProductionKwh = systemSizeKw * values.sunHours * (1 - values.systemLoss / 100);
-    const annualProductionKwh = dailyProductionKwh * 365;
-    const annualRevenue = annualProductionKwh * values.kwhPrice;
-    
-    const paybackPeriodYears = annualRevenue > 0 ? values.investmentAmount / annualRevenue : Infinity;
-    const netProfit25Years = (annualRevenue * 25) - values.investmentAmount;
+    // Defer the panelWattage from the form as it's not used in this calculation
+    const { ...calculationInput } = values;
+    const calculationResult = calculateFinancialViability(calculationInput);
+    setResult(calculationResult);
 
-    setResult({
-      systemSizeKw,
-      annualProductionKwh,
-      annualRevenue,
-      paybackPeriodYears,
-      netProfit25Years,
-    });
     setIsLoading(false);
   }
 
@@ -175,19 +155,6 @@ export default function FinancialViabilityPage() {
                   />
                    <FormField
                     control={form.control}
-                    name="panelWattage"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>قوة اللوح (واط)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., 550" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                   <FormField
-                    control={form.control}
                     name="systemLoss"
                     render={({ field }) => (
                       <FormItem>
@@ -200,7 +167,7 @@ export default function FinancialViabilityPage() {
                     )}
                   />
                 </fieldset>
-                <Button type="submit" disabled={isLoading} className="w-full">
+                <Button type="submit" disabled={isLoading} className="w-full !mt-8">
                   {isLoading ? (
                     <>
                       <Loader2 className="ml-2 h-4 w-4 animate-spin" />

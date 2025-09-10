@@ -19,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { calculateProductionFromArea, type AreaCalculationResult } from "@/services/calculations";
 
 
 const formSchema = z.object({
@@ -32,16 +33,9 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-interface CalculationResult {
-  maxPanels: number;
-  totalPowerKw: number;
-  dailyEnergyKwh: number;
-  monthlyEnergyKwh: number;
-  yearlyEnergyKwh: number;
-}
 
 export default function AreaCalculatorPage() {
-  const [result, setResult] = useState<CalculationResult | null>(null);
+  const [result, setResult] = useState<AreaCalculationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { addReportCard } = useReport();
   const { toast } = useToast();
@@ -64,25 +58,9 @@ export default function AreaCalculatorPage() {
 
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    const landArea = values.landWidth * values.landLength;
-    const panelArea = values.panelWidth * values.panelLength;
-    
-    // Consider a clearance/spacing factor, e.g., 1.5 times the panel area needed per panel
-    const requiredAreaPerPanel = panelArea * 1.5; 
-    const maxPanels = Math.floor(landArea / requiredAreaPerPanel);
+    const calculationResult = calculateProductionFromArea(values);
+    setResult(calculationResult);
 
-    const totalPowerKw = (maxPanels * values.panelWattage) / 1000;
-    const dailyEnergyKwh = totalPowerKw * values.sunHours;
-    const monthlyEnergyKwh = dailyEnergyKwh * 30;
-    const yearlyEnergyKwh = dailyEnergyKwh * 365;
-
-    setResult({
-      maxPanels,
-      totalPowerKw,
-      dailyEnergyKwh,
-      monthlyEnergyKwh,
-      yearlyEnergyKwh,
-    });
     setIsLoading(false);
   }
 

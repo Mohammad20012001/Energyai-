@@ -21,6 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
+import { calculateInverterSize, type InverterSizingResult } from "@/services/calculations";
 
 
 const formSchema = z.object({
@@ -32,16 +33,9 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-interface CalculationResult {
-  minInverterSize: number;
-  maxInverterSize: number;
-  recommendedVoc: number;
-  recommendedIsc: number;
-  gridPhase: string;
-}
 
 export default function InverterSizingPage() {
-  const [result, setResult] = useState<CalculationResult | null>(null);
+  const [result, setResult] = useState<InverterSizingResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { addReportCard } = useReport();
   const { toast } = useToast();
@@ -62,21 +56,9 @@ export default function InverterSizingPage() {
 
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    // Inverter AC size is typically 90-110% of the array's DC size
-    const minInverterSize = values.totalDcPower * 0.9;
-    const maxInverterSize = values.totalDcPower * 1.1;
+    const calculationResult = calculateInverterSize(values);
+    setResult(calculationResult);
 
-    // Safety margins for voltage and current
-    const recommendedVoc = values.maxVoc * 1.15;
-    const recommendedIsc = values.maxIsc * 1.25;
-
-    setResult({
-      minInverterSize,
-      maxInverterSize,
-      recommendedVoc,
-      recommendedIsc,
-      gridPhase: values.gridPhase === 'single' ? 'أحادي الطور' : 'ثلاثي الطور',
-    });
     setIsLoading(false);
   }
 
