@@ -52,7 +52,7 @@ You must perform the following steps for each scenario:
 4.  Calculate the final power output in Watts, considering the system size, POA irradiance, and temperature effects on panel efficiency (assume a standard temperature coefficient of -0.35%/°C from a 25°C baseline).
 5.  Assume standard system losses (e.g., inverter efficiency, soiling, wiring) of about 15% in all final calculations.
 
-You must calculate three separate output power values based on the three weather scenarios provided below.
+You must calculate three separate output power values based on the three weather scenarios provided below. Ensure each calculation is independent.
 
 Scenario 1: Live Real-Time Weather Conditions
 - Live Ambient Temperature: {{{liveTemperature}}} °C

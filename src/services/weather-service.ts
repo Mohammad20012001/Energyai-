@@ -12,18 +12,15 @@ interface WeatherData {
     current: {
         temperature: number;
         cloudCover: number;
-        solarIrradiance: number; // This will now be calculated by the AI
     },
     forecast: {
         temperature: number;
         cloudCover: number;
-        solarIrradiance: number; // This will now be calculated by the AI
     }
 }
 
 /**
  * Fetches live and forecast weather data for a given location from WeatherAPI.com.
- * The solarIrradiance is set to the cloud cover percentage and will be properly calculated by the AI model.
  * @param location A string representing one of the predefined Jordanian cities.
  * @returns A promise that resolves to the live and forecast weather data.
  */
@@ -62,25 +59,21 @@ export async function getLiveAndForecastWeatherData(location: string): Promise<W
         const liveData = {
             temperature: current_weather.temp_c ?? 0,
             cloudCover: current_weather.cloud ?? 0,
-            solarIrradiance: current_weather.cloud ?? 0, // Pass cloud cover to AI
         };
 
         const forecastData = {
             temperature: current_hour_forecast.temp_c ?? 0,
             cloudCover: current_hour_forecast.cloud ?? 0,
-            solarIrradiance: current_hour_forecast.cloud ?? 0, // Pass cloud cover to AI
         };
 
         return {
             current: {
                 temperature: parseFloat(liveData.temperature.toFixed(1)),
                 cloudCover: parseFloat(liveData.cloudCover.toFixed(1)),
-                solarIrradiance: parseFloat(liveData.solarIrradiance.toFixed(1)),
             },
             forecast: {
                 temperature: parseFloat(forecastData.temperature.toFixed(1)),
                 cloudCover: parseFloat(forecastData.cloudCover.toFixed(1)),
-                solarIrradiance: parseFloat(forecastData.solarIrradiance.toFixed(1)),
             }
         };
     } catch (error) {
