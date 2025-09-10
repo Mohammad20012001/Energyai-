@@ -21,7 +21,7 @@ import {z} from 'zod';
 import {Part} from 'genkit';
 
 // Define tools that the agent can use.
-const getStringConfig = ai.defineTool(
+const suggestStringConfigurationTool = ai.defineTool(
   {
     name: 'suggestStringConfiguration',
     description:
@@ -32,7 +32,7 @@ const getStringConfig = ai.defineTool(
   async input => suggestStringConfiguration(input)
 );
 
-const getWireSize = ai.defineTool(
+const suggestWireSizeTool = ai.defineTool(
   {
     name: 'suggestWireSize',
     description:
@@ -70,7 +70,7 @@ export const conversationalAgent = ai.defineFlow(
 
     const result = await ai.generate({
       model: llm,
-      tools: [getStringConfig, getWireSize], // Added getWireSize here
+      tools: [suggestStringConfigurationTool, suggestWireSizeTool],
       prompt: prompt,
       history: history as any, // Cast to any to handle the wider type from the API
       config: {
@@ -88,6 +88,9 @@ export const conversationalAgent = ai.defineFlow(
        for (const toolRequest of toolRequests) {
          console.log('Executing tool:', toolRequest.name, 'with input:', toolRequest.input);
          const tool = ai.lookupTool(toolRequest.name);
+         if (!tool) {
+            throw new Error(`Tool ${toolRequest.name} not found.`);
+         }
          const toolResult = await tool(toolRequest.input);
          toolResponseParts.push({
            toolResponse: {
