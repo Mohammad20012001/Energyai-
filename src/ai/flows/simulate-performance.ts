@@ -43,7 +43,7 @@ System Specifications:
 - Panel Azimuth Angle: {{{panelAzimuth}}} degrees (180 = South)
 
 Real-Time Weather Conditions for this moment ({{{currentTime}}}):
-- Global Horizontal Irradiance (GHI): {{{realIrradiance}}} W/m^2
+- Direct Normal Irradiance (DNI): {{{realIrradiance}}} W/m^2
 - Ambient Temperature: {{{realTemperature}}} °C
 - Cloud Cover: {{{realCloudCover}}} %
 
