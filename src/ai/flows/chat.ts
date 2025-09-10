@@ -16,7 +16,7 @@ import {
   SuggestWireSizeOutputSchema,
 } from './suggest-wire-size';
 import {z} from 'zod';
-import {content, Part} from 'genkit';
+import {Part} from 'genkit';
 
 // Define tools that the agent can use.
 const getStringConfig = ai.defineTool(
@@ -74,34 +74,26 @@ export const conversationalAgent = ai.defineFlow(
         // The exact instructions for how to use the system prompt are model-dependent.
         systemPrompt: `You are a helpful AI assistant for solar panel installers in Jordan. Your responses should be in Arabic.
         When a user asks a question, use the available tools to provide a precise and helpful answer.
-        Do not make up answers. If you don't have a tool for a specific question, politely state that you cannot answer it.`,
+        Do not make up answers. If you don't have a tool for a specific question, or if you don't have enough information to use a tool, politely ask the user for the missing information. Do not invent missing parameters.`,
       },
     });
+    
+    const choice = result.choices[0];
+    const toolRequests = choice.toolRequests;
 
-    const output = result.output;
-    if (!output) {
-      return 'No response from model.';
-    }
-
-    const toolRequests = output.content.filter(part => part.toolRequest);
-
-    if (toolRequests.length > 0) {
-      const toolResponseParts = await Promise.all(
-        toolRequests.map(async part => {
-          if (!part.toolRequest) {
-            // This condition is technically redundant due to the filter, but good for type safety
-            return content([]);
-          }
-          const tool = ai.lookupTool(part.toolRequest.name);
-          const toolResult = await tool(part.toolRequest.input);
-          return {
-            toolResponse: {
-              name: part.toolRequest.name,
-              output: toolResult,
-            },
-          };
-        })
-      );
+    if (toolRequests && toolRequests.length > 0) {
+       const toolResponseParts: Part[] = [];
+       for (const toolRequest of toolRequests) {
+         console.log('Executing tool:', toolRequest.name);
+         const tool = ai.lookupTool(toolRequest.name);
+         const toolResult = await tool(toolRequest.input);
+         toolResponseParts.push({
+           toolResponse: {
+             name: toolRequest.name,
+             output: toolResult,
+           },
+         });
+       }
 
       const finalResult = await ai.generate({
         model: llm,
@@ -110,17 +102,17 @@ export const conversationalAgent = ai.defineFlow(
           ...history,
           {
             role: 'model',
-            content: output.content,
+            content: choice.message.content,
           },
           {
             role: 'tool',
-            content: toolResponseParts.filter((p): p is Part => !!p),
+            content: toolResponseParts,
           },
         ],
       });
       return finalResult.text;
     } else {
-      return result.text;
+      return choice.text;
     }
   }
 );
