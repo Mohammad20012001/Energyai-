@@ -4,8 +4,22 @@ import { z } from "zod";
 import {
   simulatePerformance,
 } from "@/ai/flows/simulate-performance";
-import { SimulatePerformanceInputSchema, type SimulatePerformanceInput } from "@/ai/tool-schemas";
-import { type SimulationDataPoint } from "@/ai/types";
+import { SimulatePerformanceInputSchema, SimulatePerformanceOutputSchema, type SimulatePerformanceInput } from "@/ai/tool-schemas";
+
+
+const SimulationDataPointSchema = SimulatePerformanceOutputSchema.extend({
+  // Live Data
+  liveTemperature: z.number().describe('Live ambient temperature in degrees Celsius.'),
+  liveCloudCover: z.number().describe('Live cloud cover percentage (0-100).'),
+  
+  // Forecast Data
+  forecastUvIndex: z.number().describe('Forecasted UV index from the weather service.'),
+  forecastTemperature: z.number().describe('Forecasted ambient temperature in degrees Celsius for the same instant.'),
+  forecastCloudCover: z.number().describe('Forecasted cloud cover percentage (0-100) for the same instant.'),
+});
+
+type SimulationDataPoint = z.infer<typeof SimulationDataPointSchema>;
+
 
 export async function startSimulationAction(
   input: SimulatePerformanceInput

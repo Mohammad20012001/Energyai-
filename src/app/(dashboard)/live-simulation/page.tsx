@@ -37,15 +37,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { startSimulationAction } from "@/app/actions/simulation";
-import type { SimulationDataPoint, SimulatePerformanceInput } from "@/ai/types";
 import { cn } from "@/lib/utils";
-import { SimulatePerformanceInputSchema } from "@/ai/tool-schemas";
+import { SimulatePerformanceInputSchema, SimulatePerformanceOutputSchema, type SimulatePerformanceInput } from "@/ai/tool-schemas";
 
 
 const formSchema = SimulatePerformanceInputSchema;
-
-
 type FormValues = z.infer<typeof formSchema>;
+
+const SimulationDataPointSchema = SimulatePerformanceOutputSchema.extend({
+  liveTemperature: z.number(),
+  liveCloudCover: z.number(),
+  forecastUvIndex: z.number(),
+  forecastTemperature: z.number(),
+  forecastCloudCover: z.number(),
+});
+type SimulationDataPoint = z.infer<typeof SimulationDataPointSchema>;
+
 
 export default function LiveSimulationPage() {
   const [simulationData, setSimulationData] = useState<SimulationDataPoint[]>([]);
