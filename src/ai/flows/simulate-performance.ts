@@ -65,8 +65,8 @@ Simulated Weather Conditions for this moment ({{{currentTime}}}):
 - Ambient Temperature: {{{simulatedTemperature}}} °C
 - Cloud Cover: {{{simulatedCloudCover}}} %
 
-Based on these inputs, calculate the final `outputPower` in Watts.
-Also, populate the other fields in the output (`time`, `solarIrradiance`, `temperature`, `cloudCover`) with the exact values provided to you for this simulation step.
+Based on these inputs, calculate the final 'outputPower' in Watts.
+Also, populate the other fields in the output ('time', 'solarIrradiance', 'temperature', 'cloudCover') with the exact values provided to you for this simulation step.
 Assume standard system losses (e.g., inverter efficiency, soiling, wiring) of about 15% in your calculation.
 The location affects the sun's angle, which you must factor in along with the panel angles and weather.
 `,
