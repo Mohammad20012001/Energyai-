@@ -9,6 +9,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { SimulatePerformanceInputSchema, SimulationDataPointSchema, type SimulatePerformanceInput, type SimulationDataPoint } from '@/ai/types';
+import { getLiveWeatherData } from '@/services/weather-service';
 
 
 // This function is the main entry point called by the server action.
@@ -26,14 +27,14 @@ const prompt = ai.definePrompt({
     location: SimulatePerformanceInputSchema.shape.location,
     panelTilt: SimulatePerformanceInputSchema.shape.panelTilt,
     panelAzimuth: SimulatePerformanceInputSchema.shape.panelAzimuth,
-    // Add simulated weather data to the prompt input
-    simulatedIrradiance: z.number(),
-    simulatedTemperature: z.number(),
-    simulatedCloudCover: z.number(),
+    // Add real weather data to the prompt input
+    realIrradiance: z.number(),
+    realTemperature: z.number(),
+    realCloudCover: z.number(),
     currentTime: z.string(),
   }) },
   output: { schema: SimulationDataPointSchema },
-  prompt: `You are an advanced solar energy simulation engine. Your task is to calculate the instantaneous power output of a solar PV system based on its specifications and simulated weather data.
+  prompt: `You are an advanced solar energy simulation engine. Your task is to calculate the instantaneous power output of a solar PV system based on its specifications and real-time weather data.
 
 System Specifications:
 - System Size (DC): {{{systemSize}}} kWp
@@ -41,13 +42,13 @@ System Specifications:
 - Panel Tilt Angle: {{{panelTilt}}} degrees
 - Panel Azimuth Angle: {{{panelAzimuth}}} degrees (180 = South)
 
-Simulated Weather Conditions for this moment ({{{currentTime}}}):
-- Global Horizontal Irradiance (GHI): {{{simulatedIrradiance}}} W/m^2
-- Ambient Temperature: {{{simulatedTemperature}}} °C
-- Cloud Cover: {{{simulatedCloudCover}}} %
+Real-Time Weather Conditions for this moment ({{{currentTime}}}):
+- Global Horizontal Irradiance (GHI): {{{realIrradiance}}} W/m^2
+- Ambient Temperature: {{{realTemperature}}} °C
+- Cloud Cover: {{{realCloudCover}}} %
 
 Based on these inputs, calculate the final 'outputPower' in Watts.
-Also, populate the other fields in the output ('time', 'solarIrradiance', 'temperature', 'cloudCover') with the exact values provided to you for this simulation step.
+Also, populate the other fields in the output ('time', 'solarIrradiance', 'temperature', 'cloudCover') with the exact real-time values provided to you for this simulation step.
 Assume standard system losses (e.g., inverter efficiency, soiling, wiring) of about 15% in your calculation.
 The location affects the sun's angle, which you must factor in along with the panel angles and weather.
 `,
@@ -60,32 +61,17 @@ const simulatePerformanceFlow = ai.defineFlow(
     outputSchema: SimulationDataPointSchema,
   },
   async (input) => {
-    // In a real application, you would fetch live weather data here using a tool.
-    // For this MVP, we will simulate realistic but random weather data.
+    // Fetch live weather data using the weather service
+    const weatherData = await getLiveWeatherData(input.location);
+    
     const now = new Date();
-    const hour = now.getHours();
-    
-    // Simulate weather based on time of day
-    const isDayTime = hour > 6 && hour < 18;
-    let baseIrradiance = 0;
-    if (isDayTime) {
-      // Simulate a sun curve - peaks at midday (hour 12)
-      const peakHour = 12;
-      const hoursFromPeak = Math.abs(hour - peakHour);
-      baseIrradiance = 950 * (1 - hoursFromPeak / 8); // Simple linear model
-      baseIrradiance = Math.max(0, baseIrradiance);
-    }
-    
-    const simulatedIrradiance = baseIrradiance * (1 - Math.random() * 0.4); // Random fluctuation
-    const simulatedTemperature = 25 + (Math.random() - 0.5) * 10; // 20-30°C range
-    const simulatedCloudCover = Math.random() * 50; // 0-50% cloud cover
     const currentTime = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
     const { output } = await prompt({
       ...input,
-      simulatedIrradiance: Math.round(simulatedIrradiance),
-      simulatedTemperature: parseFloat(simulatedTemperature.toFixed(1)),
-      simulatedCloudCover: parseFloat(simulatedCloudCover.toFixed(1)),
+      realIrradiance: weatherData.solarIrradiance,
+      realTemperature: weatherData.temperature,
+      realCloudCover: weatherData.cloudCover,
       currentTime: currentTime,
     });
 
