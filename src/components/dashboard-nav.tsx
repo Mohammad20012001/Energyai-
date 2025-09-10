@@ -28,7 +28,6 @@ const navItems = [
   { href: "/", label: "لوحة التحكم", icon: LayoutDashboard },
   { type: 'divider', label: 'AI Tools'},
   { href: "/chat", label: "المساعد الذكي", icon: MessageCircle },
-  { href: "/design-optimizer", label: "محسن التصميم", icon: Bot },
   { href: "/live-simulation", label: "المحاكاة الحية", icon: Wind },
   { type: 'divider', label: 'Calculators'},
   { href: "/system-sizer", label: "حاسبة النظام المتكامل", icon: Combine },
