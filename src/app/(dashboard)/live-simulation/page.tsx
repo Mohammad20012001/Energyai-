@@ -3,7 +3,7 @@
 import {useState, useEffect, useRef} from 'react';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {useForm} from 'react-hook-form';
-import {z} from 'zod';
+import type {z} from 'zod';
 import {
   Wind,
   ArrowRight,
@@ -60,27 +60,26 @@ import {startSimulationAction} from '@/app/actions/simulation';
 import {cn} from '@/lib/utils';
 import {
   SimulatePerformanceInputSchema,
-  SimulatePerformanceOutputSchema,
+  type SimulatePerformanceOutput,
   type SimulatePerformanceInput,
 } from '@/ai/tool-schemas';
 
 const formSchema = SimulatePerformanceInputSchema;
 type FormValues = z.infer<typeof formSchema>;
 
-const SimulationDataPointSchema = SimulatePerformanceOutputSchema.extend({
-  live: z.object({
-    temperature: z.number(),
-    cloudCover: z.number(),
-    uvIndex: z.number(),
-  }),
-  forecast: z.object({
-    temperature: z.number(),
-    cloudCover: z.number(),
-    uvIndex: z.number(),
-  }),
-});
+interface SimulationDataPoint extends SimulatePerformanceOutput {
+    live: {
+        temperature: number;
+        cloudCover: number;
+        uvIndex: number;
+    };
+    forecast: {
+        temperature: number;
+        cloudCover: number;
+        uvIndex: number;
+    };
+}
 
-type SimulationDataPoint = z.infer<typeof SimulationDataPointSchema>;
 
 export default function LiveSimulationPage() {
   const [simulationData, setSimulationData] = useState<SimulationDataPoint[]>(
@@ -107,24 +106,13 @@ export default function LiveSimulationPage() {
       const result = await startSimulationAction(values);
       
       if (result.success && result.data) {
-        // Validate the received data against the client-side schema
-        const validation = SimulationDataPointSchema.safeParse(result.data);
-        if (validation.success) {
-          setCurrentDataPoint(validation.data);
+          const dataPoint = result.data as SimulationDataPoint;
+          setCurrentDataPoint(dataPoint);
           setSimulationData(prevData => {
-            const newData = [...prevData, validation.data];
+            const newData = [...prevData, dataPoint];
             // Keep only the last 15 minutes (assuming 1 data point per minute)
             return newData.slice(-15);
           });
-        } else {
-            toast({
-              variant: 'destructive',
-              title: 'خطأ في بيانات المحاكاة',
-              description: 'تم استلام بيانات غير متوقعة من الخادم.',
-            });
-            console.error("Zod validation error:", validation.error.flatten());
-            stopSimulation();
-        }
       } else {
         toast({
           variant: 'destructive',
@@ -243,6 +231,7 @@ export default function LiveSimulationPage() {
                         <Select
                           onValueChange={field.onChange}
                           defaultValue={field.value}
+                          dir="rtl"
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -434,7 +423,7 @@ export default function LiveSimulationPage() {
                     <SunDim className="h-6 w-6 text-yellow-500" />
                     <div>
                       <div className="font-bold">
-                        {currentDataPoint?.live.uvIndex ?? '...'}
+                        {currentDataPoint?.liveUvIndex ?? '...'}
                       </div>
                       <div className="text-xs text-muted-foreground">
                         مؤشر UV
