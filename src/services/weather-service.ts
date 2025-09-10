@@ -12,12 +12,12 @@ interface WeatherData {
     current: {
         temperature: number;
         cloudCover: number;
-        solarIrradiance: number;
+        uvIndex: number;
     },
     forecast: {
         temperature: number;
         cloudCover: number;
-        solarIrradiance: number;
+        uvIndex: number;
     }
 }
 
@@ -58,17 +58,17 @@ export async function getLiveAndForecastWeatherData(location: string): Promise<W
         if (!current_hour_forecast) {
             throw new Error(`Could not find forecast for the current hour (${currentHour}).`);
         }
-
+        
         return {
             current: {
                 temperature: parseFloat(current_weather.temp_c?.toFixed(1) ?? "0"),
                 cloudCover: parseFloat(current_weather.cloud?.toFixed(1) ?? "0"),
-                solarIrradiance: parseFloat(current_weather.air_quality?.['gb-defra-index']?.toFixed(1) ?? "0"),
+                uvIndex: parseFloat(current_weather.uv?.toFixed(1) ?? "0"),
             },
             forecast: {
                 temperature: parseFloat(current_hour_forecast.temp_c?.toFixed(1) ?? "0"),
                 cloudCover: parseFloat(current_hour_forecast.cloud?.toFixed(1) ?? "0"),
-                solarIrradiance: parseFloat(current_hour_forecast.air_quality?.['gb-defra-index']?.toFixed(1) ?? "0"),
+                uvIndex: parseFloat(current_hour_forecast.uv?.toFixed(1) ?? "0"),
             }
         };
     } catch (error) {

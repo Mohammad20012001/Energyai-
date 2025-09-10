@@ -15,13 +15,13 @@ export const SimulationDataPointSchema = z.object({
   time: z.string().describe('The current timestamp for the data point (e.g., "14:32").'),
   
   // Live Data
-  liveSolarIrradiance: z.number().describe('Live Global Horizontal Irradiance (GHI) in W/m^2 from the weather service.'),
+  liveUvIndex: z.number().describe('Live UV index from the weather service.'),
   liveTemperature: z.number().describe('Live ambient temperature in degrees Celsius.'),
   liveCloudCover: z.number().describe('Live cloud cover percentage (0-100).'),
   liveOutputPower: z.number().describe('The calculated output power of the system in Watts at this instant based on LIVE weather.'),
   
   // Forecast Data
-  forecastSolarIrradiance: z.number().describe('Forecasted Global Horizontal Irradiance (GHI) in W/m^2 from the weather service.'),
+  forecastUvIndex: z.number().describe('Forecasted UV index from the weather service.'),
   forecastTemperature: z.number().describe('Forecasted ambient temperature in degrees Celsius for the same instant.'),
   forecastCloudCover: z.number().describe('Forecasted cloud cover percentage (0-100) for the same instant.'),
   forecastOutputPower: z.number().describe('The calculated output power of the system in Watts for the same instant based on FORECASTED weather.'),

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Wind, ArrowRight, Loader2, Zap, Sun, Cloudy, BarChart, Thermometer, BrainCircuit, ShieldCheck, TrendingUp } from "lucide-react";
+import { Wind, ArrowRight, Loader2, Zap, Sun, Cloudy, BarChart, Thermometer, BrainCircuit, ShieldCheck, TrendingUp, SunDim } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   LineChart,
@@ -310,10 +310,10 @@ export default function LiveSimulationPage() {
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
                       <div className="flex items-center justify-center gap-2 border p-3 rounded-lg">
-                        <Sun className="h-6 w-6 text-yellow-500"/>
+                        <SunDim className="h-6 w-6 text-yellow-500"/>
                         <div>
-                          <div className="font-bold">{currentDataPoint?.liveSolarIrradiance ?? '...'}</div>
-                          <div className="text-xs text-muted-foreground">W/m²</div>
+                          <div className="font-bold">{currentDataPoint?.liveUvIndex ?? '...'}</div>
+                          <div className="text-xs text-muted-foreground">مؤشر UV</div>
                         </div>
                       </div>
                       <div className="flex items-center justify-center gap-2 border p-3 rounded-lg">
@@ -327,7 +327,7 @@ export default function LiveSimulationPage() {
                         <Cloudy className="h-6 w-6 text-gray-500"/>
                          <div>
                           <div className="font-bold">{currentDataPoint?.liveCloudCover ?? '...'}</div>
-                          <div className="text-xs text-muted-foreground">%</div>
+                          <div className="text-xs text-muted-foreground">% غيوم</div>
                         </div>
                       </div>
                   </CardContent>

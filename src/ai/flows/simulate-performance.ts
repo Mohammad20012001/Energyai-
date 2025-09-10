@@ -22,18 +22,19 @@ const prompt = ai.definePrompt({
   input: { schema: z.object({
       systemSize: SimulatePerformanceInputSchema.shape.systemSize,
       // Scenario-specific data
-      liveSolarIrradiance: z.number(),
+      liveUvIndex: z.number(),
       liveTemperature: z.number(),
-      forecastSolarIrradiance: z.number(),
+      liveCloudCover: z.number(),
+      forecastUvIndex: z.number(),
       forecastTemperature: z.number(),
-      clearSkySolarIrradiance: z.number(), // Ideal irradiance, e.g., 1000 W/m^2
+      forecastCloudCover: z.number(),
   }) },
   output: { schema: z.object({
       liveOutputPower: z.number().describe('Calculated output power in Watts for the LIVE scenario.'),
       forecastOutputPower: z.number().describe('Calculated output power in Watts for the FORECAST scenario.'),
       clearSkyOutputPower: z.number().describe('Calculated output power in Watts for the CLEAR SKY scenario.'),
   }) },
-  prompt: `You are a solar energy calculation engine. Your task is to calculate the power output of a solar PV system for three different scenarios using the provided formula.
+  prompt: `You are a sophisticated solar energy calculation engine. Your task is to calculate the power output of a solar PV system for three different scenarios.
 
 System Specifications:
 - System Size (DC): {{{systemSize}}} kWp
@@ -43,36 +44,43 @@ Power Output (Watts) = (System Size in Watts) * (Solar Irradiance / 1000) * (1 -
 
 Where:
 - System Size in Watts = {{{systemSize}}} * 1000
-- Solar Irradiance is the value for the specific scenario (in W/m^2).
+- Solar Irradiance is the value you must first estimate for each specific scenario (in W/m^2).
 - Temperature is the value for the specific scenario (in °C).
 - 0.0035 is the temperature coefficient.
 - 0.85 represents total system losses (e.g., inverter, dirt, wiring).
 
 ---
 
+Task: Calculate the output for all three scenarios independently.
+
 Scenario 1: Live Real-Time Weather Conditions
-- Solar Irradiance: {{{liveSolarIrradiance}}} W/m^2
+- UV Index: {{{liveUvIndex}}}
+- Cloud Cover: {{{liveCloudCover}}}%
 - Ambient Temperature: {{{liveTemperature}}} °C
-Calculate 'liveOutputPower' using the formula.
+- Step 1: Estimate the 'liveSolarIrradiance' in W/m^2. A UV index of 1 is very low irradiance (~100 W/m^2), while 10+ is very high (~1000 W/m^2). Use the cloud cover to reduce the irradiance. High cloud cover should significantly decrease the value.
+- Step 2: Calculate 'liveOutputPower' using the formula and your estimated 'liveSolarIrradiance'.
 
 ---
 
 Scenario 2: Forecasted Weather Conditions
-- Solar Irradiance: {{{forecastSolarIrradiance}}} W/m^2
+- UV Index: {{{forecastUvIndex}}}
+- Cloud Cover: {{{forecastCloudCover}}}%
 - Ambient Temperature: {{{forecastTemperature}}} °C
-Calculate 'forecastOutputPower' using the formula.
+- Step 1: Estimate the 'forecastSolarIrradiance' in W/m^2 using the same logic as the live scenario.
+- Step 2: Calculate 'forecastOutputPower' using the formula and your estimated 'forecastSolarIrradiance'.
 
 ---
 
 Scenario 3: Ideal Clear Sky Conditions
-- Solar Irradiance: {{{clearSkySolarIrradiance}}} W/m^2 (This is the ideal maximum)
+- For this scenario, assume ideal conditions.
+- Solar Irradiance: 1000 W/m^2 (This is the ideal maximum)
 - Ambient Temperature: 25 °C (This is the ideal temperature for panel efficiency)
-Calculate 'clearSkyOutputPower' using the formula.
+- Step 1: Use these ideal values directly.
+- Step 2: Calculate 'clearSkyOutputPower' using the formula.
 
 ---
 
 Instructions:
-- Calculate the output for all three scenarios independently.
 - Populate ALL fields in the output object with the calculated wattages. Do not add any extra text or explanations.
 `,
 });
@@ -94,13 +102,13 @@ const simulatePerformanceFlow = ai.defineFlow(
     const { output } = await prompt({
       systemSize: input.systemSize,
       // Live Data
-      liveSolarIrradiance: weatherData.current.solarIrradiance,
+      liveUvIndex: weatherData.current.uvIndex,
       liveTemperature: weatherData.current.temperature,
+      liveCloudCover: weatherData.current.cloudCover,
       // Forecast Data
-      forecastSolarIrradiance: weatherData.forecast.solarIrradiance,
+      forecastUvIndex: weatherData.forecast.uvIndex,
       forecastTemperature: weatherData.forecast.temperature,
-      // Ideal Data (using a standard high irradiance value)
-      clearSkySolarIrradiance: 1000, 
+      forecastCloudCover: weatherData.forecast.cloudCover,
     });
 
     if (!output) {
@@ -115,10 +123,10 @@ const simulatePerformanceFlow = ai.defineFlow(
       forecastOutputPower: output.forecastOutputPower,
       clearSkyOutputPower: output.clearSkyOutputPower,
       // Weather data used for the calculations
-      liveSolarIrradiance: weatherData.current.solarIrradiance,
+      liveUvIndex: weatherData.current.uvIndex,
       liveTemperature: weatherData.current.temperature,
       liveCloudCover: weatherData.current.cloudCover,
-      forecastSolarIrradiance: weatherData.forecast.solarIrradiance,
+      forecastUvIndex: weatherData.forecast.uvIndex,
       forecastTemperature: weatherData.forecast.temperature,
       forecastCloudCover: weatherData.forecast.cloudCover,
     };
