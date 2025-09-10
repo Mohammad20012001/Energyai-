@@ -12,10 +12,12 @@ interface WeatherData {
     current: {
         temperature: number;
         cloudCover: number;
+        solarIrradiance: number;
     },
     forecast: {
         temperature: number;
         cloudCover: number;
+        solarIrradiance: number;
     }
 }
 
@@ -36,7 +38,6 @@ export async function getLiveAndForecastWeatherData(location: string): Promise<W
         throw new Error("WeatherAPI.com API key is not configured.");
     }
     
-    // We fetch a 1-day forecast which includes the current hour's forecast data.
     const url = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${coords.lat},${coords.lon}&days=1&aqi=no&alerts=no`;
 
     try {
@@ -49,31 +50,25 @@ export async function getLiveAndForecastWeatherData(location: string): Promise<W
 
         const current_weather = data.current;
         
-        // Find the forecast for the current hour
         const now = new Date();
         const currentHour = now.getHours();
         const hourly_forecasts = data.forecast.forecastday[0].hour;
         const current_hour_forecast = hourly_forecasts.find((h: any) => new Date(h.time_epoch * 1000).getHours() === currentHour) ?? hourly_forecasts[currentHour];
 
-
-        const liveData = {
-            temperature: current_weather.temp_c ?? 0,
-            cloudCover: current_weather.cloud ?? 0,
-        };
-
-        const forecastData = {
-            temperature: current_hour_forecast.temp_c ?? 0,
-            cloudCover: current_hour_forecast.cloud ?? 0,
-        };
+        if (!current_hour_forecast) {
+            throw new Error(`Could not find forecast for the current hour (${currentHour}).`);
+        }
 
         return {
             current: {
-                temperature: parseFloat(liveData.temperature.toFixed(1)),
-                cloudCover: parseFloat(liveData.cloudCover.toFixed(1)),
+                temperature: parseFloat(current_weather.temp_c?.toFixed(1) ?? "0"),
+                cloudCover: parseFloat(current_weather.cloud?.toFixed(1) ?? "0"),
+                solarIrradiance: parseFloat(current_weather.air_quality?.['gb-defra-index']?.toFixed(1) ?? "0"),
             },
             forecast: {
-                temperature: parseFloat(forecastData.temperature.toFixed(1)),
-                cloudCover: parseFloat(forecastData.cloudCover.toFixed(1)),
+                temperature: parseFloat(current_hour_forecast.temp_c?.toFixed(1) ?? "0"),
+                cloudCover: parseFloat(current_hour_forecast.cloud?.toFixed(1) ?? "0"),
+                solarIrradiance: parseFloat(current_hour_forecast.air_quality?.['gb-defra-index']?.toFixed(1) ?? "0"),
             }
         };
     } catch (error) {

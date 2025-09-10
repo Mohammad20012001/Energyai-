@@ -11,67 +11,69 @@ import { z } from 'genkit';
 import { SimulatePerformanceInputSchema, SimulationDataPointSchema, type SimulatePerformanceInput, type SimulationDataPoint } from '@/ai/types';
 import { getLiveAndForecastWeatherData } from '@/services/weather-service';
 
-
-// This function is the main entry point called by the server action.
 export async function simulatePerformance(
   input: SimulatePerformanceInput
 ): Promise<SimulationDataPoint> {
   return await simulatePerformanceFlow(input);
 }
 
-
 const prompt = ai.definePrompt({
   name: 'simulatePerformancePrompt',
   input: { schema: z.object({
-    systemSize: SimulatePerformanceInputSchema.shape.systemSize,
-    location: SimulatePerformanceInputSchema.shape.location,
-    panelTilt: SimulatePerformanceInputSchema.shape.panelTilt,
-    panelAzimuth: SimulatePerformanceInputSchema.shape.panelAzimuth,
-    // Live weather data
-    liveTemperature: z.number(),
-    liveCloudCover: z.number(),
-    // Forecast weather data
-    forecastTemperature: z.number(),
-    forecastCloudCover: z.number(),
-    currentTime: z.string(),
+      systemSize: SimulatePerformanceInputSchema.shape.systemSize,
+      // Scenario-specific data
+      liveSolarIrradiance: z.number(),
+      liveTemperature: z.number(),
+      forecastSolarIrradiance: z.number(),
+      forecastTemperature: z.number(),
+      clearSkySolarIrradiance: z.number(), // Ideal irradiance, e.g., 1000 W/m^2
   }) },
-  output: { schema: SimulationDataPointSchema },
-  prompt: `You are an advanced solar energy simulation engine. Your task is to calculate the instantaneous power output of a solar PV system based on its specifications and multiple weather scenarios for a specific moment in time.
+  output: { schema: z.object({
+      liveOutputPower: z.number().describe('Calculated output power in Watts for the LIVE scenario.'),
+      forecastOutputPower: z.number().describe('Calculated output power in Watts for the FORECAST scenario.'),
+      clearSkyOutputPower: z.number().describe('Calculated output power in Watts for the CLEAR SKY scenario.'),
+  }) },
+  prompt: `You are a solar energy calculation engine. Your task is to calculate the power output of a solar PV system for three different scenarios using the provided formula.
 
 System Specifications:
 - System Size (DC): {{{systemSize}}} kWp
-- Location: {{{location}}} (This is a city name in Jordan, use it to determine sun angle based on typical coordinates)
-- Panel Tilt Angle: {{{panelTilt}}} degrees
-- Panel Azimuth Angle: {{{panelAzimuth}}} degrees (180 = South)
-- Current Time: {{{currentTime}}}
 
-You must perform the following steps for each scenario:
-1.  Calculate the ideal, clear-sky Global Horizontal Irradiance (GHI) in W/m^2 for the given location and time. Use your knowledge of solar positioning and atmospheric models.
-2.  Adjust the calculated GHI based on the provided cloud cover percentage for the scenario. Higher cloud cover drastically reduces irradiance.
-3.  Factor in the panel's tilt and azimuth angles, and the sun's current position (calculated from location and time) to determine the Plane of Array (POA) irradiance.
-4.  Calculate the final power output in Watts, considering the system size, POA irradiance, and temperature effects on panel efficiency (assume a standard temperature coefficient of -0.35%/°C from a 25°C baseline).
-5.  Assume standard system losses (e.g., inverter efficiency, soiling, wiring) of about 15% in all final calculations.
+Formula to use for each scenario:
+Power Output (Watts) = (System Size in Watts) * (Solar Irradiance / 1000) * (1 - (Temperature - 25) * 0.0035) * 0.85
 
-You must calculate three separate output power values based on the three weather scenarios provided below. Ensure each calculation is independent.
+Where:
+- System Size in Watts = {{{systemSize}}} * 1000
+- Solar Irradiance is the value for the specific scenario (in W/m^2).
+- Temperature is the value for the specific scenario (in °C).
+- 0.0035 is the temperature coefficient.
+- 0.85 represents total system losses (e.g., inverter, dirt, wiring).
+
+---
 
 Scenario 1: Live Real-Time Weather Conditions
-- Live Ambient Temperature: {{{liveTemperature}}} °C
-- Live Cloud Cover: {{{liveCloudCover}}} %
-Calculate 'liveOutputPower' based on these live conditions.
+- Solar Irradiance: {{{liveSolarIrradiance}}} W/m^2
+- Ambient Temperature: {{{liveTemperature}}} °C
+Calculate 'liveOutputPower' using the formula.
+
+---
 
 Scenario 2: Forecasted Weather Conditions
-- Forecasted Ambient Temperature: {{{forecastTemperature}}} °C
-- Forecasted Cloud Cover: {{{forecastCloudCover}}} %
-Calculate 'forecastOutputPower' based on these forecasted conditions.
+- Solar Irradiance: {{{forecastSolarIrradiance}}} W/m^2
+- Ambient Temperature: {{{forecastTemperature}}} °C
+Calculate 'forecastOutputPower' using the formula.
+
+---
 
 Scenario 3: Ideal Clear Sky Conditions
-- Use the live ambient temperature: {{{liveTemperature}}} °C
-- Assume 0% cloud cover.
-Calculate 'clearSkyOutputPower' based on these ideal conditions.
+- Solar Irradiance: {{{clearSkySolarIrradiance}}} W/m^2 (This is the ideal maximum)
+- Ambient Temperature: 25 °C (This is the ideal temperature for panel efficiency)
+Calculate 'clearSkyOutputPower' using the formula.
+
+---
 
 Instructions:
-- Populate ALL fields in the output object.
-- For the 'liveSolarIrradiance' and 'forecastSolarIrradiance' fields in the output, provide your calculated, cloud-adjusted GHI for the Live and Forecast scenarios, respectively.
+- Calculate the output for all three scenarios independently.
+- Populate ALL fields in the output object with the calculated wattages. Do not add any extra text or explanations.
 `,
 });
 
@@ -82,29 +84,41 @@ const simulatePerformanceFlow = ai.defineFlow(
     outputSchema: SimulationDataPointSchema,
   },
   async (input) => {
-    // Fetch live and forecast weather data using the weather service
+    // 1. Fetch real-world weather data
     const weatherData = await getLiveAndForecastWeatherData(input.location);
     
     const now = new Date();
     const currentTime = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
+    // 2. Call the AI prompt with data for all scenarios
     const { output } = await prompt({
-      ...input,
+      systemSize: input.systemSize,
       // Live Data
+      liveSolarIrradiance: weatherData.current.solarIrradiance,
       liveTemperature: weatherData.current.temperature,
-      liveCloudCover: weatherData.current.cloudCover,
       // Forecast Data
+      forecastSolarIrradiance: weatherData.forecast.solarIrradiance,
       forecastTemperature: weatherData.forecast.temperature,
-      forecastCloudCover: weatherData.forecast.cloudCover,
-      currentTime: currentTime,
+      // Ideal Data (using a standard high irradiance value)
+      clearSkySolarIrradiance: 1000, 
     });
 
-    // The AI now returns the calculated irradiances. We just need to add the other weather data back.
+    if (!output) {
+      throw new Error("AI model did not return an output.");
+    }
+
+    // 3. Combine AI results with weather data for the final response
     return {
-      ...output!,
       time: currentTime,
+      // AI calculated power outputs
+      liveOutputPower: output.liveOutputPower,
+      forecastOutputPower: output.forecastOutputPower,
+      clearSkyOutputPower: output.clearSkyOutputPower,
+      // Weather data used for the calculations
+      liveSolarIrradiance: weatherData.current.solarIrradiance,
       liveTemperature: weatherData.current.temperature,
       liveCloudCover: weatherData.current.cloudCover,
+      forecastSolarIrradiance: weatherData.forecast.solarIrradiance,
       forecastTemperature: weatherData.forecast.temperature,
       forecastCloudCover: weatherData.forecast.cloudCover,
     };
