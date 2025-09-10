@@ -43,8 +43,10 @@ export async function getLiveWeatherData(location: string): Promise<WeatherData>
 
         const current_weather = data.current;
 
-        // WeatherAPI.com provides solar radiation in W/m^2 which is what we need.
-        const solarIrradiance = current_weather.air_quality?.['gb-defra-index'] ? current_weather.air_quality['gb-defra-index'] * 100 : 0; // fallback logic
+        // WeatherAPI.com provides a UV index. We can approximate Solar Irradiance from it.
+        // A UV index of 10-11 is roughly equivalent to 1000-1100 W/m^2 in clear sky conditions.
+        // We'll use a factor of 100 as a simple approximation.
+        const solarIrradiance = current_weather.uv ? current_weather.uv * 100 : 0; 
         const temperature = current_weather.temp_c ?? 0;
         const cloudCover = current_weather.cloud ?? 0;
 
