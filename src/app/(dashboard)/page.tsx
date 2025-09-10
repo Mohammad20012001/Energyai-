@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Settings, Calculator, Zap, Maximize, TrendingUp, DollarSign, FileText, BatteryCharging, Wind, Bot, Combine, MessageCircle } from "lucide-react";
+import { ArrowRight, Settings, Calculator, Zap, Maximize, TrendingUp, DollarSign, FileText, BatteryCharging, Wind, Bot, Combine, MessageCircle, BrainCircuit } from "lucide-react";
 
 export default function DashboardOverviewPage() {
   return (
@@ -18,7 +18,7 @@ export default function DashboardOverviewPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MessageCircle className="text-primary" />
-              المساعد الذكي (الآن مع محسن التصميم)
+              المساعد الذكي
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -47,6 +47,25 @@ export default function DashboardOverviewPage() {
             <Button asChild>
               <Link href="/live-simulation">
                 ابدأ المحاكاة <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+        
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BrainCircuit className="text-primary" />
+              محسن التصميم بالذكاء الاصطناعي
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">
+              أدخل قيودك (الميزانية، المساحة) ودع الذكاء الاصطناعي يصمم لك النظام الأمثل.
+            </p>
+            <Button asChild>
+              <Link href="/design-optimizer">
+                اذهب للمحسن <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
           </CardContent>
