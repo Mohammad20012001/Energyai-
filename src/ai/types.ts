@@ -13,9 +13,14 @@ export type SimulatePerformanceInput = z.infer<typeof SimulatePerformanceInputSc
 // Output schema for a single data point in the simulation
 export const SimulationDataPointSchema = z.object({
   time: z.string().describe('The current timestamp for the data point (e.g., "14:32").'),
-  solarIrradiance: z.number().describe('Simulated Global Horizontal Irradiance (GHI) in W/m^2.'),
-  temperature: z.number().describe('Simulated ambient temperature in degrees Celsius.'),
-  cloudCover: z.number().describe('Simulated cloud cover percentage (0-100).'),
-  outputPower: z.number().describe('The calculated output power of the system in Watts at this instant.'),
+  liveSolarIrradiance: z.number().describe('Live Global Horizontal Irradiance (GHI) in W/m^2.'),
+  liveTemperature: z.number().describe('Live ambient temperature in degrees Celsius.'),
+  liveCloudCover: z.number().describe('Live cloud cover percentage (0-100).'),
+  liveOutputPower: z.number().describe('The calculated output power of the system in Watts at this instant based on LIVE weather.'),
+  forecastSolarIrradiance: z.number().describe('Forecasted Global Horizontal Irradiance (GHI) in W/m^2 for the same instant.'),
+  forecastTemperature: z.number().describe('Forecasted ambient temperature in degrees Celsius for the same instant.'),
+  forecastCloudCover: z.number().describe('Forecasted cloud cover percentage (0-100) for the same instant.'),
+  forecastOutputPower: z.number().describe('The calculated output power of the system in Watts for the same instant based on FORECASTED weather.'),
+  clearSkyOutputPower: z.number().describe('The calculated output power of the system in Watts for the same instant assuming ideal, clear sky conditions (0% cloud cover).'),
 });
 export type SimulationDataPoint = z.infer<typeof SimulationDataPointSchema>;

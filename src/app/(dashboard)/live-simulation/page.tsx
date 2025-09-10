@@ -4,8 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Wind, ArrowRight, Loader2, Zap, Sun, Cloudy, Clock, BarChart, PlusCircle, Thermometer } from "lucide-react";
-import { useReport } from "@/context/ReportContext";
+import { Wind, ArrowRight, Loader2, Zap, Sun, Cloudy, BarChart, Thermometer, BrainCircuit, ShieldCheck, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   LineChart,
@@ -14,6 +13,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   ResponsiveContainer,
 } from "recharts";
 
@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/select";
 import { startSimulationAction } from "@/app/actions/simulation";
 import type { SimulationDataPoint, SimulatePerformanceInput } from "@/ai/types";
+import { cn } from "@/lib/utils";
 
 
 const formSchema = z.object({
@@ -52,9 +53,8 @@ type FormValues = z.infer<typeof formSchema>;
 export default function LiveSimulationPage() {
   const [simulationData, setSimulationData] = useState<SimulationDataPoint[]>([]);
   const [isSimulating, setIsSimulating] = useState(false);
-  const [currentWeather, setCurrentWeather] = useState<SimulationDataPoint | null>(null);
+  const [currentDataPoint, setCurrentDataPoint] = useState<SimulationDataPoint | null>(null);
   const simulationIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const { addReportCard } = useReport();
   const { toast } = useToast();
 
   const form = useForm<FormValues>({
@@ -71,12 +71,12 @@ export default function LiveSimulationPage() {
     try {
       const result = await startSimulationAction(values);
       if (result.success && result.data) {
+        setCurrentDataPoint(result.data);
         setSimulationData(prevData => {
           const newData = [...prevData, result.data!];
           // Keep only the last 15 minutes (assuming 1 data point per minute)
           return newData.slice(-15);
         });
-        setCurrentWeather(result.data);
       } else {
         toast({
           variant: "destructive",
@@ -99,7 +99,7 @@ export default function LiveSimulationPage() {
   const startSimulation = (values: FormValues) => {
     setIsSimulating(true);
     setSimulationData([]);
-    setCurrentWeather(null);
+    setCurrentDataPoint(null);
 
     // Run first step immediately
     runSimulationStep(values);
@@ -107,7 +107,7 @@ export default function LiveSimulationPage() {
     // Then run every 1 minute
     simulationIntervalRef.current = setInterval(() => {
       runSimulationStep(values);
-    }, 60000); // 60 seconds
+    }, 60000 * 5); // 5 minutes for demo purposes to not exhaust API limits
   };
 
   const stopSimulation = () => {
@@ -137,15 +137,19 @@ export default function LiveSimulationPage() {
   
   const chartData = simulationData.map(d => ({
       time: d.time,
-      output: parseFloat(d.outputPower.toFixed(2)),
+      live: parseFloat(d.liveOutputPower.toFixed(0)),
+      forecast: parseFloat(d.forecastOutputPower.toFixed(0)),
+      ideal: parseFloat(d.clearSkyOutputPower.toFixed(0)),
   }));
+
+  const performancePercentage = currentDataPoint ? (currentDataPoint.liveOutputPower / currentDataPoint.clearSkyOutputPower) * 100 : 0;
 
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight font-headline">المحاكاة الحية للأداء (التوأم الرقمي)</h1>
+        <h1 className="text-3xl font-bold tracking-tight font-headline">المحاكاة الحية والتحليل المقارن</h1>
         <p className="text-muted-foreground mt-2">
-          شاهد الأداء المتوقع لنظامك الشمسي لحظة بلحظة بناءً على ظروف الطقس المحاكاة.
+          قارن أداء نظامك الفعلي مع الأداء المتوقع والمثالي بناءً على بيانات الطقس الحية والمتوقعة.
         </p>
       </div>
 
@@ -229,7 +233,7 @@ export default function LiveSimulationPage() {
                     </>
                   ) : (
                     <>
-                      بدء المحاكاة <ArrowRight className="mr-2 h-4 w-4" />
+                      بدء المحاكاة والتحليل <ArrowRight className="mr-2 h-4 w-4" />
                     </>
                   )}
                 </Button>
@@ -243,13 +247,13 @@ export default function LiveSimulationPage() {
             <Card className="flex flex-col items-center justify-center text-center p-8 lg:min-h-[400px] bg-muted/20">
               <CardHeader>
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                  <Wind className="h-8 w-8 text-primary" />
+                  <BrainCircuit className="h-8 w-8 text-primary" />
                 </div>
-                <CardTitle className="mt-4">أنشئ نسختك الرقمية الخاصة</CardTitle>
+                <CardTitle className="mt-4">احصل على رؤى أعمق</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground max-w-md">
-                  أدخل مواصفات نظامك الشمسي لبدء محاكاة حية لأدائه وتوليده للطاقة.
+                  أدخل مواصفات نظامك لبدء محاكاة مقارنة متقدمة تكشف عن الأداء الحقيقي مقابل الإمكانات الكاملة.
                 </p>
               </CardContent>
             </Card>
@@ -260,13 +264,13 @@ export default function LiveSimulationPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center justify-between">
-                            <span>الإنتاج اللحظي</span>
-                            {currentWeather && <span className="text-sm font-normal text-muted-foreground">{currentWeather.time}</span>}
+                            <span>الإنتاج اللحظي الفعلي</span>
+                            {currentDataPoint && <span className="text-sm font-normal text-muted-foreground">{currentDataPoint.time}</span>}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="text-center">
-                        {currentWeather ? (
-                             <div className="text-6xl font-bold text-primary">{currentWeather.outputPower.toFixed(2)}</div>
+                        {currentDataPoint ? (
+                             <div className="text-6xl font-bold text-primary">{currentDataPoint.liveOutputPower.toFixed(0)}</div>
                         ) : (
                             <Loader2 className="h-12 w-12 text-primary animate-spin mx-auto"/>
                         )}
@@ -275,48 +279,44 @@ export default function LiveSimulationPage() {
                 </Card>
 
                 <Card>
-                    <CardHeader>
-                        <CardTitle>ظروف الطقس المحاكاة</CardTitle>
-                    </CardHeader>
-                     <CardContent>
-                        {currentWeather ? (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-center">
-                                <div className="border p-3 rounded-lg">
-                                    <Sun className="mx-auto h-6 w-6 text-yellow-500 mb-1"/>
-                                    <div className="font-bold">{currentWeather.solarIrradiance}</div>
-                                    <div className="text-xs text-muted-foreground">W/m²</div>
-                                </div>
-                                <div className="border p-3 rounded-lg">
-                                    <Thermometer className="mx-auto h-6 w-6 text-red-500 mb-1"/>
-                                    <div className="font-bold">{currentWeather.temperature.toFixed(1)}</div>
-                                    <div className="text-xs text-muted-foreground">°C</div>
-                                </div>
-                                <div className="border p-3 rounded-lg col-span-2 sm:col-span-1">
-                                    <Cloudy className="mx-auto h-6 w-6 text-blue-400 mb-1"/>
-                                    <div className="font-bold">{currentWeather.cloudCover.toFixed(1)}</div>
-                                    <div className="text-xs text-muted-foreground">%</div>
-                                </div>
+                  <CardHeader>
+                    <CardTitle>مؤشرات الأداء الرئيسية</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-center">
+                      <div className="border p-3 rounded-lg flex flex-col justify-center">
+                          <div className="text-sm text-muted-foreground mb-1">كفاءة الأداء الحالية</div>
+                          {currentDataPoint ? (
+                            <div className={cn("text-3xl font-bold", performancePercentage > 80 ? 'text-green-500' : performancePercentage > 50 ? 'text-yellow-500' : 'text-red-500')}>
+                                {isFinite(performancePercentage) ? performancePercentage.toFixed(1) : 0}%
                             </div>
-                        ) : (
-                             <div className="flex justify-center items-center p-8">
-                                <Loader2 className="h-8 w-8 text-muted-foreground animate-spin"/>
-                             </div>
-                        )}
-                    </CardContent>
+                          ) : <Loader2 className="h-8 w-8 text-muted-foreground animate-spin mx-auto"/>}
+                          <div className="text-xs text-muted-foreground">(مقارنة بالسماء الصافية)</div>
+                      </div>
+                      <div className="border p-3 rounded-lg flex flex-col justify-center">
+                          <div className="text-sm text-muted-foreground mb-1">الإنتاج المتوقع</div>
+                          {currentDataPoint ? (
+                            <div className="text-3xl font-bold text-blue-500">{currentDataPoint.forecastOutputPower.toFixed(0)}</div>
+                          ) : <Loader2 className="h-8 w-8 text-muted-foreground animate-spin mx-auto"/> }
+                          <div className="text-xs text-muted-foreground">(واط)</div>
+                      </div>
+                  </CardContent>
                 </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><BarChart className="text-primary"/> مخطط الأداء (آخر 15 دقيقة)</CardTitle>
+                  <CardTitle className="flex items-center gap-2"><BarChart className="text-primary"/> التحليل المقارن للأداء (آخر 15 دقيقة)</CardTitle>
                 </CardHeader>
-                <CardContent className="h-64">
+                <CardContent className="h-72">
                     <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                        <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 20 }}>
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="time" />
                             <YAxis label={{ value: 'واط', angle: -90, position: 'insideLeft' }}/>
-                            <Tooltip contentStyle={{ background: "hsl(var(--background))" }}/>
-                            <Line type="monotone" dataKey="output" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                            <Tooltip contentStyle={{ background: "hsl(var(--background))", direction: 'rtl' }}/>
+                            <Legend verticalAlign="top" wrapperStyle={{top: -4, right: 20, direction: 'rtl' }}/>
+                            <Line name="الفعلي" type="monotone" dataKey="live" stroke="hsl(var(--primary))" strokeWidth={3} dot={false} />
+                            <Line name="المتوقع" type="monotone" dataKey="forecast" stroke="#3b82f6" strokeWidth={2} dot={false} strokeDasharray="5 5" />
+                            <Line name="المثالي" type="monotone" dataKey="ideal" stroke="#8f8f8f" strokeWidth={2} dot={false} strokeDasharray="3 3" />
                         </LineChart>
                     </ResponsiveContainer>
                 </CardContent>
