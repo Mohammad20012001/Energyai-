@@ -56,7 +56,7 @@ export async function getLiveAndForecastWeatherData(location: string): Promise<W
         const response = await axios.get(url);
         const data = response.data;
         
-        if (!data.current || !data.forecast || !data.forecast.forecastday[0] || !data.forecast.forecastday[0].hour[0]) {
+        if (!data.current || !data.forecast || !data.forecast.forecastday[0] || !data.forecast.forecastday[0].hour) {
             throw new Error("Invalid response structure from WeatherAPI.com.");
         }
 
