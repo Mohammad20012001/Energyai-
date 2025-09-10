@@ -4,20 +4,37 @@ import { z } from "zod";
 import {
   simulatePerformance,
 } from "@/ai/flows/simulate-performance";
-import { SimulatePerformanceInputSchema, type SimulatePerformanceInput } from "@/ai/types";
+import { SimulatePerformanceInputSchema, type SimulatePerformanceInput } from "@/ai/tool-schemas";
+import { type SimulationDataPoint } from "@/ai/types";
 
 export async function startSimulationAction(
   input: SimulatePerformanceInput
-) {
+) : Promise<{ success: boolean; data?: SimulationDataPoint; error?: string }>{
   try {
     const validatedInput = SimulatePerformanceInputSchema.parse(input);
     const result = await simulatePerformance(validatedInput);
-    return { success: true, data: result };
+    
+    // The flow returns a partial result, so we need to fetch weather data again to have the full datapoint for the UI
+    const weatherService = await import("@/services/weather-service");
+    const weatherData = await weatherService.getLiveAndForecastWeatherData(validatedInput.location);
+
+    const fullDataPoint: SimulationDataPoint = {
+        ...result,
+        liveTemperature: weatherData.current.temperature,
+        liveCloudCover: weatherData.current.cloudCover,
+        forecastUvIndex: weatherData.forecast.uvIndex,
+        forecastTemperature: weatherData.forecast.temperature,
+        forecastCloudCover: weatherData.forecast.cloudCover,
+    };
+
+    return { success: true, data: fullDataPoint };
+
   } catch (error) {
     console.error("Error in startSimulationAction:", error);
     if (error instanceof z.ZodError) {
       return { success: false, error: "المدخلات المقدمة غير صالحة." };
     }
-    return { success: false, error: "فشل في الحصول على بيانات المحاكاة." };
+    const errorMessage = (error instanceof Error) ? error.message : "فشل في الحصول على بيانات المحاكاة.";
+    return { success: false, error: errorMessage };
   }
 }

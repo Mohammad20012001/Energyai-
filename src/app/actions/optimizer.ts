@@ -2,22 +2,16 @@
 
 import { z } from "zod";
 import { optimizeDesign } from "@/ai/flows/optimize-design";
-import type { OptimizeDesignInput, OptimizeDesignOutput } from "@/ai/flows/optimize-design";
-
-// This schema is a re-definition for server action validation.
-const OptimizeDesignActionSchema = z.object({
-  budget: z.coerce.number().positive("يجب أن تكون الميزانية إيجابية"),
-  surfaceArea: z.coerce.number().positive("يجب أن تكون المساحة إيجابية"),
-  monthlyBill: z.coerce.number().positive("يجب أن تكون الفاتورة إيجابية"),
-  location: z.enum(['amman', 'zarqa', 'irbid', 'aqaba']),
-});
+import type { OptimizeDesignInput } from "@/ai/tool-schemas";
+import { OptimizeDesignInputSchema, type OptimizeDesignOutput } from "@/ai/tool-schemas";
 
 
 export async function optimizeDesignAction(
   input: OptimizeDesignInput
 ): Promise<{ success: boolean; data?: OptimizeDesignOutput; error?: string }> {
   try {
-    const validatedInput = OptimizeDesignActionSchema.parse(input);
+    // Note: The schema from tool-schemas is reused here for validation.
+    const validatedInput = OptimizeDesignInputSchema.parse(input);
     const result = await optimizeDesign(validatedInput);
     return { success: true, data: result };
   } catch (error) {

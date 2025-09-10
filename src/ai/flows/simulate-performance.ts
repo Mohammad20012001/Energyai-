@@ -8,12 +8,12 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { SimulatePerformanceInputSchema, SimulationDataPointSchema, type SimulatePerformanceInput, type SimulationDataPoint } from '@/ai/types';
+import { SimulatePerformanceInputSchema, SimulatePerformanceOutputSchema, type SimulatePerformanceInput, type SimulatePerformanceOutput } from '@/ai/tool-schemas';
 import { getLiveAndForecastWeatherData } from '@/services/weather-service';
 
 export async function simulatePerformance(
   input: SimulatePerformanceInput
-): Promise<SimulationDataPoint> {
+): Promise<SimulatePerformanceOutput> {
   return await simulatePerformanceFlow(input);
 }
 
@@ -100,7 +100,7 @@ const simulatePerformanceFlow = ai.defineFlow(
   {
     name: 'simulatePerformanceFlow',
     inputSchema: SimulatePerformanceInputSchema,
-    outputSchema: SimulationDataPointSchema,
+    outputSchema: SimulatePerformanceOutputSchema,
   },
   async (input) => {
     // 1. Fetch real-world weather data
@@ -135,13 +135,8 @@ const simulatePerformanceFlow = ai.defineFlow(
       clearSkyOutputPower: output.clearSkyOutputPower,
       // AI generated analysis
       performanceAnalysis: output.performanceAnalysis,
-      // Weather data used for the calculations
+      // Pass back the key weather metric
       liveUvIndex: weatherData.current.uvIndex,
-      liveTemperature: weatherData.current.temperature,
-      liveCloudCover: weatherData.current.cloudCover,
-      forecastUvIndex: weatherData.forecast.uvIndex,
-      forecastTemperature: weatherData.forecast.temperature,
-      forecastCloudCover: weatherData.forecast.cloudCover,
     };
   }
 );

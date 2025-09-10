@@ -5,20 +5,25 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {
-  suggestStringConfiguration,
-} from './suggest-string-config';
-import {
-  suggestWireSize,
-} from './suggest-wire-size';
+import {z} from 'zod';
+import {Part} from 'genkit';
+
+import { suggestStringConfiguration } from './suggest-string-config';
+import { suggestWireSize } from './suggest-wire-size';
+import { optimizeDesign } from './optimize-design';
+import { simulatePerformance } from './simulate-performance';
+
 import {
   SuggestStringConfigurationInputSchema,
   SuggestStringConfigurationOutputSchema,
   SuggestWireSizeInputSchema,
-  SuggestWireSizeOutputSchema
+  SuggestWireSizeOutputSchema,
+  OptimizeDesignInputSchema,
+  OptimizeDesignOutputSchema,
+  SimulatePerformanceInputSchema,
+  SimulatePerformanceOutputSchema,
 } from '@/ai/tool-schemas';
-import {z} from 'zod';
-import {Part} from 'genkit';
+
 
 // Define tools that the agent can use.
 const suggestStringConfigurationTool = ai.defineTool(
@@ -42,6 +47,27 @@ const suggestWireSizeTool = ai.defineTool(
   },
   async input => suggestWireSize(input)
 );
+
+const optimizeDesignTool = ai.defineTool(
+    {
+        name: 'optimizeDesign',
+        description: 'Designs an entire solar PV system from scratch based on user constraints like budget, area, and electricity bill. Use this for general, high-level questions about system design or "what system should I get?".',
+        inputSchema: OptimizeDesignInputSchema,
+        outputSchema: OptimizeDesignOutputSchema,
+    },
+    async (input) => optimizeDesign(input)
+);
+
+const simulatePerformanceTool = ai.defineTool(
+    {
+        name: 'simulatePerformance',
+        description: "Simulates the live, real-time power output of a solar PV system based on its specifications and live weather data. Use this when the user asks 'how is my system doing?', 'what's the output now?', or for performance analysis.",
+        inputSchema: SimulatePerformanceInputSchema,
+        outputSchema: SimulatePerformanceOutputSchema,
+    },
+    async (input) => simulatePerformance(input)
+);
+
 
 const ChatHistorySchema = z.array(
   z.object({
@@ -70,26 +96,24 @@ export const conversationalAgent = ai.defineFlow(
 
     const result = await ai.generate({
       model: llm,
-      tools: [suggestStringConfigurationTool, suggestWireSizeTool],
+      tools: [suggestStringConfigurationTool, suggestWireSizeTool, optimizeDesignTool, simulatePerformanceTool],
       prompt: prompt,
-      history: history as any, // Cast to any to handle the wider type from the API
+      history: history as any,
       config: {
         systemPrompt: `You are a helpful AI assistant for solar panel installers in Jordan. Your responses should be in Arabic.
-        When a user asks a question, use the available tools to provide a precise and helpful answer.
-        Do not make up answers. If you don't have a tool for a specific question, or if you don't have enough information to use a tool, politely ask the user for the missing information. Do not invent missing parameters.`,
+When a user asks a question, use the available tools to provide a precise and helpful answer.
+Do not make up answers. If you don't have enough information to use a tool, politely ask the user for the missing information. Do not invent missing parameters.
+When you use the 'optimizeDesign' tool, present the key summary results in a friendly, readable way.
+When you use the 'simulatePerformance' tool, present the live power output and the AI analysis clearly.`,
       },
     });
 
     const choice = result.choices[0];
     
     // Check if the model decided to use a tool
-    if (choice.finishReason === 'toolCode') {
+    if (choice.finishReason === 'toolCode' && choice.toolRequest) {
         const toolRequest = choice.toolRequest;
-        if (!toolRequest) {
-            // This should not happen if finishReason is toolCode
-            return "حدث خطأ أثناء محاولة استخدام الأداة.";
-        }
-
+        
         console.log('Executing tool:', toolRequest.name, 'with input:', toolRequest.input);
         const tool = ai.lookupTool(toolRequest.name);
         if (!tool) {

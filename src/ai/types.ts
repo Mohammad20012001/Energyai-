@@ -1,35 +1,22 @@
 import { z } from 'genkit';
+import { SimulatePerformanceInputSchema, SimulatePerformanceOutputSchema } from '@/ai/tool-schemas';
+
 
 // Input schema for the simulation
-export const SimulatePerformanceInputSchema = z.object({
-  systemSize: z.coerce.number({invalid_type_error: "يجب أن يكون حجم النظام رقمًا موجبًا"}).positive("يجب أن يكون حجم النظام إيجابياً"),
-  location: z.string({ required_error: "يجب اختيار الموقع" }),
-  panelTilt: z.coerce.number().min(0, "زاوية الميل لا يمكن أن تكون سالبة").max(90, "زاوية الميل لا يمكن أن تتجاوز 90"),
-  panelAzimuth: z.coerce.number().min(0, "زاوية الاتجاه يجب ان تكون بين 0 و 360").max(360, "زاوية الاتجاه يجب ان تكون بين 0 و 360"),
-});
+// Note: The main schema is now in tool-schemas.ts, this is just for type inference.
 export type SimulatePerformanceInput = z.infer<typeof SimulatePerformanceInputSchema>;
 
 
 // Output schema for a single data point in the simulation
-export const SimulationDataPointSchema = z.object({
-  time: z.string().describe('The current timestamp for the data point (e.g., "14:32").'),
-  
+// Note: The main schema is now in tool-schemas.ts, this is for type inference and extending it for the UI.
+export const SimulationDataPointSchema = SimulatePerformanceOutputSchema.extend({
   // Live Data
-  liveUvIndex: z.number().describe('Live UV index from the weather service.'),
   liveTemperature: z.number().describe('Live ambient temperature in degrees Celsius.'),
   liveCloudCover: z.number().describe('Live cloud cover percentage (0-100).'),
-  liveOutputPower: z.number().describe('The calculated output power of the system in Watts at this instant based on LIVE weather.'),
   
   // Forecast Data
   forecastUvIndex: z.number().describe('Forecasted UV index from the weather service.'),
   forecastTemperature: z.number().describe('Forecasted ambient temperature in degrees Celsius for the same instant.'),
   forecastCloudCover: z.number().describe('Forecasted cloud cover percentage (0-100) for the same instant.'),
-  forecastOutputPower: z.number().describe('The calculated output power of the system in Watts for the same instant based on FORECASTED weather.'),
-  
-  // Ideal (Clear Sky) Data
-  clearSkyOutputPower: z.number().describe('The calculated output power of the system in Watts for the same instant assuming ideal, clear sky conditions (1000 W/m^2 irradiance, 25°C).'),
-
-  // AI Generated Analysis
-  performanceAnalysis: z.string().describe('A concise, one-sentence analysis of the system\'s current performance.'),
 });
 export type SimulationDataPoint = z.infer<typeof SimulationDataPointSchema>;
