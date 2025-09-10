@@ -9,14 +9,15 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { sendMessage } from "@/app/actions/chat";
+import { type Part } from 'genkit';
 
-// Define the message structure
-interface Message {
-  role: "user" | "model";
-  content: { text: string }[];
-}
+// Define the message structure that the AI model expects
+type HistoryMessage = {
+  role: "user" | "model" | "tool";
+  content: Part[];
+};
 
-// Define the message component for rendering
+// Define the message structure for display purposes
 interface DisplayMessage {
   id: string;
   role: "user" | "bot";
@@ -24,7 +25,8 @@ interface DisplayMessage {
 }
 
 export default function ChatPage() {
-  const [messages, setMessages] = useState<DisplayMessage[]>([]);
+  const [displayMessages, setDisplayMessages] = useState<DisplayMessage[]>([]);
+  const [history, setHistory] = useState<HistoryMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -33,23 +35,21 @@ export default function ChatPage() {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    const userMessage: DisplayMessage = { id: `user-${Date.now()}`, text: input, role: "user" };
-    setMessages(prev => [...prev, userMessage]);
-    const currentInput = input;
+    const userMessageText = input;
+    const userDisplayMessage: DisplayMessage = { id: `user-${Date.now()}`, text: userMessageText, role: "user" };
+    
+    setDisplayMessages(prev => [...prev, userDisplayMessage]);
+    setHistory(prev => [...prev, { role: 'user', content: [{ text: userMessageText }] }]);
+    
     setInput("");
     setIsLoading(true);
 
     try {
-      // Construct the history for the AI model
-      const history: Message[] = messages.map(msg => ({
-        role: msg.role === 'user' ? 'user' : 'model',
-        content: [{ text: msg.text }]
-      }));
-
-      const response = await sendMessage({ history, prompt: currentInput });
+      const response = await sendMessage({ history, prompt: userMessageText });
       
       const botMessage: DisplayMessage = { id: `bot-${Date.now()}`, text: response, role: "bot" };
-      setMessages(prev => [...prev, botMessage]);
+      setDisplayMessages(prev => [...prev, botMessage]);
+      setHistory(prev => [...prev, { role: 'model', content: [{ text: response }] }]);
 
     } catch (error) {
       console.error("Error sending message:", error);
@@ -58,7 +58,7 @@ export default function ChatPage() {
         role: "bot",
         text: "عذراً، حدث خطأ أثناء معالجة طلبك. الرجاء المحاولة مرة أخرى."
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setDisplayMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -72,7 +72,7 @@ export default function ChatPage() {
            scrollableView.scrollTop = scrollableView.scrollHeight;
         }
     }
-  }, [messages]);
+  }, [displayMessages]);
   
 
   return (
@@ -88,7 +88,7 @@ export default function ChatPage() {
         <CardContent className="flex-1 flex flex-col p-0">
           <ScrollArea className="flex-1 p-6" ref={scrollAreaRef}>
             <div className="space-y-6">
-              {messages.map((message) => (
+              {displayMessages.map((message) => (
                 <div key={message.id} className={`flex items-start gap-4 ${message.role === 'user' ? 'justify-end' : ''}`}>
                    {message.role === 'bot' && (
                     <Avatar className="w-8 h-8 border">
@@ -97,6 +97,7 @@ export default function ChatPage() {
                   )}
                   <div className={`rounded-lg p-3 max-w-lg ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
                     <p className="text-sm whitespace-pre-wrap">{message.text}</p>
+
                   </div>
                    {message.role === 'user' && (
                     <Avatar className="w-8 h-8 border">

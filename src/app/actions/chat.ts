@@ -3,13 +3,16 @@
 import {conversationalAgent} from '@/ai/flows/chat';
 import {z} from 'zod';
 
+const ContentPartSchema = z.object({
+  text: z.string().optional(),
+  toolRequest: z.any().optional(),
+  toolResponse: z.any().optional(),
+});
+
+
 const ChatMessageSchema = z.object({
-  role: z.enum(['user', 'model']),
-  content: z.array(
-    z.object({
-      text: z.string(),
-    })
-  ),
+  role: z.enum(['user', 'model', 'tool']),
+  content: z.array(ContentPartSchema),
 });
 
 const ChatRequestSchema = z.object({

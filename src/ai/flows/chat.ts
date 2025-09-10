@@ -45,10 +45,12 @@ const getWireSize = ai.defineTool(
 
 const ChatHistorySchema = z.array(
   z.object({
-    role: z.enum(['user', 'model']),
+    role: z.enum(['user', 'model', 'tool']),
     content: z.array(
       z.object({
-        text: z.string(),
+        text: z.string().optional(),
+        toolRequest: z.any().optional(),
+        toolResponse: z.any().optional(),
       })
     ),
   })
@@ -68,12 +70,10 @@ export const conversationalAgent = ai.defineFlow(
 
     const result = await ai.generate({
       model: llm,
-      tools: [getStringConfig, getWireSize],
+      tools: [getStringConfig, getWireSize], // Added getWireSize here
       prompt: prompt,
-      history: history,
+      history: history as any, // Cast to any to handle the wider type from the API
       config: {
-        // Instruct the model to use a system prompt.
-        // The exact instructions for how to use the system prompt are model-dependent.
         systemPrompt: `You are a helpful AI assistant for solar panel installers in Jordan. Your responses should be in Arabic.
         When a user asks a question, use the available tools to provide a precise and helpful answer.
         Do not make up answers. If you don't have a tool for a specific question, or if you don't have enough information to use a tool, politely ask the user for the missing information. Do not invent missing parameters.`,
@@ -86,7 +86,7 @@ export const conversationalAgent = ai.defineFlow(
     if (toolRequests && toolRequests.length > 0) {
        const toolResponseParts: Part[] = [];
        for (const toolRequest of toolRequests) {
-         console.log('Executing tool:', toolRequest.name);
+         console.log('Executing tool:', toolRequest.name, 'with input:', toolRequest.input);
          const tool = ai.lookupTool(toolRequest.name);
          const toolResult = await tool(toolRequest.input);
          toolResponseParts.push({
@@ -97,22 +97,20 @@ export const conversationalAgent = ai.defineFlow(
          });
        }
 
+      // We need to add the original model response (with tool_code) and the tool responses to history
+      const newHistory = [
+        ...history,
+        { role: 'model' as const, content: choice.message.content },
+        { role: 'tool' as const, content: toolResponseParts }
+      ];
+
       const finalResult = await ai.generate({
         model: llm,
-        prompt: {role: 'user', content: [{text: prompt}]},
-        history: [
-          ...history,
-          {
-            role: 'model',
-            content: choice.message.content,
-          },
-          {
-            role: 'tool',
-            content: toolResponseParts,
-          },
-        ],
+        prompt: { role: 'user', content: [{ text: prompt }] },
+        history: newHistory as any, // Cast to any to handle the wider type from the API
       });
       return finalResult.text;
+
     } else {
       return choice.text;
     }
