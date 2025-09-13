@@ -48,19 +48,22 @@ const LeafletMap = ({ onAreaCalculated }: LeafletMapProps) => {
     const map = mapInstanceRef.current;
 
     // --- Add Geoman Controls ---
-    map.pm.addControls({
-      position: 'topleft',
-      drawCircle: false,
-      drawMarker: false,
-      drawCircleMarker: false,
-      drawRectangle: true,
-      drawPolyline: false,
-      drawPolygon: true,
-      cutPolygon: false,
-      editMode: true,
-      dragMode: true,
-      removalMode: true,
-    });
+    // Check if controls are already added to prevent duplicates
+    if (!map.pm.controlsVisible()) {
+        map.pm.addControls({
+          position: 'topleft',
+          drawCircle: false,
+          drawMarker: false,
+          drawCircleMarker: false,
+          drawRectangle: true,
+          drawPolyline: false,
+          drawPolygon: true,
+          cutPolygon: false,
+          editMode: true,
+          dragMode: true,
+          removalMode: true,
+        });
+    }
     
     // Set global options for snapping
     map.pm.setGlobalOptions({
@@ -101,11 +104,7 @@ const LeafletMap = ({ onAreaCalculated }: LeafletMapProps) => {
     // Cleanup function to run when the component unmounts
     return () => {
         map.off('pm:create', handleCreate);
-        // It's often better to not remove controls if the map instance is preserved across renders,
-        // but if the component truly unmounts, you would:
-        // map.pm.removeControls();
-        // map.remove(); 
-        // mapInstanceRef.current = null;
+        // Do not remove map instance on cleanup to prevent re-initialization errors
     };
   }, []); // Empty dependency array ensures this effect runs only once
 
@@ -113,4 +112,3 @@ const LeafletMap = ({ onAreaCalculated }: LeafletMapProps) => {
 };
 
 export default LeafletMap;
-
