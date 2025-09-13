@@ -199,6 +199,7 @@ export default function DesignOptimizerPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle>ملخص النظام الأمثل</CardTitle>
+                        <CardDescription>أهم المؤشرات المالية والفنية للتصميم المقترح.</CardDescription>
                     </CardHeader>
                      <CardContent className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-center">
                         <div className="border rounded-lg p-3">
@@ -224,7 +225,7 @@ export default function DesignOptimizerPage() {
                   <CardHeader>
                     <CardTitle>منطق التصميم (لماذا هذا النظام؟)</CardTitle>
                   </CardHeader>
-                  <CardContent className="prose prose-sm max-w-none text-muted-foreground">
+                  <CardContent className="prose prose-sm max-w-none text-muted-foreground leading-relaxed">
                     <p>{result.reasoning}</p>
                   </CardContent>
                 </Card>
@@ -236,28 +237,28 @@ export default function DesignOptimizerPage() {
                     <CardContent>
                         <div className="space-y-4">
                             <div>
-                                <h4 className="font-semibold">الألواح الشمسية</h4>
-                                <ul className="text-sm text-muted-foreground list-disc pl-5 mt-1">
-                                    <li>العدد: {result.panelConfig.panelCount}</li>
-                                    <li>قدرة اللوح: {result.panelConfig.panelWattage} واط</li>
-                                    <li>إجمالي القدرة (DC): {result.panelConfig.totalDcPower} kWp</li>
-                                    <li>زاوية الميل: {result.panelConfig.tilt}° | زاوية الاتجاه: {result.panelConfig.azimuth}°</li>
+                                <h4 className="font-semibold text-base">الألواح الشمسية</h4>
+                                <ul className="text-sm text-muted-foreground list-disc list-inside mt-2 space-y-1">
+                                    <li><span className="font-semibold">العدد:</span> {result.panelConfig.panelCount} لوح</li>
+                                    <li><span className="font-semibold">قدرة اللوح:</span> {result.panelConfig.panelWattage} واط</li>
+                                    <li><span className="font-semibold">إجمالي القدرة (DC):</span> {result.panelConfig.totalDcPower} kWp</li>
+                                    <li><span className="font-semibold">زاوية الميل والاتجاه:</span> {result.panelConfig.tilt}° ميل | {result.panelConfig.azimuth}° اتجاه (جنوب)</li>
                                 </ul>
                             </div>
-                            <div>
-                                <h4 className="font-semibold">العاكس (Inverter)</h4>
-                                 <ul className="text-sm text-muted-foreground list-disc pl-5 mt-1">
-                                    <li>الحجم الموصى به: {result.inverterConfig.recommendedSize}</li>
-                                    <li>نوع الطور: {result.inverterConfig.phase}</li>
-                                    <li>نطاق جهد MPPT: {result.inverterConfig.mpptVoltage}</li>
+                            <div className="border-t pt-4">
+                                <h4 className="font-semibold text-base">العاكس (Inverter)</h4>
+                                 <ul className="text-sm text-muted-foreground list-disc list-inside mt-2 space-y-1">
+                                    <li><span className="font-semibold">الحجم الموصى به:</span> {result.inverterConfig.recommendedSize}</li>
+                                    <li><span className="font-semibold">نوع الطور:</span> {result.inverterConfig.phase}</li>
+                                    <li><span className="font-semibold">نطاق جهد MPPT:</span> {result.inverterConfig.mpptVoltage}</li>
                                 </ul>
                             </div>
-                             <div>
-                                <h4 className="font-semibold">الأسلاك</h4>
-                                 <ul className="text-sm text-muted-foreground list-disc pl-5 mt-1">
-                                     <li>عدد الألواح لكل سلسلة: {result.wiringConfig.panelsPerString}</li>
-                                     <li>عدد السلاسل المتوازية: {result.wiringConfig.parallelStrings}</li>
-                                     <li>مقطع السلك الرئيسي: {result.wiringConfig.wireSize} مم²</li>
+                             <div className="border-t pt-4">
+                                <h4 className="font-semibold text-base">الأسلاك</h4>
+                                 <ul className="text-sm text-muted-foreground list-disc list-inside mt-2 space-y-1">
+                                     <li><span className="font-semibold">عدد الألواح لكل سلسلة:</span> {result.wiringConfig.panelsPerString}</li>
+                                     <li><span className="font-semibold">عدد السلاسل المتوازية:</span> {result.wiringConfig.parallelStrings}</li>
+                                     <li><span className="font-semibold">مقطع السلك الرئيسي:</span> {result.wiringConfig.wireSize} مم²</li>
                                 </ul>
                             </div>
                         </div>
@@ -291,5 +292,3 @@ export default function DesignOptimizerPage() {
     </div>
   );
 }
-
-    
