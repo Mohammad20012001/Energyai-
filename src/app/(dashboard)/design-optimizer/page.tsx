@@ -69,7 +69,7 @@ export default function DesignOptimizerPage() {
     if (!result) return;
     addReportCard({
       id: `design-optimizer-${Date.now()}`,
-      type: "محسن التصميم بالذكاء الاصطناعي",
+      type: "حاسبة النظام الشاملة (AI)",
       summary: `نظام ${result.summary.optimizedSystemSize}kWp بتكلفة ${result.summary.totalCost} دينار`,
       values: {
         "حجم النظام الأمثل": `${result.summary.optimizedSystemSize} kWp`,
@@ -82,16 +82,16 @@ export default function DesignOptimizerPage() {
     });
     toast({
       title: "تمت الإضافة بنجاح",
-      description: "تمت إضافة بطاقة محسن التصميم إلى تقريرك.",
+      description: "تمت إضافة بطاقة حاسبة النظام إلى تقريرك.",
     });
   };
 
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight font-headline">محسن التصميم بالذكاء الاصطناعي</h1>
+        <h1 className="text-3xl font-bold tracking-tight font-headline">حاسبة النظام الشاملة (AI)</h1>
         <p className="text-muted-foreground mt-2">
-          أدخل قيودك (الميزانية، المساحة، الاستهلاك) ودع الذكاء الاصطناعي يصمم لك النظام الأمثل.
+          أدخل قيودك (الميزانية، المساحة، الاستهلاك) ودع الذكاء الاصطناعي يصمم لك النظام الأمثل من كل النواحي.
         </p>
       </div>
 
@@ -291,3 +291,5 @@ export default function DesignOptimizerPage() {
     </div>
   );
 }
+
+    

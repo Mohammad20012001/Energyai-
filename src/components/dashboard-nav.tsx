@@ -30,9 +30,8 @@ const navItems = [
   { type: 'divider', label: 'AI Tools'},
   { href: "/chat", label: "المساعد الذكي", icon: MessageCircle },
   { href: "/live-simulation", label: "المحاكاة الحية", icon: Wind },
-  { href: "/design-optimizer", label: "محسن التصميم", icon: BrainCircuit },
+  { href: "/design-optimizer", label: "حاسبة النظام الشاملة (AI)", icon: BrainCircuit },
   { type: 'divider', label: 'Calculators'},
-  { href: "/system-sizer", label: "حاسبة النظام المتكامل", icon: Combine },
   { href: "/string-configuration", label: "تهيئة السلاسل", icon: Settings },
   { href: "/area-calculator", label: "حاسبة المساحة", icon: Maximize },
   { href: "/financial-viability", label: "الجدوى الاقتصادية", icon: TrendingUp },
@@ -73,3 +72,5 @@ export function DashboardNav() {
     </SidebarMenu>
   );
 }
+
+    

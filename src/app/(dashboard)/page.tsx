@@ -56,7 +56,7 @@ export default function DashboardOverviewPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BrainCircuit className="text-primary" />
-              محسن التصميم بالذكاء الاصطناعي
+              حاسبة النظام الشاملة (AI)
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -65,31 +65,12 @@ export default function DashboardOverviewPage() {
             </p>
             <Button asChild>
               <Link href="/design-optimizer">
-                اذهب للمحسن <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-        
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Combine className="text-primary" />
-              حاسبة النظام المتكامل
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              حدد حجم نظام الألواح وحجم العاكس المناسب له في خطوة واحدة.
-            </p>
-            <Button asChild>
-              <Link href="/system-sizer">
                 اذهب للحاسبة <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
           </CardContent>
         </Card>
-
+        
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -208,3 +189,5 @@ export default function DashboardOverviewPage() {
     </div>
   );
 }
+
+    
