@@ -7,7 +7,6 @@ import { z } from "zod";
 import { Calculator, Maximize, Zap, ArrowRight, Loader2, Sun, PlusCircle, Square, Rows, Columns, Map } from "lucide-react";
 import { useReport } from "@/context/ReportContext";
 import dynamic from 'next/dynamic';
-import { MapContainer, TileLayer } from "react-leaflet";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -127,17 +126,7 @@ export default function AreaCalculatorPage() {
         </CardHeader>
         <CardContent>
             <div className="h-[400px] w-full rounded-md border">
-              <MapContainer
-                center={[31.9539, 35.9106]} // Centered on Amman, Jordan
-                zoom={13}
-                style={{ height: '100%', width: '100%' }}
-              >
-                <TileLayer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                />
-                <DrawingManager onAreaCalculated={onAreaCalculated} />
-              </MapContainer>
+              <DrawingManager onAreaCalculated={onAreaCalculated} />
             </div>
         </CardContent>
       </Card>
