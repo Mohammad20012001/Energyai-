@@ -1,17 +1,16 @@
 'use client';
 
-import { MapContainer, TileLayer, useMap } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
+import { useMap } from 'react-leaflet';
 import { useEffect } from 'react';
 import L from 'leaflet';
 import '@geoman-io/leaflet-geoman-free';
 import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css';
 
-interface LeafletMapProps {
+interface DrawingManagerProps {
   onAreaCalculated: (area: number) => void;
 }
 
-const DrawingManager = ({ onAreaCalculated }: LeafletMapProps) => {
+const DrawingManager = ({ onAreaCalculated }: DrawingManagerProps) => {
   const map = useMap();
 
   useEffect(() => {
@@ -23,35 +22,35 @@ const DrawingManager = ({ onAreaCalculated }: LeafletMapProps) => {
       shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
     });
 
-    if (!map) return;
+    if (!map.pm) {
+        // Adds the drawing controls to the map
+        map.pm.addControls({
+          position: 'topleft',
+          drawCircle: false,
+          drawMarker: false,
+          drawCircleMarker: false,
+          drawRectangle: true,
+          drawPolyline: false,
+          cutPolygon: false,
+          editMode: true,
+          dragMode: true,
+          removalMode: true,
+        });
+        
+        map.pm.setGlobalOptions({
+            limitMarkersToCount: 1,
+            snappable: true,
+            snapDistance: 20,
+        });
+    }
 
-    // Adds the drawing controls to the map
-    map.pm.addControls({
-      position: 'topleft',
-      drawCircle: false,
-      drawMarker: false,
-      drawCircleMarker: false,
-      drawRectangle: true,
-      drawPolyline: false,
-      cutPolygon: false,
-      editMode: true,
-      dragMode: true,
-      removalMode: true,
-    });
-    
-    map.pm.setGlobalOptions({
-        limitMarkersToCount: 1,
-        snappable: true,
-        snapDistance: 20,
-    });
 
-    // Event listener for when a new shape is created
-    map.on('pm:create', (e) => {
+    const handleCreate = (e: any) => {
       const { layer } = e;
       
       // Clear previous layers
-      map.eachLayer((l) => {
-          if (l instanceof L.Polygon && l !== layer) {
+      map.eachLayer((l: any) => {
+          if (l.pm && l instanceof L.Polygon && l !== layer) {
               l.remove();
           }
       });
@@ -62,38 +61,27 @@ const DrawingManager = ({ onAreaCalculated }: LeafletMapProps) => {
         onAreaCalculated(area);
       }
 
-      layer.on('pm:edit', (editEvent) => {
+      layer.on('pm:edit', (editEvent: any) => {
           if (editEvent.layer instanceof L.Polygon) {
              const area = L.GeometryUtil.geodesicArea(editEvent.layer.getLatLngs()[0] as L.LatLng[]);
              onAreaCalculated(area);
           }
       });
 
-    });
+    };
+
+    map.on('pm:create', handleCreate);
 
     return () => {
-      map.pm.removeControls();
-      map.off('pm:create');
+      map.off('pm:create', handleCreate);
+      // It's often better not to remove controls to avoid re-initialization issues
+      // if (map.pm) {
+      //   map.pm.removeControls();
+      // }
     };
   }, [map, onAreaCalculated]);
 
   return null;
 };
 
-const LeafletMap = ({ onAreaCalculated }: LeafletMapProps) => {
-  return (
-    <MapContainer
-      center={[31.9539, 35.9106]} // Centered on Amman, Jordan
-      zoom={13}
-      style={{ height: '100%', width: '100%' }}
-    >
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      />
-      <DrawingManager onAreaCalculated={onAreaCalculated} />
-    </MapContainer>
-  );
-};
-
-export default LeafletMap;
+export default DrawingManager;
