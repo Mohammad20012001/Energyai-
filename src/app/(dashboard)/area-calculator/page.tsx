@@ -5,7 +5,7 @@ import { useState, useCallback } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
-import { Calculator, Maximize, Zap, ArrowRight, Loader2, Sun, PlusCircle, Square, Rows, Columns, Map, Pencil } from "lucide-react";
+import { Calculator, Maximize, Zap, ArrowRight, Loader2, Sun, PlusCircle, Square, Rows, Columns, Map, Pencil, Redo2 } from "lucide-react";
 import { useReport } from "@/context/ReportContext";
 import dynamic from 'next/dynamic';
 
@@ -22,6 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { calculateProductionFromArea, type AreaCalculationResult } from "@/services/calculations";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -33,6 +34,9 @@ const formSchema = z.object({
   panelLength: z.coerce.number({invalid_type_error: "يجب أن يكون رقماً"}).positive("يجب أن تكون قيمة الطول إيجابية"),
   panelWattage: z.coerce.number({invalid_type_error: "يجب أن يكون رقماً"}).positive("يجب أن تكون القوة الكهربائية إيجابية"),
   sunHours: z.coerce.number({invalid_type_error: "يجب أن يكون رقماً"}).min(1, "يجب أن تكون ساعة واحدة على الأقل").max(24, "لا يمكن أن يتجاوز 24 ساعة"),
+  orientation: z.enum(['auto', 'portrait', 'landscape'], {
+    required_error: "الرجاء اختيار اتجاه التركيب"
+  }),
   notes: z.string().optional(),
 });
 
@@ -64,6 +68,7 @@ export default function AreaCalculatorPage() {
       panelLength: 2.28,
       panelWattage: 550,
       sunHours: 5.5,
+      orientation: 'auto',
       notes: "",
     },
   });
@@ -99,9 +104,15 @@ export default function AreaCalculatorPage() {
   const handleAddToReport = () => {
     if (!result) return;
     const notes = form.getValues("notes");
+    const orientationText = {
+      portrait: 'طولي',
+      landscape: 'عرضي',
+      auto: 'تلقائي'
+    };
     const reportValues: Record<string, string> = {
         "إجمالي المساحة": `${result.totalArea.toFixed(1)} م²`,
         "العدد الأقصى للألواح": `${result.calculation.maxPanels} لوح`,
+        "اتجاه التركيب": orientationText[result.calculation.finalOrientation],
         "إجمالي قوة النظام": `${result.calculation.totalPowerKw.toFixed(2)} كيلوواط`,
         "الإنتاج السنوي المقدر": `${result.calculation.yearlyEnergyKwh.toFixed(0)} ك.و.س`,
     };
@@ -121,6 +132,12 @@ export default function AreaCalculatorPage() {
       description: "تمت إضافة بطاقة حاسبة المساحة إلى تقريرك.",
     });
   };
+  
+  const orientationText = {
+    portrait: 'طولي',
+    landscape: 'عرضي',
+  };
+
 
   return (
     <div className="flex flex-col gap-8">
@@ -236,6 +253,50 @@ export default function AreaCalculatorPage() {
                       </FormItem>
                     )}
                   />
+
+                  <FormField
+                    control={form.control}
+                    name="orientation"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3">
+                        <FormLabel>اتجاه تركيب الألواح</FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            className="flex flex-col space-y-1"
+                          >
+                            <FormItem className="flex items-center space-x-2 space-x-reverse">
+                              <FormControl>
+                                <RadioGroupItem value="auto" />
+                              </FormControl>
+                              <FormLabel className="font-normal">
+                                تلقائي (الأفضل)
+                              </FormLabel>
+                            </FormItem>
+                            <FormItem className="flex items-center space-x-2 space-x-reverse">
+                              <FormControl>
+                                <RadioGroupItem value="portrait" />
+                              </FormControl>
+                              <FormLabel className="font-normal">
+                                طولي (Portrait)
+                              </FormLabel>
+                            </FormItem>
+                            <FormItem className="flex items-center space-x-2 space-x-reverse">
+                              <FormControl>
+                                <RadioGroupItem value="landscape" />
+                              </FormControl>
+                              <FormLabel className="font-normal">
+                                عرضي (Landscape)
+                              </FormLabel>
+                            </FormItem>
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
                   <FormField
                     control={form.control}
                     name="notes"
@@ -299,27 +360,27 @@ export default function AreaCalculatorPage() {
                 <CardHeader>
                   <CardTitle className="text-2xl">العدد الأقصى للألواح</CardTitle>
                   <CardDescription>
-                    بناءً على المساحة المتاحة والأبعاد المدخلة
+                    أفضل نتيجة ممكنة بناءً على المساحة والاتجاه المحدد
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="text-6xl font-bold text-primary">{result.calculation.maxPanels}</div>
                   <p className="text-muted-foreground mt-2 text-lg">لوح شمسي</p>
                    <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
-                    <div className="flex items-center justify-center gap-2 rounded-lg border p-2">
-                      <Rows className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <div className="font-bold">{result.calculation.portrait.rows} صفوف</div>
-                        <div className="text-muted-foreground">{result.calculation.portrait.panelsPerRow} لوح/صف</div>
-                      </div>
-                    </div>
-                     <div className="flex items-center justify-center gap-2 rounded-lg border p-2">
-                      <Columns className="h-5 w-5 text-muted-foreground" />
-                       <div>
-                        <div className="font-bold">{result.calculation.landscape.rows} صفوف</div>
-                        <div className="text-muted-foreground">{result.calculation.landscape.panelsPerRow} لوح/صف</div>
-                      </div>
-                    </div>
+                     <div className="flex items-center justify-center gap-2 rounded-lg border p-3">
+                        <Redo2 className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                            <div className="font-bold">{orientationText[result.calculation.finalOrientation]}</div>
+                            <div className="text-muted-foreground">الاتجاه النهائي</div>
+                        </div>
+                     </div>
+                     <div className="flex items-center justify-center gap-2 rounded-lg border p-3">
+                        <Rows className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                            <div className="font-bold">{result.calculation.rowCount} صفوف</div>
+                            <div className="text-muted-foreground">{result.calculation.panelsPerString} لوح/صف</div>
+                        </div>
+                     </div>
                   </div>
                 </CardContent>
               </Card>
@@ -377,5 +438,3 @@ export default function AreaCalculatorPage() {
     </div>
   );
 }
-
-    

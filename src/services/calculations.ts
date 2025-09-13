@@ -84,6 +84,7 @@ export interface AreaCalculationInput {
     panelLength: number;
     panelWattage: number;
     sunHours: number;
+    orientation: 'auto' | 'portrait' | 'landscape';
 }
 
 interface OrientationResult {
@@ -98,8 +99,9 @@ export interface AreaCalculationResult {
     dailyEnergyKwh: number;
     monthlyEnergyKwh: number;
     yearlyEnergyKwh: number;
-    portrait: OrientationResult;
-    landscape: OrientationResult;
+    finalOrientation: 'portrait' | 'landscape';
+    panelsPerString: number;
+    rowCount: number;
 }
 
 export function calculateProductionFromArea(input: AreaCalculationInput): AreaCalculationResult {
@@ -115,8 +117,35 @@ export function calculateProductionFromArea(input: AreaCalculationInput): AreaCa
     const panelsPerRowLandscape = Math.floor(input.landWidth / input.panelLength);
     const totalPanelsLandscape = rowsLandscape * panelsPerRowLandscape;
 
-    // --- Determine Best Orientation ---
-    const maxPanels = Math.max(totalPanelsPortrait, totalPanelsLandscape);
+    // --- Determine Best Orientation based on input ---
+    let maxPanels: number;
+    let finalOrientation: 'portrait' | 'landscape';
+    let panelsPerString: number;
+    let rowCount: number;
+
+    if (input.orientation === 'portrait') {
+        maxPanels = totalPanelsPortrait;
+        finalOrientation = 'portrait';
+        panelsPerString = panelsPerRowPortrait;
+        rowCount = rowsPortrait;
+    } else if (input.orientation === 'landscape') {
+        maxPanels = totalPanelsLandscape;
+        finalOrientation = 'landscape';
+        panelsPerString = panelsPerRowLandscape;
+        rowCount = rowsLandscape;
+    } else { // 'auto'
+        if (totalPanelsPortrait >= totalPanelsLandscape) {
+            maxPanels = totalPanelsPortrait;
+            finalOrientation = 'portrait';
+            panelsPerString = panelsPerRowPortrait;
+            rowCount = rowsPortrait;
+        } else {
+            maxPanels = totalPanelsLandscape;
+            finalOrientation = 'landscape';
+            panelsPerString = panelsPerRowLandscape;
+            rowCount = rowsLandscape;
+        }
+    }
 
     // --- Calculate Energy Production based on max panels ---
     const totalPowerKw = (maxPanels * input.panelWattage) / 1000;
@@ -130,16 +159,9 @@ export function calculateProductionFromArea(input: AreaCalculationInput): AreaCa
         dailyEnergyKwh,
         monthlyEnergyKwh,
         yearlyEnergyKwh,
-        portrait: {
-            rows: rowsPortrait,
-            panelsPerRow: panelsPerRowPortrait,
-            totalPanels: totalPanelsPortrait
-        },
-        landscape: {
-            rows: rowsLandscape,
-            panelsPerRow: panelsPerRowLandscape,
-            totalPanels: totalPanelsLandscape
-        }
+        finalOrientation,
+        panelsPerString,
+        rowCount,
     };
 }
 // #endregion
