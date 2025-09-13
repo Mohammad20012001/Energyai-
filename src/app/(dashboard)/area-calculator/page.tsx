@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -62,7 +62,7 @@ export default function AreaCalculatorPage() {
 
   const landArea = (useWatch({ control: form.control, name: "landWidth" }) || 0) * (useWatch({ control: form.control, name: "landLength" }) || 0);
 
-  const onAreaCalculated = (area: number) => {
+  const onAreaCalculated = useCallback((area: number) => {
     // This is a simplified approach: we take the square root to get an approximation of length/width
     const side = Math.sqrt(area);
     form.setValue('landWidth', parseFloat(side.toFixed(2)));
@@ -71,7 +71,7 @@ export default function AreaCalculatorPage() {
         title: "تم حساب المساحة",
         description: `تم تحديث أبعاد الأرض إلى ${side.toFixed(2)} م x ${side.toFixed(2)} م.`,
     });
-  };
+  }, [form, toast]);
 
 
   async function onSubmit(values: FormValues) {
