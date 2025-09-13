@@ -438,8 +438,3 @@ export default function AreaCalculatorPage() {
     </div>
   );
 }
-
-
-    
-
-    
