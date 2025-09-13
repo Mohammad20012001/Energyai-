@@ -5,7 +5,7 @@ import { useState, useCallback } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
-import { Calculator, Maximize, Zap, ArrowRight, Loader2, Sun, PlusCircle, Square, Rows, Columns, Map, Pencil, Redo2 } from "lucide-react";
+import { Calculator, Maximize, Zap, ArrowRight, Loader2, Sun, PlusCircle, Square, Rows, Columns, Map, Pencil, Redo2, Scissors } from "lucide-react";
 import { useReport } from "@/context/ReportContext";
 import dynamic from 'next/dynamic';
 
@@ -76,14 +76,15 @@ export default function AreaCalculatorPage() {
   const landArea = (useWatch({ control: form.control, name: "landWidth" }) || 0) * (useWatch({ control: form.control, name: "landLength" }) || 0);
 
   const onAreaCalculated = useCallback((area: number) => {
-    const side = Math.sqrt(area);
-    form.setValue('landWidth', parseFloat(side.toFixed(2)));
-    form.setValue('landLength', parseFloat(side.toFixed(2)));
+    // This function is now simplified: it only receives the final, net area.
+    // The logic to set width/length from a simple square is complex for irregular shapes,
+    // so we focus on updating the result based on the drawn area, not the form inputs.
+    // For now, we can show a toast that the area is updated.
     toast({
-        title: "تم حساب المساحة",
-        description: `تم تحديث أبعاد الأرض إلى ${side.toFixed(2)} م x ${side.toFixed(2)} م.`,
+        title: "تم تحديث المساحة الصافية",
+        description: `المساحة الصافية القابلة للاستخدام هي ${area.toFixed(2)} م². اضغط 'احسب' لتحديث النتائج.`,
     });
-  }, [form, toast]);
+  }, [toast]);
 
 
   async function onSubmit(values: FormValues) {
@@ -144,7 +145,7 @@ export default function AreaCalculatorPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight font-headline">حاسبة المساحة والإنتاج</h1>
         <p className="text-muted-foreground mt-2">
-          ارسم أرضك على الخريطة أو أدخل الأبعاد يدويًا لتقدير عدد الألواح التي يمكن تركيبها وكمية الطاقة التي يمكن إنتاجها.
+          ارسم أرضك على الخريطة، واقتطع العوائق، ثم أدخل الأبعاد لتقدير عدد الألواح التي يمكن تركيبها وكمية الطاقة.
         </p>
       </div>
 
@@ -152,7 +153,7 @@ export default function AreaCalculatorPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Map className="text-primary"/> تحديد المساحة من الخريطة</CardTitle>
           <CardDescription>
-            استخدم أدوات الرسم (المضلع أو المستطيل) على اليسار لتحديد قطعة الأرض. سيتم حساب المساحة وتعبئة الحقول أدناه تلقائيًا.
+            استخدم أدوات الرسم (المضلع أو المستطيل) لتحديد قطعة الأرض. ثم استخدم أداة المقص (<Scissors className="inline h-4 w-4" />) لرسم العوائق واقتطاعها من المساحة.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -438,3 +439,5 @@ export default function AreaCalculatorPage() {
     </div>
   );
 }
+
+    

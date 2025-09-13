@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useRef } from 'react';
@@ -17,22 +18,40 @@ L.Icon.Default.mergeOptions({
 
 // Local implementation of geodesicArea to avoid import issues.
 // Source: https://github.com/Leaflet/Leaflet.GeometryUtil/blob/master/src/L.GeometryUtil.js
-function calculateGeodesicArea(latlngs: L.LatLng[]): number {
-    const pointsCount = latlngs.length;
-    let area = 0.0;
+// This version handles polygons with holes.
+function calculateGeodesicArea(latlngs: L.LatLng[] | L.LatLng[][] | L.LatLng[][][]): number {
     const d2r = Math.PI / 180;
+    let area = 0.0;
 
-    if (pointsCount > 2) {
-        for (let i = 0; i < pointsCount; i++) {
-            const p1 = latlngs[i];
-            const p2 = latlngs[(i + 1) % pointsCount];
-            area += ((p2.lng - p1.lng) * d2r) *
-                (2 + Math.sin(p1.lat * d2r) + Math.sin(p2.lat * d2r));
+    const processRing = (ring: L.LatLng[]) => {
+        let ringArea = 0.0;
+        if (ring.length > 2) {
+            for (let i = 0; i < ring.length; i++) {
+                const p1 = ring[i];
+                const p2 = ring[(i + 1) % ring.length];
+                ringArea += ((p2.lng - p1.lng) * d2r) *
+                    (2 + Math.sin(p1.lat * d2r) + Math.sin(p2.lat * d2r));
+            }
         }
-        area = area * 6378137.0 * 6378137.0 / 2.0;
+        return ringArea * 6378137.0 * 6378137.0 / 2.0;
+    };
+
+    if (Array.isArray(latlngs) && latlngs.length > 0) {
+        if (Array.isArray(latlngs[0]) && latlngs[0].length > 0 && latlngs[0][0] instanceof L.LatLng) {
+            // It's a polygon with holes: L.LatLng[][]
+            const mainRingArea = processRing(latlngs[0] as L.LatLng[]);
+            let holeArea = 0.0;
+            for (let i = 1; i < latlngs.length; i++) {
+                holeArea += processRing(latlngs[i] as L.LatLng[]);
+            }
+            area = Math.abs(mainRingArea - holeArea);
+        } else if (latlngs[0] instanceof L.LatLng) {
+            // It's a simple polygon: L.LatLng[]
+            area = Math.abs(processRing(latlngs as L.LatLng[]));
+        }
     }
 
-    return Math.abs(area);
+    return area;
 }
 
 
@@ -83,7 +102,7 @@ const LeafletMap = ({ onAreaCalculated }: LeafletMapProps) => {
           drawRectangle: true,
           drawPolyline: false,
           drawPolygon: true,
-          cutPolygon: false,
+          cutPolygon: true, // Enable the cut tool
           editMode: true,
           dragMode: true,
           removalMode: true,
@@ -95,32 +114,31 @@ const LeafletMap = ({ onAreaCalculated }: LeafletMapProps) => {
         snappable: true,
         snapDistance: 20,
     });
+    
+    const recalculateArea = (layer: L.Polygon | L.Rectangle) => {
+        if (layer instanceof L.Polygon) {
+             const area = calculateGeodesicArea(layer.getLatLngs());
+             onAreaCalculatedRef.current(area);
+        }
+    };
 
 
     // --- Event Listener for when a shape is created ---
     const handleCreate = (e: any) => {
         const { layer } = e;
 
-        // Remove all previously drawn layers to keep only one
+        // Remove all previously drawn layers to keep only one main shape
         map.eachLayer((l: any) => {
             if (l.pm && (l instanceof L.Polygon || l instanceof L.Rectangle) && l !== layer) {
                 l.remove();
             }
         });
         
-        // Calculate the area of the newly created shape
-        if (layer instanceof L.Polygon) {
-             const area = calculateGeodesicArea(layer.getLatLngs()[0] as L.LatLng[]);
-             onAreaCalculatedRef.current(area);
-        }
+        recalculateArea(layer);
 
-        // Add an edit listener to the new layer to update on changes
-        layer.on('pm:edit', (editEvent: any) => {
-           if (editEvent.layer instanceof L.Polygon) {
-                const area = calculateGeodesicArea(editEvent.layer.getLatLngs()[0] as L.LatLng[]);
-                onAreaCalculatedRef.current(area);
-           }
-        });
+        // Add listeners to the new layer to update on changes
+        layer.on('pm:edit', (editEvent: any) => recalculateArea(editEvent.layer));
+        layer.on('pm:cut', (cutEvent: any) => recalculateArea(cutEvent.layer));
     };
 
     map.on('pm:create', handleCreate);
@@ -137,3 +155,5 @@ const LeafletMap = ({ onAreaCalculated }: LeafletMapProps) => {
 };
 
 export default LeafletMap;
+
+    
