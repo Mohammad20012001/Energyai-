@@ -4,7 +4,7 @@
  * This ensures that the numerical outputs of the application are reliable and accurate.
  */
 
-import type { SuggestWireSizeInput, SuggestWireSizeOutput } from "@/ai/tool-schemas";
+import type { OptimizeDesignInput, OptimizeDesignOutput, SuggestWireSizeInput, SuggestWireSizeOutput } from "@/ai/tool-schemas";
 
 
 /**
@@ -182,4 +182,107 @@ export function calculateInverterSize(input: InverterSizingInput): InverterSizin
         gridPhase: input.gridPhase === 'single' ? 'أحادي الطور' : 'ثلاثي الطور',
     };
 }
+// #endregion
+
+// #region Optimal Design Calculator (Hybrid)
+
+export type CalculationOutput = Omit<OptimizeDesignOutput, 'reasoning'> & {
+    limitingFactor: 'consumption' | 'budget' | 'area';
+};
+
+export function calculateOptimalDesign(input: OptimizeDesignInput): CalculationOutput {
+    // 1. Calculate Effective kWh Price from Tariffs
+    let bill = 0;
+    let remainingKwh = input.monthlyConsumption;
+    
+    const tariffs = [
+        { limit: 160, rate: 0.033 },
+        { limit: 300, rate: 0.072 },
+        { limit: 500, rate: 0.086 },
+        { limit: 1000, rate: 0.114 },
+        { limit: Infinity, rate: 0.152 },
+    ];
+
+    let lastTierKwh = 0;
+    for (const tier of tariffs) {
+        const tierConsumption = Math.min(remainingKwh, tier.limit - lastTierKwh);
+        bill += tierConsumption * tier.rate;
+        remainingKwh -= tierConsumption;
+        if (remainingKwh <= 0) break;
+        lastTierKwh = tier.limit;
+    }
+    const effectiveKwhPrice = (input.monthlyConsumption > 0) ? bill / input.monthlyConsumption : 0;
+    
+    // 2. Sun Hours
+    const sunHoursMap = { amman: 5.5, zarqa: 5.6, irbid: 5.4, aqaba: 6.0 };
+    const sunHours = sunHoursMap[input.location];
+    
+    // 3. Calculate constraint sizes (in kWp)
+    const dailyKwhConsumption = input.monthlyConsumption / 30;
+    const systemLossFactor = (100 - input.systemLoss) / 100;
+    
+    const consumptionBasedSize = (dailyKwhConsumption / (sunHours * systemLossFactor));
+    const budgetBasedSize = (input.budget / input.costPerWatt) / 1000;
+    const areaBasedSize = (input.surfaceArea / 3.5) * input.panelWattage / 1000;
+
+    // 4. Determine limiting factor and final system size
+    let optimizedSystemSize = Math.min(consumptionBasedSize, budgetBasedSize, areaBasedSize);
+    let limitingFactor: 'consumption' | 'budget' | 'area';
+    
+    if (optimizedSystemSize === consumptionBasedSize) {
+        limitingFactor = 'consumption';
+    } else if (optimizedSystemSize === budgetBasedSize) {
+        limitingFactor = 'budget';
+    } else {
+        limitingFactor = 'area';
+    }
+    optimizedSystemSize = parseFloat(optimizedSystemSize.toFixed(2));
+    
+    // 5. Design the system based on the final size
+    const totalCost = optimizedSystemSize * 1000 * input.costPerWatt;
+    const panelCount = Math.floor((optimizedSystemSize * 1000) / input.panelWattage);
+    const totalDcPower = (panelCount * input.panelWattage) / 1000;
+    
+    // Inverter
+    const inverterSize = totalDcPower * 0.95; // Aim for 95% of DC power
+    const phase = totalDcPower > 6 ? 'Three-Phase' : 'Single-Phase';
+
+    // Wiring
+    const panelsPerString = panelCount <= 20 ? panelCount : Math.floor(panelCount / 2);
+    const parallelStrings = panelCount <= 20 ? 1 : 2;
+
+    // 6. Calculate Financials
+    const annualEnergyProduction = totalDcPower * sunHours * 365 * systemLossFactor;
+    const annualSavings = annualEnergyProduction * effectiveKwhPrice;
+    const paybackPeriod = annualSavings > 0 ? (totalCost / annualSavings) : Infinity;
+    const twentyFiveYearProfit = (annualSavings * 25 * (1 - 0.005 * 12.5)) - totalCost;
+
+    return {
+        summary: {
+            optimizedSystemSize: totalDcPower,
+            totalCost: parseFloat(totalCost.toFixed(0)),
+            paybackPeriod: parseFloat(paybackPeriod.toFixed(1)),
+            twentyFiveYearProfit: parseFloat(twentyFiveYearProfit.toFixed(0)),
+        },
+        panelConfig: {
+            panelCount,
+            panelWattage: input.panelWattage,
+            totalDcPower: totalDcPower,
+            tilt: 30,
+            azimuth: 180,
+        },
+        inverterConfig: {
+            recommendedSize: `${inverterSize.toFixed(1)} kW`,
+            phase,
+            mpptVoltage: "200-800V",
+        },
+        wiringConfig: {
+            panelsPerString,
+            parallelStrings,
+            wireSize: 6,
+        },
+        limitingFactor: limitingFactor,
+    };
+}
+
 // #endregion
