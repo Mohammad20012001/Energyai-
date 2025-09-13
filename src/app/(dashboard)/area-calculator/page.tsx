@@ -76,15 +76,15 @@ export default function AreaCalculatorPage() {
   const landArea = (useWatch({ control: form.control, name: "landWidth" }) || 0) * (useWatch({ control: form.control, name: "landLength" }) || 0);
 
   const onAreaCalculated = useCallback((area: number) => {
-    // This function is now simplified: it only receives the final, net area.
-    // The logic to set width/length from a simple square is complex for irregular shapes,
-    // so we focus on updating the result based on the drawn area, not the form inputs.
-    // For now, we can show a toast that the area is updated.
+    const sideLength = Math.sqrt(area);
+    form.setValue('landWidth', parseFloat(sideLength.toFixed(2)), { shouldValidate: true });
+    form.setValue('landLength', parseFloat(sideLength.toFixed(2)), { shouldValidate: true });
+    
     toast({
-        title: "تم تحديث المساحة الصافية",
-        description: `المساحة الصافية القابلة للاستخدام هي ${area.toFixed(2)} م². اضغط 'احسب' لتحديث النتائج.`,
+        title: "تم تحديث الأبعاد",
+        description: `تم تحديث العرض والطول بناءً على المساحة المرسومة: ${area.toFixed(2)} م².`,
     });
-  }, [toast]);
+  }, [form, toast]);
 
 
   async function onSubmit(values: FormValues) {
