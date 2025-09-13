@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -121,7 +121,7 @@ export default function AreaCalculatorPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Map className="text-primary"/> تحديد المساحة من الخريطة</CardTitle>
           <CardDescription>
-            استخدم أدوات الرسم (المضلع) على اليسار لتحديد قطعة الأرض. سيتم حساب المساحة وتعبئة الحقول أدناه تلقائيًا.
+            استخدم أدوات الرسم (المضلع أو المستطيل) على اليسار لتحديد قطعة الأرض. سيتم حساب المساحة وتعبئة الحقول أدناه تلقائيًا.
           </CardDescription>
         </CardHeader>
         <CardContent>
