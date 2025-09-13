@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { BrainCircuit, ArrowRight, Loader2, Ruler, PlusCircle, Settings, Sun, Maximize } from "lucide-react";
+import { BrainCircuit, ArrowRight, Loader2, Ruler, PlusCircle, Settings, Sun, Maximize, Balance } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -33,6 +33,7 @@ import { optimizeDesign } from "@/ai/flows/optimize-design";
 import { OptimizeDesignInputSchema, type OptimizeDesignOutput } from '@/ai/tool-schemas';
 import type { z } from 'zod';
 import { useReport } from "@/context/ReportContext";
+import { cn } from "@/lib/utils";
 
 
 type FormValues = z.infer<typeof OptimizeDesignInputSchema>;
@@ -91,6 +92,9 @@ export default function DesignOptimizerPage() {
       description: "تمت إضافة بطاقة الحاسبة إلى تقريرك.",
     });
   };
+
+  const LimitingFactorIcon = result?.limitingFactor === 'area' ? Ruler : Balance;
+  const limitingFactorText = result?.limitingFactor === 'area' ? 'المساحة هي العامل المحدد' : 'الاستهلاك هو العامل المحدد';
 
   return (
     <div className="flex flex-col gap-8">
@@ -231,21 +235,26 @@ export default function DesignOptimizerPage() {
 
           {result && (
             <div className="space-y-6">
-                <Card>
+                <Card className={cn("transition-colors", result.limitingFactor === 'area' ? 'bg-orange-50 dark:bg-orange-950 border-orange-200 dark:border-orange-800' : 'bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800' )}>
                     <CardHeader>
-                        <CardTitle>ملخص النظام الفني الأمثل</CardTitle>
-                        <CardDescription>أهم المؤشرات الفنية للتصميم المقترح.</CardDescription>
+                        <CardTitle className="flex items-center gap-3">
+                           <LimitingFactorIcon className={cn("h-6 w-6", result.limitingFactor === 'area' ? 'text-orange-500' : 'text-blue-500')} />
+                           ملخص النظام الفني الأمثل
+                        </CardTitle>
+                        <CardDescription className={cn(result.limitingFactor === 'area' ? 'text-orange-700 dark:text-orange-300' : 'text-blue-700 dark:text-blue-300')}>
+                          {limitingFactorText}
+                        </CardDescription>
                     </CardHeader>
                      <CardContent className="grid grid-cols-2 lg:grid-cols-3 gap-4 text-center">
-                        <div className="border rounded-lg p-3">
+                        <div className="border rounded-lg p-3 bg-background/50">
                             <div className="text-2xl font-bold text-primary">{result.panelConfig.totalDcPower}</div>
                             <div className="text-sm text-muted-foreground">kWp (حجم النظام)</div>
                         </div>
-                         <div className="border rounded-lg p-3">
+                         <div className="border rounded-lg p-3 bg-background/50">
                             <div className="text-2xl font-bold">{result.panelConfig.panelCount}</div>
                             <div className="text-sm text-muted-foreground">لوح شمسي</div>
                         </div>
-                         <div className="border rounded-lg p-3 col-span-2 lg:col-span-1">
+                         <div className="border rounded-lg p-3 col-span-2 lg:col-span-1 bg-background/50">
                             <div className="text-2xl font-bold">{result.panelConfig.requiredArea.toFixed(1)}</div>
                             <div className="text-sm text-muted-foreground">م² (المساحة المطلوبة)</div>
                         </div>

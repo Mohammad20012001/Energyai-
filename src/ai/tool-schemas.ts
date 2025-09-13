@@ -85,6 +85,7 @@ export const OptimizeDesignOutputSchema = z.object({
     wireSize: z.number().describe('The recommended main DC wire size in mm².')
   }),
   reasoning: z.string().describe('A step-by-step explanation in Arabic of how the AI reached this design, explaining the trade-offs and why this design is optimal for the user\'s constraints.'),
+  limitingFactor: z.enum(['consumption', 'area']).describe('The primary constraint that determined the final system size.'),
 });
 export type OptimizeDesignOutput = z.infer<typeof OptimizeDesignOutputSchema>;
 // #endregion
