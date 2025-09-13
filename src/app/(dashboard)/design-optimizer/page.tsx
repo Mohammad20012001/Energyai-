@@ -48,7 +48,7 @@ export default function DesignOptimizerPage() {
     defaultValues: {
       budget: 10000,
       surfaceArea: 80,
-      monthlyConsumption: 700, // Changed from monthlyBill
+      monthlyConsumption: 700,
       location: "amman",
       // Advanced defaults
       costPerWatt: 0.85,
@@ -356,5 +356,3 @@ export default function DesignOptimizerPage() {
     </div>
   );
 }
-
-    
