@@ -5,7 +5,7 @@ import { useState, useCallback } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
-import { Calculator, Maximize, Zap, ArrowRight, Loader2, Sun, PlusCircle, Square, Rows, Columns, Map } from "lucide-react";
+import { Calculator, Maximize, Zap, ArrowRight, Loader2, Sun, PlusCircle, Square, Rows, Columns, Map, Pencil } from "lucide-react";
 import { useReport } from "@/context/ReportContext";
 import dynamic from 'next/dynamic';
 
@@ -20,6 +20,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { calculateProductionFromArea, type AreaCalculationResult } from "@/services/calculations";
@@ -32,6 +33,7 @@ const formSchema = z.object({
   panelLength: z.coerce.number({invalid_type_error: "يجب أن يكون رقماً"}).positive("يجب أن تكون قيمة الطول إيجابية"),
   panelWattage: z.coerce.number({invalid_type_error: "يجب أن يكون رقماً"}).positive("يجب أن تكون القوة الكهربائية إيجابية"),
   sunHours: z.coerce.number({invalid_type_error: "يجب أن يكون رقماً"}).min(1, "يجب أن تكون ساعة واحدة على الأقل").max(24, "لا يمكن أن يتجاوز 24 ساعة"),
+  notes: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -62,6 +64,7 @@ export default function AreaCalculatorPage() {
       panelLength: 2.28,
       panelWattage: 550,
       sunHours: 5.5,
+      notes: "",
     },
   });
 
@@ -95,16 +98,23 @@ export default function AreaCalculatorPage() {
 
   const handleAddToReport = () => {
     if (!result) return;
-    addReportCard({
-      id: `area-${Date.now()}`,
-      type: "حاسبة المساحة والإنتاج",
-      summary: `إنتاج سنوي يبلغ ${result.calculation.yearlyEnergyKwh.toFixed(0)} ك.و.س من ${result.calculation.maxPanels} لوحًا.`,
-      values: {
+    const notes = form.getValues("notes");
+    const reportValues: Record<string, string> = {
         "إجمالي المساحة": `${result.totalArea.toFixed(1)} م²`,
         "العدد الأقصى للألواح": `${result.calculation.maxPanels} لوح`,
         "إجمالي قوة النظام": `${result.calculation.totalPowerKw.toFixed(2)} كيلوواط`,
         "الإنتاج السنوي المقدر": `${result.calculation.yearlyEnergyKwh.toFixed(0)} ك.و.س`,
-      }
+    };
+
+    if (notes) {
+        reportValues["ملاحظات"] = notes;
+    }
+
+    addReportCard({
+      id: `area-${Date.now()}`,
+      type: "حاسبة المساحة والإنتاج",
+      summary: `إنتاج سنوي يبلغ ${result.calculation.yearlyEnergyKwh.toFixed(0)} ك.و.س من ${result.calculation.maxPanels} لوحًا.`,
+      values: reportValues,
     });
     toast({
       title: "تمت الإضافة بنجاح",
@@ -221,6 +231,22 @@ export default function AreaCalculatorPage() {
                         <FormLabel>متوسط ساعات الشمس اليومية</FormLabel>
                         <FormControl>
                           <Input placeholder="e.g., 5.5" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="notes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <Pencil className="h-4 w-4 text-muted-foreground" />
+                          ملاحظات (اختياري)
+                        </FormLabel>
+                        <FormControl>
+                          <Textarea placeholder="e.g., تجنب خزان المياه في الزاوية الشمالية." {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -351,3 +377,5 @@ export default function AreaCalculatorPage() {
     </div>
   );
 }
+
+    
