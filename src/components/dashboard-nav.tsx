@@ -17,6 +17,7 @@ import {
   Bot,
   Combine,
   BrainCircuit,
+  ListChecks,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -31,6 +32,7 @@ const navItems = [
   { href: "/chat", label: "المساعد الذكي", icon: MessageCircle },
   { href: "/live-simulation", label: "المحاكاة الحية", icon: Wind },
   { href: "/design-optimizer", label: "حاسبة النظام الشاملة (AI)", icon: BrainCircuit },
+  { href: "/calculation-auditor", label: "المدقق الحسابي (AI)", icon: ListChecks },
   { type: 'divider', label: 'Calculators'},
   { href: "/string-configuration", label: "تهيئة السلاسل", icon: Settings },
   { href: "/area-calculator", label: "حاسبة المساحة", icon: Maximize },
@@ -72,5 +74,3 @@ export function DashboardNav() {
     </SidebarMenu>
   );
 }
-
-    

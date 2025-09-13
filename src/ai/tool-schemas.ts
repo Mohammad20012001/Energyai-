@@ -57,13 +57,10 @@ export type SuggestWireSizeOutput = z.infer<typeof SuggestWireSizeOutputSchema>;
 
 // #region Design Optimizer Schemas
 export const OptimizeDesignInputSchema = z.object({
-  // Basic Inputs
-  budget: z.coerce.number().positive('يجب أن تكون الميزانية رقماً موجباً'),
-  surfaceArea: z.coerce.number().positive('يجب أن تكون المساحة رقماً موجباً'),
   monthlyConsumption: z.coerce.number().positive('يجب أن يكون الاستهلاك رقماً موجباً'),
+  surfaceArea: z.coerce.number().positive('يجب أن تكون المساحة رقماً موجباً'),
+  budget: z.coerce.number().positive('يجب أن تكون الميزانية رقماً موجباً'),
   location: z.enum(['amman', 'zarqa', 'irbid', 'aqaba'], {required_error: 'الرجاء اختيار الموقع'}),
-
-  // Advanced Inputs
   costPerWatt: z.coerce.number().positive('تكلفة الواط يجب أن تكون رقماً موجباً'),
   systemLoss: z.coerce.number().min(0).max(99, 'نسبة الفقد يجب أن تكون بين 0 و 99'),
   panelWattage: z.coerce.number().positive('قدرة اللوح يجب أن تكون رقماً موجباً'),
@@ -125,6 +122,29 @@ export const SimulatePerformanceOutputSchema = z.object({
   }).describe('The full weather data object used for the simulation.'),
 });
 export type SimulatePerformanceOutput = z.infer<typeof SimulatePerformanceOutputSchema>;
+// #endregion
+
+
+// #region Calculation Auditor Schemas
+export const AuditInputSchema = z.object({
+  text: z.string().describe("النص الذي يحتوي على الحسابات لمراجعتها."),
+});
+export type AuditInput = z.infer<typeof AuditInputSchema>;
+
+export const AuditOutputSchema = z.object({
+    overallAssessment: z.string().describe("تقييم عام لصحة الحسابات وما إذا كانت هناك أخطاء جوهرية."),
+    corrections: z.array(z.object({
+        item: z.string().describe("البند الذي يحتوي على الخطأ (مثال: حجم النظام المطلوب)."),
+        incorrectCalculation: z.string().describe("المعادلة أو النتيجة الخاطئة كما وردت في النص."),
+        correctCalculation: z.string().describe("المعادلة أو النتيجة الصحيحة."),
+        explanation: z.string().describe("شرح بسيط لسبب الخطأ وكيف تم تصحيحه."),
+    })).describe("قائمة بالتصحيحات التي تم إجراؤها."),
+    finalCorrectValues: z.array(z.object({
+        parameter: z.string().describe("اسم المؤشر (مثال: عدد الألواح)."),
+        value: z.string().describe("القيمة النهائية الصحيحة للمؤشر مع الوحدة."),
+    })).describe("جدول بالقيم النهائية الصحيحة بعد التصحيح."),
+});
+export type AuditOutput = z.infer<typeof AuditOutputSchema>;
 // #endregion
 
     
