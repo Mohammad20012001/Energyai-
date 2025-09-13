@@ -168,7 +168,7 @@ export default function AreaCalculatorPage() {
           <CardHeader>
             <CardTitle>أدخل الأبعاد والبيانات يدويًا</CardTitle>
             <CardDescription>
-              المساحة الحالية المحسوبة: {landArea.toFixed(2)} م²
+              المساحة بالمتر المربع: {landArea.toFixed(2)} م²
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -439,3 +439,5 @@ export default function AreaCalculatorPage() {
   );
 }
 
+
+    
