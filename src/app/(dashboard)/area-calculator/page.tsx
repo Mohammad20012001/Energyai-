@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
-import { Calculator, Maximize, Zap, ArrowRight, Loader2, Sun, PlusCircle, Square, Rows, Columns } from "lucide-react";
+import { Calculator, Maximize, Zap, ArrowRight, Loader2, Sun, PlusCircle, Square, Rows, Columns, MapPin } from "lucide-react";
 import { useReport } from "@/context/ReportContext";
+import MapWithDrawing from "@/components/map-with-drawing";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { calculateProductionFromArea, type AreaCalculationResult } from "@/services/calculations";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 
 const formSchema = z.object({
@@ -57,6 +59,8 @@ export default function AreaCalculatorPage() {
     },
   });
 
+  const landArea = (useWatch({ control: form.control, name: "landWidth" }) || 0) * (useWatch({ control: form.control, name: "landLength" }) || 0);
+
   async function onSubmit(values: FormValues) {
     setIsLoading(true);
     setResult(null);
@@ -71,6 +75,18 @@ export default function AreaCalculatorPage() {
 
     setIsLoading(false);
   }
+  
+  const handleAreaUpdate = (area: number) => {
+    // We get a single area value. To fit it into our existing form,
+    // we can calculate the square root to get an equivalent square side length.
+    const sideLength = Math.sqrt(area);
+    form.setValue("landWidth", parseFloat(sideLength.toFixed(2)));
+    form.setValue("landLength", parseFloat(sideLength.toFixed(2)));
+     toast({
+      title: "تم تحديث المساحة",
+      description: `تم تحديث أبعاد الأرض إلى ${sideLength.toFixed(2)} م × ${sideLength.toFixed(2)} م بناءً على تحديدك على الخريطة.`,
+    });
+  };
 
   const handleAddToReport = () => {
     if (!result) return;
@@ -100,10 +116,28 @@ export default function AreaCalculatorPage() {
         </p>
       </div>
 
+       <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><MapPin className="text-primary"/> تحديد مساحة الأرض</CardTitle>
+          <CardDescription>
+            ارسم مضلعًا على الخريطة لتحديد منطقة التركيب، أو أدخل الأبعاد يدويًا في النموذج أدناه.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+           <div className="h-[400px] w-full rounded-lg overflow-hidden border">
+              <MapWithDrawing onAreaUpdate={handleAreaUpdate} />
+           </div>
+        </CardContent>
+      </Card>
+
+
       <div className="grid gap-8 lg:grid-cols-5">
         <Card className="lg:col-span-2 h-fit">
           <CardHeader>
             <CardTitle>أدخل الأبعاد والبيانات</CardTitle>
+            <CardDescription>
+              المساحة الحالية المحسوبة: {landArea.toFixed(2)} م²
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -299,19 +333,13 @@ export default function AreaCalculatorPage() {
           )}
 
           {!isLoading && !result && (
-            <Card className="flex flex-col items-center justify-center text-center p-8 lg:min-h-[400px] bg-muted/20">
-              <CardHeader>
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                  <Maximize className="h-8 w-8 text-primary" />
-                </div>
-                <CardTitle className="mt-4">استغل مساحتك بأفضل شكل</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground max-w-md">
-                  أدخل أبعاد أرضك لتعرف كم عدد الألواح التي يمكنك تركيبها وما هي كمية الطاقة التي يمكن أن تولدها لك.
-                </p>
-              </CardContent>
-            </Card>
+             <Alert>
+                <Maximize className="h-4 w-4" />
+                <AlertTitle>استغل مساحتك بأفضل شكل</AlertTitle>
+                <AlertDescription>
+                  اضغط على زر "احسب الآن" لعرض إمكانيات الإنتاج بناءً على الأبعاد الافتراضية، أو حدد مساحتك على الخريطة أولاً.
+                </AlertDescription>
+            </Alert>
           )}
         </div>
       </div>
