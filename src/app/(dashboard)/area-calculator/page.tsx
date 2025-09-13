@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -23,6 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import { calculateProductionFromArea, type AreaCalculationResult } from "@/services/calculations";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
+const LeafletMap = dynamic(() => import('@/components/leaflet-map'), { ssr: false });
 
 const formSchema = z.object({
   landWidth: z.coerce.number({invalid_type_error: "يجب أن يكون رقماً"}).positive("يجب أن تكون قيمة العرض إيجابية"),
@@ -46,9 +47,6 @@ export default function AreaCalculatorPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { addReportCard } = useReport();
   const { toast } = useToast();
-
-  const LeafletMap = useMemo(() => dynamic(() => import('@/components/leaflet-map'), { ssr: false }), []);
-
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -349,3 +347,5 @@ export default function AreaCalculatorPage() {
     </div>
   );
 }
+
+    
