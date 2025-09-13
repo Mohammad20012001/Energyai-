@@ -60,11 +60,10 @@ export const OptimizeDesignInputSchema = z.object({
   // Basic Inputs
   budget: z.coerce.number().positive('يجب أن تكون الميزانية رقماً موجباً'),
   surfaceArea: z.coerce.number().positive('يجب أن تكون المساحة رقماً موجباً'),
-  monthlyBill: z.coerce.number().positive('يجب أن تكون قيمة الفاتورة موجبة'),
+  monthlyConsumption: z.coerce.number().positive('يجب أن يكون الاستهلاك رقماً موجباً'),
   location: z.enum(['amman', 'zarqa', 'irbid', 'aqaba'], {required_error: 'الرجاء اختيار الموقع'}),
 
   // Advanced Inputs
-  kwhPrice: z.coerce.number().positive('سعر الكهرباء يجب أن يكون رقماً موجباً'),
   costPerWatt: z.coerce.number().positive('تكلفة الواط يجب أن تكون رقماً موجباً'),
   systemLoss: z.coerce.number().min(0).max(99, 'نسبة الفقد يجب أن تكون بين 0 و 99'),
   panelWattage: z.coerce.number().positive('قدرة اللوح يجب أن تكون رقماً موجباً'),
@@ -127,3 +126,5 @@ export const SimulatePerformanceOutputSchema = z.object({
 });
 export type SimulatePerformanceOutput = z.infer<typeof SimulatePerformanceOutputSchema>;
 // #endregion
+
+    

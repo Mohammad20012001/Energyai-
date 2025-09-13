@@ -48,10 +48,9 @@ export default function DesignOptimizerPage() {
     defaultValues: {
       budget: 10000,
       surfaceArea: 80,
-      monthlyBill: 120,
+      monthlyConsumption: 700, // Changed from monthlyBill
       location: "amman",
       // Advanced defaults
-      kwhPrice: 0.12,
       costPerWatt: 0.85,
       systemLoss: 15,
       panelWattage: 550,
@@ -143,12 +142,12 @@ export default function DesignOptimizerPage() {
                   />
                   <FormField
                     control={form.control}
-                    name="monthlyBill"
+                    name="monthlyConsumption"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>متوسط الفاتورة الشهرية (دينار)</FormLabel>
+                        <FormLabel>متوسط الاستهلاك الشهري (kWh)</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="e.g., 80" {...field} />
+                          <Input type="number" placeholder="e.g., 700" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -187,19 +186,6 @@ export default function DesignOptimizerPage() {
                         </span>
                       </AccordionTrigger>
                       <AccordionContent className="space-y-4 pt-4">
-                        <FormField
-                          control={form.control}
-                          name="kwhPrice"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>سعر الكهرباء (دينار/ك.و.س)</FormLabel>
-                              <FormControl>
-                                <Input type="number" step="0.01" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
                         <FormField
                           control={form.control}
                           name="costPerWatt"
@@ -370,3 +356,5 @@ export default function DesignOptimizerPage() {
     </div>
   );
 }
+
+    
