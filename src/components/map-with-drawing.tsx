@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { GoogleMap, useJsApiLoader, DrawingManager, Polygon } from '@react-google-maps/api';
 
 const containerStyle = {
@@ -21,9 +21,17 @@ interface MapWithDrawingProps {
 }
 
 function MapWithDrawing({ onAreaUpdate }: MapWithDrawingProps) {
+  const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
+  
+  useEffect(() => {
+    if (!googleMapsApiKey) {
+      console.error("Google Maps API key is missing. Please check your .env.local file and ensure NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is set.");
+    }
+  }, [googleMapsApiKey]);
+
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+    googleMapsApiKey: googleMapsApiKey,
     libraries: libraries,
   });
 
@@ -36,8 +44,8 @@ function MapWithDrawing({ onAreaUpdate }: MapWithDrawingProps) {
     setPath(newPath);
 
     // Calculate area
-    if (google.maps.geometry) {
-        const areaInMeters = google.maps.geometry.spherical.computeArea(polygon.getPath());
+    if (window.google && window.google.maps && window.google.maps.geometry) {
+        const areaInMeters = window.google.maps.geometry.spherical.computeArea(polygon.getPath());
         onAreaUpdate(areaInMeters);
     }
     
@@ -54,7 +62,7 @@ function MapWithDrawing({ onAreaUpdate }: MapWithDrawingProps) {
   }, []);
 
   if (loadError) {
-    return <div>خطأ في تحميل الخريطة. يرجى التحقق من مفتاح API.</div>;
+    return <div>خطأ في تحميل الخريطة. يرجى التحقق من صلاحية مفتاح API وتفعيله.</div>;
   }
 
   return isLoaded ? (
