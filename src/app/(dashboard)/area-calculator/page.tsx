@@ -1,14 +1,13 @@
 
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { Calculator, Maximize, Zap, ArrowRight, Loader2, Sun, PlusCircle, Square, Rows, Columns, Map } from "lucide-react";
 import { useReport } from "@/context/ReportContext";
 import dynamic from 'next/dynamic';
-import { MapContainer, TileLayer } from "react-leaflet";
 
 
 import { Button } from "@/components/ui/button";
@@ -25,8 +24,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { calculateProductionFromArea, type AreaCalculationResult } from "@/services/calculations";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-
-const DrawingManager = dynamic(() => import('@/components/leaflet-map'), { ssr: false });
 
 const formSchema = z.object({
   landWidth: z.coerce.number({invalid_type_error: "يجب أن يكون رقماً"}).positive("يجب أن تكون قيمة العرض إيجابية"),
@@ -51,6 +48,11 @@ export default function AreaCalculatorPage() {
   const { addReportCard } = useReport();
   const { toast } = useToast();
 
+  const LeafletMap = useMemo(() => dynamic(() => import('@/components/leaflet-map'), { 
+    loading: () => <p className="text-center text-muted-foreground">...تحميل الخريطة</p>,
+    ssr: false 
+  }), []);
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -66,7 +68,6 @@ export default function AreaCalculatorPage() {
   const landArea = (useWatch({ control: form.control, name: "landWidth" }) || 0) * (useWatch({ control: form.control, name: "landLength" }) || 0);
 
   const onAreaCalculated = useCallback((area: number) => {
-    // This is a simplified approach: we take the square root to get an approximation of length/width
     const side = Math.sqrt(area);
     form.setValue('landWidth', parseFloat(side.toFixed(2)));
     form.setValue('landLength', parseFloat(side.toFixed(2)));
@@ -129,18 +130,7 @@ export default function AreaCalculatorPage() {
         </CardHeader>
         <CardContent>
             <div className="h-[400px] w-full rounded-md border overflow-hidden">
-             <MapContainer
-                center={[31.9539, 35.9106]} // Centered on Amman, Jordan
-                zoom={13}
-                style={{ height: '100%', width: '100%' }}
-                scrollWheelZoom={true}
-              >
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                <DrawingManager onAreaCalculated={onAreaCalculated} />
-              </MapContainer>
+             <LeafletMap onAreaCalculated={onAreaCalculated} />
             </div>
         </CardContent>
       </Card>
@@ -361,4 +351,3 @@ export default function AreaCalculatorPage() {
     </div>
   );
 }
-
