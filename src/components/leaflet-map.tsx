@@ -74,9 +74,11 @@ const LeafletMap = ({ onAreaCalculated }: LeafletMapProps) => {
             }
           });
 
+          // This is the crucial part that was missing.
+          // Calculate area for the newly created layer.
           calculateAndCallback(layer);
 
-          // Add an edit listener to the new layer
+          // Add an edit listener to the new layer to update on changes.
           layer.on('pm:edit', (editEvent: any) => {
              calculateAndCallback(editEvent.layer);
           });
@@ -86,6 +88,14 @@ const LeafletMap = ({ onAreaCalculated }: LeafletMapProps) => {
 
       mapInstance.current = map;
     }
+
+    // Cleanup function to run when component unmounts
+    return () => {
+        if (mapInstance.current) {
+            mapInstance.current.remove();
+            mapInstance.current = null;
+        }
+    };
   }, []);
 
   return <div ref={mapRef} style={{ height: '100%', width: '100%' }} />;
