@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -41,17 +41,17 @@ interface ResultState {
   totalArea: number;
 }
 
+const LeafletMap = dynamic(() => import('@/components/leaflet-map'), { 
+    loading: () => <p className="text-center text-muted-foreground">...تحميل الخريطة</p>,
+    ssr: false 
+});
+
 
 export default function AreaCalculatorPage() {
   const [result, setResult] = useState<ResultState | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { addReportCard } = useReport();
   const { toast } = useToast();
-
-  const LeafletMap = useMemo(() => dynamic(() => import('@/components/leaflet-map'), { 
-    loading: () => <p className="text-center text-muted-foreground">...تحميل الخريطة</p>,
-    ssr: false 
-  }), []);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
