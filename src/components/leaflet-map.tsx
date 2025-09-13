@@ -15,15 +15,12 @@ const LeafletMap = ({ onAreaCalculated }: LeafletMapProps) => {
   const mapInstance = useRef<L.Map | null>(null);
   const onAreaCalculatedRef = useRef(onAreaCalculated);
 
-  // Keep the ref updated with the latest callback function
   useEffect(() => {
     onAreaCalculatedRef.current = onAreaCalculated;
   }, [onAreaCalculated]);
 
   useEffect(() => {
-    // Ensure this code runs only once
     if (mapRef.current && !mapInstance.current) {
-      // Fix for default icon issues with webpack which can happen in Next.js
       delete (L.Icon.Default.prototype as any)._getIconUrl;
       L.Icon.Default.mergeOptions({
         iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -48,12 +45,13 @@ const LeafletMap = ({ onAreaCalculated }: LeafletMapProps) => {
         drawCircleMarker: false,
         drawRectangle: true,
         drawPolyline: false,
+        drawPolygon: true,
         cutPolygon: true,
         editMode: true,
         dragMode: true,
         removalMode: true,
       });
-
+      
       map.pm.setGlobalOptions({
         snappable: true,
         snapDistance: 20,
@@ -62,21 +60,23 @@ const LeafletMap = ({ onAreaCalculated }: LeafletMapProps) => {
       const calculateAndCallback = (layer: L.Layer) => {
         if (layer instanceof L.Polygon) {
           const area = L.GeometryUtil.geodesicArea((layer as L.Polygon).getLatLngs()[0] as L.LatLng[]);
-          onAreaCalculatedRef.current(area); // Use the ref to call the latest function
+          onAreaCalculatedRef.current(area);
         }
       };
       
       const handleCreate = (e: any) => {
           const { layer } = e;
           
+          // Remove previous layers
           map.eachLayer((l: any) => {
-            if (l.pm && l instanceof L.Polygon && l !== layer) {
+            if (l.pm && (l instanceof L.Polygon || l instanceof L.Rectangle) && l !== layer) {
               l.remove();
             }
           });
 
           calculateAndCallback(layer);
 
+          // Add an edit listener to the new layer
           layer.on('pm:edit', (editEvent: any) => {
              calculateAndCallback(editEvent.layer);
           });
@@ -86,15 +86,7 @@ const LeafletMap = ({ onAreaCalculated }: LeafletMapProps) => {
 
       mapInstance.current = map;
     }
-
-    // Cleanup function to destroy the map
-    return () => {
-      if (mapInstance.current) {
-        mapInstance.current.remove();
-        mapInstance.current = null;
-      }
-    };
-  }, []); // Empty dependency array ensures this runs only once
+  }, []);
 
   return <div ref={mapRef} style={{ height: '100%', width: '100%' }} />;
 };
