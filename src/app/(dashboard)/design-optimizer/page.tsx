@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { BrainCircuit, ArrowRight, Loader2, Ruler, PlusCircle, Settings, Sun, Maximize, Balance } from "lucide-react";
+import { BrainCircuit, ArrowRight, Loader2, Ruler, PlusCircle, Settings, Sun, Maximize, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -93,7 +93,7 @@ export default function DesignOptimizerPage() {
     });
   };
 
-  const LimitingFactorIcon = result?.limitingFactor === 'area' ? Ruler : Balance;
+  const LimitingFactorIcon = result?.limitingFactor === 'area' ? Ruler : Scale;
   const limitingFactorText = result?.limitingFactor === 'area' ? 'المساحة هي العامل المحدد' : 'الاستهلاك هو العامل المحدد';
 
   return (
