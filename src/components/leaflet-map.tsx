@@ -1,14 +1,13 @@
 
 'use client';
 
-import { MapContainer, TileLayer } from "react-leaflet";
+import { useEffect, useRef } from 'react';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import '@geoman-io/leaflet-geoman-free';
 import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css';
-import { useEffect } from 'react';
-import { useMap } from "react-leaflet";
 
-// Monkey patch the Leaflet Default Icon
+// Monkey patch the Leaflet Default Icon to fix loading issues
 // @ts-ignore
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -17,16 +16,38 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-
-interface DrawingManagerProps {
+interface LeafletMapProps {
   onAreaCalculated: (area: number) => void;
 }
 
-const DrawingManager = ({ onAreaCalculated }: DrawingManagerProps) => {
-  const map = useMap();
+const LeafletMap = ({ onAreaCalculated }: LeafletMapProps) => {
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+  const onAreaCalculatedRef = useRef(onAreaCalculated);
+
+  // Keep the ref updated with the latest callback function
+  useEffect(() => {
+    onAreaCalculatedRef.current = onAreaCalculated;
+  }, [onAreaCalculated]);
 
   useEffect(() => {
-    // Add drawing controls
+    // Ensure this runs only on the client and that the container exists
+    if (typeof window === 'undefined' || !mapContainerRef.current) {
+      return;
+    }
+
+    // Initialize the map only if it hasn't been initialized yet
+    if (!mapInstanceRef.current) {
+        mapInstanceRef.current = L.map(mapContainerRef.current).setView([31.9539, 35.9106], 13);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(mapInstanceRef.current);
+    }
+    
+    const map = mapInstanceRef.current;
+
+    // --- Add Geoman Controls ---
     map.pm.addControls({
       position: 'topleft',
       drawCircle: false,
@@ -35,21 +56,23 @@ const DrawingManager = ({ onAreaCalculated }: DrawingManagerProps) => {
       drawRectangle: true,
       drawPolyline: false,
       drawPolygon: true,
-      cutPolygon: true,
+      cutPolygon: false,
       editMode: true,
       dragMode: true,
       removalMode: true,
     });
-
+    
+    // Set global options for snapping
     map.pm.setGlobalOptions({
         snappable: true,
         snapDistance: 20,
     });
 
+
     // --- Event Listener for when a shape is created ---
     const handleCreate = (e: any) => {
         const { layer } = e;
-        
+
         // Remove all previously drawn layers to keep only one
         map.eachLayer((l: any) => {
             if (l.pm && (l instanceof L.Polygon || l instanceof L.Rectangle) && l !== layer) {
@@ -60,50 +83,33 @@ const DrawingManager = ({ onAreaCalculated }: DrawingManagerProps) => {
         // Calculate the area of the newly created shape
         if (layer instanceof L.Polygon) {
              const area = L.GeometryUtil.geodesicArea((layer as L.Polygon).getLatLngs()[0] as L.LatLng[]);
-             onAreaCalculated(area);
+             onAreaCalculatedRef.current(area);
         }
 
         // Add an edit listener to the new layer to update on changes
         layer.on('pm:edit', (editEvent: any) => {
            if (editEvent.layer instanceof L.Polygon) {
                 const area = L.GeometryUtil.geodesicArea((editEvent.layer as L.Polygon).getLatLngs()[0] as L.LatLng[]);
-                onAreaCalculated(area);
+                onAreaCalculatedRef.current(area);
            }
         });
     };
 
     map.on('pm:create', handleCreate);
 
-    // Cleanup: remove controls and event listeners when the component unmounts
+
+    // Cleanup function to run when the component unmounts
     return () => {
-      map.pm.removeControls();
-      map.off('pm:create', handleCreate);
+        map.off('pm:create', handleCreate);
+        // It's often better to not remove controls if the map instance is preserved across renders,
+        // but if the component truly unmounts, you would:
+        // map.pm.removeControls();
+        // map.remove(); 
+        // mapInstanceRef.current = null;
     };
+  }, []); // Empty dependency array ensures this effect runs only once
 
-  }, [map, onAreaCalculated]);
-
-  return null;
-};
-
-
-interface LeafletMapProps {
-  onAreaCalculated: (area: number) => void;
-}
-
-const LeafletMap = ({ onAreaCalculated }: LeafletMapProps) => {
-  return (
-    <MapContainer
-      center={[31.9539, 35.9106]} // Centered on Amman, Jordan
-      zoom={13}
-      style={{ height: '100%', width: '100%' }}
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      <DrawingManager onAreaCalculated={onAreaCalculated} />
-    </MapContainer>
-  );
+  return <div ref={mapContainerRef} style={{ height: '100%', width: '100%' }} />;
 };
 
 export default LeafletMap;
