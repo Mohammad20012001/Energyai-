@@ -125,7 +125,7 @@ export default function AreaCalculatorPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-            <div className="h-[400px] w-full rounded-md border">
+            <div className="h-[400px] w-full rounded-md border overflow-hidden">
               <DrawingManager onAreaCalculated={onAreaCalculated} />
             </div>
         </CardContent>
