@@ -4,9 +4,8 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
-import { Calculator, Maximize, Zap, ArrowRight, Loader2, Sun, PlusCircle, Square, Rows, Columns, MapPin } from "lucide-react";
+import { Calculator, Maximize, Zap, ArrowRight, Loader2, Sun, PlusCircle, Square, Rows, Columns } from "lucide-react";
 import { useReport } from "@/context/ReportContext";
-import MapWithDrawing from "@/components/map-with-drawing";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -75,18 +74,6 @@ export default function AreaCalculatorPage() {
 
     setIsLoading(false);
   }
-  
-  const handleAreaUpdate = (area: number) => {
-    // We get a single area value. To fit it into our existing form,
-    // we can calculate the square root to get an equivalent square side length.
-    const sideLength = Math.sqrt(area);
-    form.setValue("landWidth", parseFloat(sideLength.toFixed(2)));
-    form.setValue("landLength", parseFloat(sideLength.toFixed(2)));
-     toast({
-      title: "تم تحديث المساحة",
-      description: `تم تحديث أبعاد الأرض إلى ${sideLength.toFixed(2)} م × ${sideLength.toFixed(2)} م بناءً على تحديدك على الخريطة.`,
-    });
-  };
 
   const handleAddToReport = () => {
     if (!result) return;
@@ -115,21 +102,6 @@ export default function AreaCalculatorPage() {
           قدّر عدد الألواح التي يمكن تركيبها في مساحة معينة وكمية الطاقة التي يمكن إنتاجها.
         </p>
       </div>
-
-       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><MapPin className="text-primary"/> تحديد مساحة الأرض</CardTitle>
-          <CardDescription>
-            ارسم مضلعًا على الخريطة لتحديد منطقة التركيب، أو أدخل الأبعاد يدويًا في النموذج أدناه.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-           <div className="h-[400px] w-full rounded-lg overflow-hidden border">
-              <MapWithDrawing onAreaUpdate={handleAreaUpdate} />
-           </div>
-        </CardContent>
-      </Card>
-
 
       <div className="grid gap-8 lg:grid-cols-5">
         <Card className="lg:col-span-2 h-fit">
@@ -337,7 +309,7 @@ export default function AreaCalculatorPage() {
                 <Maximize className="h-4 w-4" />
                 <AlertTitle>استغل مساحتك بأفضل شكل</AlertTitle>
                 <AlertDescription>
-                  اضغط على زر "احسب الآن" لعرض إمكانيات الإنتاج بناءً على الأبعاد الافتراضية، أو حدد مساحتك على الخريطة أولاً.
+                  املأ النموذج أعلاه لحساب أقصى عدد من الألواح يمكنك وضعه في أرضك والإنتاج المتوقع.
                 </AlertDescription>
             </Alert>
           )}
