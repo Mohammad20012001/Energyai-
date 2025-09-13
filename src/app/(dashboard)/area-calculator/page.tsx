@@ -156,7 +156,7 @@ export default function AreaCalculatorPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-            <div className="h-[400px] w-full rounded-md border overflow-hidden">
+            <div className="h-[400px] w-full rounded-md border overflow-hidden relative z-10">
              <LeafletMap onAreaCalculated={onAreaCalculated} />
             </div>
         </CardContent>
