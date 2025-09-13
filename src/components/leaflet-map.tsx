@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useRef } from 'react';
@@ -6,6 +5,8 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import '@geoman-io/leaflet-geoman-free';
 import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css';
+import 'leaflet-geometryutil';
+
 
 // Monkey patch the Leaflet Default Icon to fix loading issues
 // @ts-ignore
@@ -85,14 +86,14 @@ const LeafletMap = ({ onAreaCalculated }: LeafletMapProps) => {
 
         // Calculate the area of the newly created shape
         if (layer instanceof L.Polygon) {
-             const area = L.PM.Utils.getGeodesicArea(layer.getLatLngs()[0] as L.LatLng[]);
+             const area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0] as L.LatLng[]);
              onAreaCalculatedRef.current(area);
         }
 
         // Add an edit listener to the new layer to update on changes
         layer.on('pm:edit', (editEvent: any) => {
            if (editEvent.layer instanceof L.Polygon) {
-                const area = L.PM.Utils.getGeodesicArea(editEvent.layer.getLatLngs()[0] as L.LatLng[]);
+                const area = L.GeometryUtil.geodesicArea(editEvent.layer.getLatLngs()[0] as L.LatLng[]);
                 onAreaCalculatedRef.current(area);
            }
         });
