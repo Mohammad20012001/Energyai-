@@ -123,28 +123,3 @@ export const SimulatePerformanceOutputSchema = z.object({
 });
 export type SimulatePerformanceOutput = z.infer<typeof SimulatePerformanceOutputSchema>;
 // #endregion
-
-
-// #region Calculation Auditor Schemas
-export const AuditInputSchema = z.object({
-  text: z.string().describe("النص الذي يحتوي على الحسابات لمراجعتها."),
-});
-export type AuditInput = z.infer<typeof AuditInputSchema>;
-
-export const AuditOutputSchema = z.object({
-    overallAssessment: z.string().describe("تقييم عام لصحة الحسابات وما إذا كانت هناك أخطاء جوهرية."),
-    corrections: z.array(z.object({
-        item: z.string().describe("البند الذي يحتوي على الخطأ (مثال: حجم النظام المطلوب)."),
-        incorrectCalculation: z.string().describe("المعادلة أو النتيجة الخاطئة كما وردت في النص."),
-        correctCalculation: z.string().describe("المعادلة أو النتيجة الصحيحة."),
-        explanation: z.string().describe("شرح بسيط لسبب الخطأ وكيف تم تصحيحه."),
-    })).describe("قائمة بالتصحيحات التي تم إجراؤها."),
-    finalCorrectValues: z.array(z.object({
-        parameter: z.string().describe("اسم المؤشر (مثال: عدد الألواح)."),
-        value: z.string().describe("القيمة النهائية الصحيحة للمؤشر مع الوحدة."),
-    })).describe("جدول بالقيم النهائية الصحيحة بعد التصحيح."),
-});
-export type AuditOutput = z.infer<typeof AuditOutputSchema>;
-// #endregion
-
-    

@@ -71,25 +71,6 @@ export default function DashboardOverviewPage() {
           </CardContent>
         </Card>
         
-         <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ListChecks className="text-primary" />
-              المدقق الحسابي (AI)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              راجع ودقق أي حسابات جاهزة للتأكد من صحتها ومنطقيتها.
-            </p>
-            <Button asChild>
-              <Link href="/calculation-auditor">
-                ابدأ التدقيق <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -208,5 +189,3 @@ export default function DashboardOverviewPage() {
     </div>
   );
 }
-
-    

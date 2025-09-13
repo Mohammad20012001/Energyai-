@@ -32,7 +32,6 @@ const navItems = [
   { href: "/chat", label: "المساعد الذكي", icon: MessageCircle },
   { href: "/live-simulation", label: "المحاكاة الحية", icon: Wind },
   { href: "/design-optimizer", label: "حاسبة النظام الشاملة (AI)", icon: BrainCircuit },
-  { href: "/calculation-auditor", label: "المدقق الحسابي (AI)", icon: ListChecks },
   { type: 'divider', label: 'Calculators'},
   { href: "/system-sizer", label: "حاسبة النظام المتكامل", icon: Combine },
   { href: "/string-configuration", label: "تهيئة السلاسل", icon: Settings },

@@ -6,4 +6,3 @@ import '@/ai/flows/suggest-wire-size.ts';
 import '@/ai/flows/simulate-performance.ts';
 import '@/ai/flows/chat.ts';
 import '@/ai/flows/optimize-design.ts';
-import '@/ai/flows/audit-calculations.ts';
