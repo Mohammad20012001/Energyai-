@@ -113,3 +113,4 @@ const LeafletMap = ({ onAreaCalculated }: LeafletMapProps) => {
 };
 
 export default LeafletMap;
+
