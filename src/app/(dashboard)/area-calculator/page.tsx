@@ -4,7 +4,7 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Calculator, Maximize, Zap, ArrowRight, Loader2, Sun, PlusCircle, Square } from "lucide-react";
+import { Calculator, Maximize, Zap, ArrowRight, Loader2, Sun, PlusCircle, Square, Rows, Columns } from "lucide-react";
 import { useReport } from "@/context/ReportContext";
 
 import { Button } from "@/components/ui/button";
@@ -240,6 +240,22 @@ export default function AreaCalculatorPage() {
                 <CardContent>
                   <div className="text-6xl font-bold text-primary">{result.calculation.maxPanels}</div>
                   <p className="text-muted-foreground mt-2 text-lg">لوح شمسي</p>
+                   <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
+                    <div className="flex items-center justify-center gap-2 rounded-lg border p-2">
+                      <Rows className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <div className="font-bold">{result.calculation.portrait.rows} صفوف</div>
+                        <div className="text-muted-foreground">{result.calculation.portrait.panelsPerRow} لوح/صف</div>
+                      </div>
+                    </div>
+                     <div className="flex items-center justify-center gap-2 rounded-lg border p-2">
+                      <Columns className="h-5 w-5 text-muted-foreground" />
+                       <div>
+                        <div className="font-bold">{result.calculation.landscape.rows} صفوف</div>
+                        <div className="text-muted-foreground">{result.calculation.landscape.panelsPerRow} لوح/صف</div>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 

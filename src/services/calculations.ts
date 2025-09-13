@@ -86,20 +86,39 @@ export interface AreaCalculationInput {
     sunHours: number;
 }
 
+interface OrientationResult {
+    rows: number;
+    panelsPerRow: number;
+    totalPanels: number;
+}
+
 export interface AreaCalculationResult {
     maxPanels: number;
     totalPowerKw: number;
     dailyEnergyKwh: number;
     monthlyEnergyKwh: number;
     yearlyEnergyKwh: number;
+    portrait: OrientationResult;
+    landscape: OrientationResult;
 }
 
 export function calculateProductionFromArea(input: AreaCalculationInput): AreaCalculationResult {
-    const landArea = input.landWidth * input.landLength;
-    const panelArea = input.panelWidth * input.panelLength;
-    const requiredAreaPerPanel = panelArea * 1.5; 
-    const maxPanels = Math.floor(landArea / requiredAreaPerPanel);
+    const SPACING_FACTOR = 1.5;
 
+    // --- Portrait Orientation ---
+    const rowsPortrait = Math.floor(input.landLength / (input.panelLength * SPACING_FACTOR));
+    const panelsPerRowPortrait = Math.floor(input.landWidth / input.panelWidth);
+    const totalPanelsPortrait = rowsPortrait * panelsPerRowPortrait;
+
+    // --- Landscape Orientation ---
+    const rowsLandscape = Math.floor(input.landLength / (input.panelWidth * SPACING_FACTOR));
+    const panelsPerRowLandscape = Math.floor(input.landWidth / input.panelLength);
+    const totalPanelsLandscape = rowsLandscape * panelsPerRowLandscape;
+
+    // --- Determine Best Orientation ---
+    const maxPanels = Math.max(totalPanelsPortrait, totalPanelsLandscape);
+
+    // --- Calculate Energy Production based on max panels ---
     const totalPowerKw = (maxPanels * input.panelWattage) / 1000;
     const dailyEnergyKwh = totalPowerKw * input.sunHours;
     const monthlyEnergyKwh = dailyEnergyKwh * 30;
@@ -111,6 +130,16 @@ export function calculateProductionFromArea(input: AreaCalculationInput): AreaCa
         dailyEnergyKwh,
         monthlyEnergyKwh,
         yearlyEnergyKwh,
+        portrait: {
+            rows: rowsPortrait,
+            panelsPerRow: panelsPerRowPortrait,
+            totalPanels: totalPanelsPortrait
+        },
+        landscape: {
+            rows: rowsLandscape,
+            panelsPerRow: panelsPerRowLandscape,
+            totalPanels: totalPanelsLandscape
+        }
     };
 }
 // #endregion
