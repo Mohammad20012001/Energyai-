@@ -5,8 +5,6 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import '@geoman-io/leaflet-geoman-free';
 import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css';
-import 'leaflet-geometryutil';
-
 
 // Monkey patch the Leaflet Default Icon to fix loading issues
 // @ts-ignore
@@ -16,6 +14,27 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
+
+// Local implementation of geodesicArea to avoid import issues.
+// Source: https://github.com/Leaflet/Leaflet.GeometryUtil/blob/master/src/L.GeometryUtil.js
+function calculateGeodesicArea(latlngs: L.LatLng[]): number {
+    const pointsCount = latlngs.length;
+    let area = 0.0;
+    const d2r = Math.PI / 180;
+
+    if (pointsCount > 2) {
+        for (let i = 0; i < pointsCount; i++) {
+            const p1 = latlngs[i];
+            const p2 = latlngs[(i + 1) % pointsCount];
+            area += ((p2.lng - p1.lng) * d2r) *
+                (2 + Math.sin(p1.lat * d2r) + Math.sin(p2.lat * d2r));
+        }
+        area = area * 6378137.0 * 6378137.0 / 2.0;
+    }
+
+    return Math.abs(area);
+}
+
 
 interface LeafletMapProps {
   onAreaCalculated: (area: number) => void;
@@ -50,8 +69,13 @@ const LeafletMap = ({ onAreaCalculated }: LeafletMapProps) => {
 
     // --- Add Geoman Controls ---
     // Check if controls are already added to prevent duplicates
-    if (!map.pm.controlsVisible()) {
-        map.pm.addControls({
+    if (!(map as any).pm) {
+      console.error("Leaflet-Geoman not initialized on map instance.");
+      return;
+    }
+    
+    if (!(map as any).pm.controlsVisible()) {
+        (map as any).pm.addControls({
           position: 'topleft',
           drawCircle: false,
           drawMarker: false,
@@ -67,7 +91,7 @@ const LeafletMap = ({ onAreaCalculated }: LeafletMapProps) => {
     }
     
     // Set global options for snapping
-    map.pm.setGlobalOptions({
+    (map as any).pm.setGlobalOptions({
         snappable: true,
         snapDistance: 20,
     });
@@ -83,17 +107,17 @@ const LeafletMap = ({ onAreaCalculated }: LeafletMapProps) => {
                 l.remove();
             }
         });
-
+        
         // Calculate the area of the newly created shape
         if (layer instanceof L.Polygon) {
-             const area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0] as L.LatLng[]);
+             const area = calculateGeodesicArea(layer.getLatLngs()[0] as L.LatLng[]);
              onAreaCalculatedRef.current(area);
         }
 
         // Add an edit listener to the new layer to update on changes
         layer.on('pm:edit', (editEvent: any) => {
            if (editEvent.layer instanceof L.Polygon) {
-                const area = L.GeometryUtil.geodesicArea(editEvent.layer.getLatLngs()[0] as L.LatLng[]);
+                const area = calculateGeodesicArea(editEvent.layer.getLatLngs()[0] as L.LatLng[]);
                 onAreaCalculatedRef.current(area);
            }
         });
