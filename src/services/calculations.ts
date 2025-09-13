@@ -187,61 +187,41 @@ export function calculateInverterSize(input: InverterSizingInput): InverterSizin
 // #region Optimal Design Calculator (Hybrid)
 
 export type CalculationOutput = Omit<OptimizeDesignOutput, 'reasoning'> & {
-    limitingFactor: 'consumption' | 'budget' | 'area';
+    limitingFactor: 'consumption' | 'area';
 };
 
 export function calculateOptimalDesign(input: OptimizeDesignInput): CalculationOutput {
-    // 1. Calculate Effective kWh Price from Tariffs
-    let bill = 0;
-    let remainingKwh = input.monthlyConsumption;
     
-    const tariffs = [
-        { limit: 160, rate: 0.033 },
-        { limit: 300, rate: 0.072 },
-        { limit: 500, rate: 0.086 },
-        { limit: 1000, rate: 0.114 },
-        { limit: Infinity, rate: 0.152 },
-    ];
-
-    let lastTierKwh = 0;
-    for (const tier of tariffs) {
-        const tierConsumption = Math.min(remainingKwh, tier.limit - lastTierKwh);
-        bill += tierConsumption * tier.rate;
-        remainingKwh -= tierConsumption;
-        if (remainingKwh <= 0) break;
-        lastTierKwh = tier.limit;
-    }
-    const effectiveKwhPrice = (input.monthlyConsumption > 0) ? bill / input.monthlyConsumption : 0;
-    
-    // 2. Sun Hours
+    // 1. Sun Hours
     const sunHoursMap = { amman: 5.5, zarqa: 5.6, irbid: 5.4, aqaba: 6.0 };
     const sunHours = sunHoursMap[input.location];
     
-    // 3. Calculate constraint sizes (in kWp)
+    // 2. Calculate constraint sizes (in kWp)
     const dailyKwhConsumption = input.monthlyConsumption / 30;
     const systemLossFactor = (100 - input.systemLoss) / 100;
     
     const consumptionBasedSize = (dailyKwhConsumption / (sunHours * systemLossFactor));
-    const budgetBasedSize = (input.budget / input.costPerWatt) / 1000;
-    const areaBasedSize = (input.surfaceArea / 3.5) * input.panelWattage / 1000;
+    
+    // Assuming 2.6 m^2 per panel and 1.5 spacing factor.
+    const panelArea = (1.13 * 2.28) * 1.5;
+    const maxPanelsFromArea = Math.floor(input.surfaceArea / panelArea);
+    const areaBasedSize = (maxPanelsFromArea * input.panelWattage) / 1000;
 
-    // 4. Determine limiting factor and final system size
-    let optimizedSystemSize = Math.min(consumptionBasedSize, budgetBasedSize, areaBasedSize);
-    let limitingFactor: 'consumption' | 'budget' | 'area';
+    // 3. Determine limiting factor and final system size
+    let optimizedSystemSize = Math.min(consumptionBasedSize, areaBasedSize);
+    let limitingFactor: 'consumption' | 'area';
     
     if (optimizedSystemSize === consumptionBasedSize) {
         limitingFactor = 'consumption';
-    } else if (optimizedSystemSize === budgetBasedSize) {
-        limitingFactor = 'budget';
     } else {
         limitingFactor = 'area';
     }
     optimizedSystemSize = parseFloat(optimizedSystemSize.toFixed(2));
     
-    // 5. Design the system based on the final size
-    const totalCost = optimizedSystemSize * 1000 * input.costPerWatt;
+    // 4. Design the system based on the final size
     const panelCount = Math.floor((optimizedSystemSize * 1000) / input.panelWattage);
-    const totalDcPower = (panelCount * input.panelWattage) / 1000;
+    const totalDcPower = parseFloat(((panelCount * input.panelWattage) / 1000).toFixed(2));
+    const requiredArea = panelCount * panelArea;
     
     // Inverter
     const inverterSize = totalDcPower * 0.95; // Aim for 95% of DC power
@@ -251,23 +231,12 @@ export function calculateOptimalDesign(input: OptimizeDesignInput): CalculationO
     const panelsPerString = panelCount <= 20 ? panelCount : Math.floor(panelCount / 2);
     const parallelStrings = panelCount <= 20 ? 1 : 2;
 
-    // 6. Calculate Financials
-    const annualEnergyProduction = totalDcPower * sunHours * 365 * systemLossFactor;
-    const annualSavings = annualEnergyProduction * effectiveKwhPrice;
-    const paybackPeriod = annualSavings > 0 ? (totalCost / annualSavings) : Infinity;
-    const twentyFiveYearProfit = (annualSavings * 25 * (1 - 0.005 * 12.5)) - totalCost;
-
     return {
-        summary: {
-            optimizedSystemSize: totalDcPower,
-            totalCost: parseFloat(totalCost.toFixed(0)),
-            paybackPeriod: parseFloat(paybackPeriod.toFixed(1)),
-            twentyFiveYearProfit: parseFloat(twentyFiveYearProfit.toFixed(0)),
-        },
         panelConfig: {
             panelCount,
             panelWattage: input.panelWattage,
             totalDcPower: totalDcPower,
+            requiredArea: requiredArea,
             tilt: 30,
             azimuth: 180,
         },

@@ -23,9 +23,8 @@ const generateReasoningPrompt = ai.definePrompt({
     name: 'generateOptimizerReasoningPrompt',
     input: { schema: z.object({
         finalSystemSize: z.number(),
-        limitingFactor: z.enum(['consumption', 'budget', 'area']),
+        limitingFactor: z.enum(['consumption', 'area']),
         monthlyConsumption: z.number(),
-        budget: z.number(),
         surfaceArea: z.number(),
     })},
     output: { schema: z.object({
@@ -38,18 +37,16 @@ Based on the final, calculated data below, write a clear, step-by-step reasoning
 - Final Recommended System Size: {{{finalSystemSize}}} kWp
 - The Limiting Factor for the design was: {{{limitingFactor}}}
 - User's Monthly Consumption: {{{monthlyConsumption}}} kWh
-- User's Budget: {{{budget}}} JOD
 - User's Available Area: {{{surfaceArea}}} m²
 
 **Your Task:**
 Write the 'reasoning' text. Explain **why** this specific system size was chosen.
-You MUST explicitly mention which constraint was the limiting factor (consumption/law, budget, or area).
+You MUST explicitly mention which constraint was the limiting factor (consumption/law or area).
 
-- **If 'limitingFactor' is 'consumption':** "تم تحديد حجم النظام بـ {{{finalSystemSize}}} كيلوواط لتغطية استهلاكك الشهري بالكامل ({{{monthlyConsumption}}} كيلوواط/ساعة)، وهو الحد الأقصى الذي يسمح به قانون صافي القياس في الأردن. هذا النظام يتناسب مع ميزانيتك ومساحتك المتاحة."
-- **If 'limitingFactor' is 'budget':** "لقد تم تحديد حجم النظام الأمثل بـ {{{finalSystemSize}}} كيلوواط. هذا هو أكبر نظام يمكن تركيبه ضمن ميزانيتك البالغة {{{budget}}} دينار، مع العلم أن مساحتك وقانون الاستهلاك كانا يسمحان بالمزيد."
-- **If 'limitingFactor' is 'area':** "بناءً على مساحتك المتاحة، تم تحديد حجم النظام الأقصى بـ {{{finalSystemSize}}} كيلوواط. هذا النظام يقع ضمن حدود ميزانيتك واستهلاكك."
+- **If 'limitingFactor' is 'consumption':** "تم تحديد حجم النظام بـ {{{finalSystemSize}}} كيلوواط لتغطية استهلاكك الشهري بالكامل ({{{monthlyConsumption}}} كيلوواط/ساعة)، وهو الحد الأقصى الذي يسمح به قانون صافي القياس في الأردن. هذا النظام يتناسب مع مساحتك المتاحة."
+- **If 'limitingFactor' is 'area':** "بناءً على مساحتك المتاحة البالغة {{{surfaceArea}}} متر مربع، تم تحديد حجم النظام الأقصى بـ {{{finalSystemSize}}} كيلوواط. هذا النظام يغطي جزءًا كبيرًا من استهلاكك وهو أكبر ما يمكن تركيبه."
 
-Briefly justify the component choices (inverter, panels, etc.) and conclude by highlighting the financial return.
+Briefly justify the component choices (inverter, panels, etc.).
 The response must be ONLY the reasoning text in Arabic.
 `,
 });
@@ -68,10 +65,9 @@ const optimizeDesignFlow = ai.defineFlow(
 
     // Step 2: Call the AI model ONLY to generate the reasoning, using the accurate data.
     const { output: reasoningOutput } = await generateReasoningPrompt({
-        finalSystemSize: calculatedData.summary.optimizedSystemSize,
+        finalSystemSize: calculatedData.panelConfig.totalDcPower,
         limitingFactor: calculatedData.limitingFactor,
         monthlyConsumption: input.monthlyConsumption,
-        budget: input.budget,
         surfaceArea: input.surfaceArea,
     });
     

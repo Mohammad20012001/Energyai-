@@ -56,12 +56,12 @@ export default function DashboardOverviewPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BrainCircuit className="text-primary" />
-              حاسبة النظام الشاملة (AI)
+              حاسبة حجم النظام الفني
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-4">
-              أدخل قيودك (الميزانية، المساحة) ودع الذكاء الاصطناعي يصمم لك النظام الأمثل.
+              أدخل استهلاكك ومساحتك ودع الذكاء الاصطناعي يصمم لك النظام الأمثل.
             </p>
             <Button asChild>
               <Link href="/design-optimizer">

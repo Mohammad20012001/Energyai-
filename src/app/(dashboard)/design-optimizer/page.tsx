@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { BrainCircuit, ArrowRight, Loader2, DollarSign, Ruler, BarChart3, PlusCircle, Settings } from "lucide-react";
+import { BrainCircuit, ArrowRight, Loader2, Ruler, PlusCircle, Settings, Sun, Maximize } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -46,12 +46,10 @@ export default function DesignOptimizerPage() {
   const form = useForm<FormValues>({
     resolver: zodResolver(OptimizeDesignInputSchema),
     defaultValues: {
-      budget: 10000,
       surfaceArea: 80,
       monthlyConsumption: 700,
       location: "amman",
       // Advanced defaults
-      costPerWatt: 0.85,
       systemLoss: 15,
       panelWattage: 550,
     },
@@ -79,29 +77,27 @@ export default function DesignOptimizerPage() {
     if (!result) return;
     addReportCard({
       id: `design-optimizer-${Date.now()}`,
-      type: "حاسبة النظام الشاملة (AI)",
-      summary: `نظام ${result.summary.optimizedSystemSize}kWp بتكلفة ${result.summary.totalCost} دينار`,
+      type: "حاسبة حجم النظام الفني",
+      summary: `نظام ${result.panelConfig.totalDcPower}kWp يتكون من ${result.panelConfig.panelCount} لوح`,
       values: {
-        "حجم النظام الأمثل": `${result.summary.optimizedSystemSize} kWp`,
-        "التكلفة الإجمالية": `${result.summary.totalCost} دينار`,
-        "فترة الاسترداد": `${result.summary.paybackPeriod.toFixed(1)} سنوات`,
-        "ربح 25 سنة": `${result.summary.twentyFiveYearProfit.toFixed(0)} دينار`,
+        "حجم النظام الأمثل": `${result.panelConfig.totalDcPower} kWp`,
         "عدد الألواح": `${result.panelConfig.panelCount} لوح`,
+        "المساحة المطلوبة": `${result.panelConfig.requiredArea.toFixed(1)} م²`,
         "حجم العاكس": `${result.inverterConfig.recommendedSize}`
       }
     });
     toast({
       title: "تمت الإضافة بنجاح",
-      description: "تمت إضافة بطاقة حاسبة النظام إلى تقريرك.",
+      description: "تمت إضافة بطاقة الحاسبة إلى تقريرك.",
     });
   };
 
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight font-headline">حاسبة النظام الشاملة (AI)</h1>
+        <h1 className="text-3xl font-bold tracking-tight font-headline">حاسبة حجم النظام الفني</h1>
         <p className="text-muted-foreground mt-2">
-          أدخل قيودك (الميزانية، المساحة، الاستهلاك) ودع الذكاء الاصطناعي يصمم لك النظام الأمثل من كل النواحي.
+          أدخل قيودك (الاستهلاك والمساحة) وسيقوم الذكاء الاصطناعي بتصميم النظام الأمثل من الناحية الفنية.
         </p>
       </div>
 
@@ -114,14 +110,15 @@ export default function DesignOptimizerPage() {
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 text-right">
                 <fieldset disabled={isLoading} className="space-y-4">
+                  
                   <FormField
                     control={form.control}
-                    name="budget"
+                    name="monthlyConsumption"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>الميزانية الإجمالية (دينار)</FormLabel>
+                        <FormLabel>متوسط الاستهلاك الشهري (kWh)</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="e.g., 7000" {...field} />
+                          <Input type="number" placeholder="e.g., 700" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -135,19 +132,6 @@ export default function DesignOptimizerPage() {
                         <FormLabel>المساحة المتاحة (م²)</FormLabel>
                         <FormControl>
                           <Input type="number" placeholder="e.g., 60" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="monthlyConsumption"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>متوسط الاستهلاك الشهري (kWh)</FormLabel>
-                        <FormControl>
-                          <Input type="number" placeholder="e.g., 700" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -182,23 +166,10 @@ export default function DesignOptimizerPage() {
                       <AccordionTrigger>
                         <span className="flex items-center gap-2">
                             <Settings className="h-4 w-4"/>
-                            إعدادات متقدمة (اختياري)
+                            إعدادات فنية (اختياري)
                         </span>
                       </AccordionTrigger>
                       <AccordionContent className="space-y-4 pt-4">
-                        <FormField
-                          control={form.control}
-                          name="costPerWatt"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>تكلفة الواط الشمسي (دينار/واط)</FormLabel>
-                              <FormControl>
-                                <Input type="number" step="0.05" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
                         <FormField
                           control={form.control}
                           name="systemLoss"
@@ -235,7 +206,7 @@ export default function DesignOptimizerPage() {
                   {isLoading ? (
                     <>
                       <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                      ...جاري التصميم الأمثل
+                      ...جاري التصميم الفني
                     </>
                   ) : (
                     <>
@@ -253,7 +224,7 @@ export default function DesignOptimizerPage() {
             <Card className="flex items-center justify-center p-8 lg:min-h-[400px]">
               <div className="flex flex-col items-center gap-4 text-muted-foreground">
                 <BrainCircuit className="h-12 w-12 animate-pulse" />
-                <p>...الذكاء الاصطناعي يوازن بين جميع المتغيرات</p>
+                <p>...الذكاء الاصطناعي يوازن بين الاستهلاك والمساحة</p>
               </div>
             </Card>
           )}
@@ -262,25 +233,21 @@ export default function DesignOptimizerPage() {
             <div className="space-y-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>ملخص النظام الأمثل</CardTitle>
-                        <CardDescription>أهم المؤشرات المالية والفنية للتصميم المقترح.</CardDescription>
+                        <CardTitle>ملخص النظام الفني الأمثل</CardTitle>
+                        <CardDescription>أهم المؤشرات الفنية للتصميم المقترح.</CardDescription>
                     </CardHeader>
-                     <CardContent className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-center">
+                     <CardContent className="grid grid-cols-2 lg:grid-cols-3 gap-4 text-center">
                         <div className="border rounded-lg p-3">
-                            <div className="text-2xl font-bold text-primary">{result.summary.optimizedSystemSize}</div>
-                            <div className="text-sm text-muted-foreground">kWp</div>
+                            <div className="text-2xl font-bold text-primary">{result.panelConfig.totalDcPower}</div>
+                            <div className="text-sm text-muted-foreground">kWp (حجم النظام)</div>
                         </div>
                          <div className="border rounded-lg p-3">
-                            <div className="text-2xl font-bold">{result.summary.totalCost.toFixed(0)}</div>
-                            <div className="text-sm text-muted-foreground">دينار</div>
+                            <div className="text-2xl font-bold">{result.panelConfig.panelCount}</div>
+                            <div className="text-sm text-muted-foreground">لوح شمسي</div>
                         </div>
-                         <div className="border rounded-lg p-3">
-                            <div className="text-2xl font-bold">{result.summary.paybackPeriod.toFixed(1)}</div>
-                            <div className="text-sm text-muted-foreground">سنوات</div>
-                        </div>
-                         <div className="border rounded-lg p-3">
-                            <div className="text-2xl font-bold text-green-600">{result.summary.twentyFiveYearProfit.toFixed(0)}</div>
-                            <div className="text-sm text-muted-foreground">أرباح 25 سنة</div>
+                         <div className="border rounded-lg p-3 col-span-2 lg:col-span-1">
+                            <div className="text-2xl font-bold">{result.panelConfig.requiredArea.toFixed(1)}</div>
+                            <div className="text-sm text-muted-foreground">م² (المساحة المطلوبة)</div>
                         </div>
                     </CardContent>
                 </Card>
@@ -301,11 +268,12 @@ export default function DesignOptimizerPage() {
                     <CardContent>
                         <div className="space-y-4">
                             <div>
-                                <h4 className="font-semibold text-base">الألواح الشمسية</h4>
+                                <h4 className="font-semibold text-base flex items-center gap-2"><Sun className="text-primary"/>الألواح الشمسية</h4>
                                 <ul className="text-sm text-muted-foreground list-disc list-inside mt-2 space-y-1">
                                     <li><span className="font-semibold">العدد:</span> {result.panelConfig.panelCount} لوح</li>
                                     <li><span className="font-semibold">قدرة اللوح:</span> {result.panelConfig.panelWattage} واط</li>
                                     <li><span className="font-semibold">إجمالي القدرة (DC):</span> {result.panelConfig.totalDcPower} kWp</li>
+                                     <li><span className="font-semibold">المساحة المطلوبة:</span> {result.panelConfig.requiredArea.toFixed(1)} متر مربع</li>
                                     <li><span className="font-semibold">زاوية الميل والاتجاه:</span> {result.panelConfig.tilt}° ميل | {result.panelConfig.azimuth}° اتجاه (جنوب)</li>
                                 </ul>
                             </div>
@@ -346,7 +314,7 @@ export default function DesignOptimizerPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground max-w-md">
-                  أدخل معطيات مشروعك في النموذج، وسيقوم مهندسنا الذكي بتحليل آلاف الاحتمالات ليقدم لك التصميم الأمثل الذي يحقق أفضل عائد على استثمارك.
+                  أدخل استهلاكك ومساحتك المتاحة، وسيقوم مهندسنا الذكي بتصميم النظام الأمثل الذي يناسب احتياجك الفعلي.
                 </p>
               </CardContent>
             </Card>

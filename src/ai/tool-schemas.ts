@@ -59,25 +59,18 @@ export type SuggestWireSizeOutput = z.infer<typeof SuggestWireSizeOutputSchema>;
 export const OptimizeDesignInputSchema = z.object({
   monthlyConsumption: z.coerce.number().positive('يجب أن يكون الاستهلاك رقماً موجباً'),
   surfaceArea: z.coerce.number().positive('يجب أن تكون المساحة رقماً موجباً'),
-  budget: z.coerce.number().positive('يجب أن تكون الميزانية رقماً موجباً'),
   location: z.enum(['amman', 'zarqa', 'irbid', 'aqaba'], {required_error: 'الرجاء اختيار الموقع'}),
-  costPerWatt: z.coerce.number().positive('تكلفة الواط يجب أن تكون رقماً موجباً'),
   systemLoss: z.coerce.number().min(0).max(99, 'نسبة الفقد يجب أن تكون بين 0 و 99'),
   panelWattage: z.coerce.number().positive('قدرة اللوح يجب أن تكون رقماً موجباً'),
 });
 export type OptimizeDesignInput = z.infer<typeof OptimizeDesignInputSchema>;
 
 export const OptimizeDesignOutputSchema = z.object({
-  summary: z.object({
-    optimizedSystemSize: z.number().describe('The final optimized DC system size in kilowatts (kW).'),
-    totalCost: z.number().describe('The estimated total cost of the system in JOD.'),
-    paybackPeriod: z.number().describe('The estimated payback period in years.'),
-    twentyFiveYearProfit: z.number().describe('The estimated net profit over 25 years in JOD.'),
-  }),
   panelConfig: z.object({
     panelCount: z.number().describe('The total number of solar panels.'),
     panelWattage: z.number().describe('The wattage of each individual panel.'),
     totalDcPower: z.number().describe('The total DC power of the panel array in kWp.'),
+    requiredArea: z.number().describe('The total area required for the panels in m².'),
     tilt: z.number().describe('The recommended tilt angle for the panels in degrees.'),
     azimuth: z.number().describe('The recommended azimuth angle for the panels in degrees (e.g., 180 for South).'),
   }),
