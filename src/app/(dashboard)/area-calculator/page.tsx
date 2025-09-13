@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
-import { Calculator, Maximize, Zap, ArrowRight, Loader2, Sun, PlusCircle, Square, Rows, Columns } from "lucide-react";
+import { Calculator, Maximize, Zap, ArrowRight, Loader2, Sun, PlusCircle, Square, Rows, Columns, Map } from "lucide-react";
 import { useReport } from "@/context/ReportContext";
+import dynamic from 'next/dynamic';
 
 import { Button } from "@/components/ui/button";
 import {
@@ -46,6 +47,9 @@ export default function AreaCalculatorPage() {
   const { addReportCard } = useReport();
   const { toast } = useToast();
 
+  const LeafletMap = useMemo(() => dynamic(() => import('@/components/leaflet-map'), { ssr: false }), []);
+
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -59,6 +63,18 @@ export default function AreaCalculatorPage() {
   });
 
   const landArea = (useWatch({ control: form.control, name: "landWidth" }) || 0) * (useWatch({ control: form.control, name: "landLength" }) || 0);
+
+  const onAreaCalculated = (area: number) => {
+    // This is a simplified approach: we take the square root to get an approximation of length/width
+    const side = Math.sqrt(area);
+    form.setValue('landWidth', parseFloat(side.toFixed(2)));
+    form.setValue('landLength', parseFloat(side.toFixed(2)));
+    toast({
+        title: "تم حساب المساحة",
+        description: `تم تحديث أبعاد الأرض إلى ${side.toFixed(2)} م x ${side.toFixed(2)} م.`,
+    });
+  };
+
 
   async function onSubmit(values: FormValues) {
     setIsLoading(true);
@@ -99,14 +115,29 @@ export default function AreaCalculatorPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight font-headline">حاسبة المساحة والإنتاج</h1>
         <p className="text-muted-foreground mt-2">
-          قدّر عدد الألواح التي يمكن تركيبها في مساحة معينة وكمية الطاقة التي يمكن إنتاجها.
+          ارسم أرضك على الخريطة أو أدخل الأبعاد يدويًا لتقدير عدد الألواح التي يمكن تركيبها وكمية الطاقة التي يمكن إنتاجها.
         </p>
       </div>
+
+       <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Map className="text-primary"/> تحديد المساحة من الخريطة</CardTitle>
+          <CardDescription>
+            استخدم أدوات الرسم (المضلع) على اليسار لتحديد قطعة الأرض. سيتم حساب المساحة وتعبئة الحقول أدناه تلقائيًا.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+            <div className="h-[400px] w-full rounded-md border">
+              <LeafletMap onAreaCalculated={onAreaCalculated} />
+            </div>
+        </CardContent>
+      </Card>
+
 
       <div className="grid gap-8 lg:grid-cols-5">
         <Card className="lg:col-span-2 h-fit">
           <CardHeader>
-            <CardTitle>أدخل الأبعاد والبيانات</CardTitle>
+            <CardTitle>أدخل الأبعاد والبيانات يدويًا</CardTitle>
             <CardDescription>
               المساحة الحالية المحسوبة: {landArea.toFixed(2)} م²
             </CardDescription>

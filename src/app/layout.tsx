@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
 import { Toaster } from "@/components/ui/toaster"
 import './globals.css';
+import "leaflet/dist/leaflet.css";
+import "@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css";
+
 
 export const metadata: Metadata = {
   title: 'Jordan Solar Architect',
