@@ -57,10 +57,17 @@ export type SuggestWireSizeOutput = z.infer<typeof SuggestWireSizeOutputSchema>;
 
 // #region Design Optimizer Schemas
 export const OptimizeDesignInputSchema = z.object({
-  budget: z.number().describe('The total available budget for the project in JOD.'),
-  surfaceArea: z.number().describe('The available rooftop or land area in square meters (m²).'),
-  monthlyBill: z.number().describe('The average monthly electricity bill in JOD, used to estimate consumption.'),
-  location: z.enum(['amman', 'zarqa', 'irbid', 'aqaba']).describe('The city in Jordan for location-specific data like sun hours.'),
+  // Basic Inputs
+  budget: z.coerce.number().positive('يجب أن تكون الميزانية رقماً موجباً'),
+  surfaceArea: z.coerce.number().positive('يجب أن تكون المساحة رقماً موجباً'),
+  monthlyBill: z.coerce.number().positive('يجب أن تكون قيمة الفاتورة موجبة'),
+  location: z.enum(['amman', 'zarqa', 'irbid', 'aqaba'], {required_error: 'الرجاء اختيار الموقع'}),
+
+  // Advanced Inputs
+  kwhPrice: z.coerce.number().positive('سعر الكهرباء يجب أن يكون رقماً موجباً'),
+  costPerWatt: z.coerce.number().positive('تكلفة الواط يجب أن تكون رقماً موجباً'),
+  systemLoss: z.coerce.number().min(0).max(99, 'نسبة الفقد يجب أن تكون بين 0 و 99'),
+  panelWattage: z.coerce.number().positive('قدرة اللوح يجب أن تكون رقماً موجباً'),
 });
 export type OptimizeDesignInput = z.infer<typeof OptimizeDesignInputSchema>;
 

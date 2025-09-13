@@ -4,7 +4,7 @@
  * @fileOverview Solar system design optimization AI agent.
  *
  * This file defines a Genkit flow that acts as an expert solar engineer. It takes high-level
- * user requirements (budget, area, consumption) and uses a suite of tools to find an
+ * user requirements (budget, area, consumption) and now also advanced parameters to find an
  * optimized solar PV system design.
  */
 
@@ -26,22 +26,21 @@ const optimizeDesignPrompt = ai.definePrompt({
     prompt: `You are an expert solar system design optimization engine for Jordan.
 Your goal is to find the optimal solar PV system design that maximizes the 25-year financial return for the user, while staying within their budget and available area, and aiming to cover their electricity needs.
 
-**User Constraints:**
+**User Constraints & Parameters:**
 - **Budget:** {{{budget}}} JOD
 - **Available Area:** {{{surfaceArea}}} m²
 - **Average Monthly Bill:** {{{monthlyBill}}} JOD
 - **Location:** {{{location}}}
 
-**Assumptions & Data (Jordan Market):**
-- Average cost per watt for a full system: 0.85 JOD/Wp
-- Average electricity tariff: 0.12 JOD/kWh
-- Average panel degradation per year: 0.5%
-- Available panel wattage: 550 Wp
-- Area per 550Wp panel (including spacing): 3.5 m²
-- Optimal tilt angle for Jordan: 30 degrees
-- Optimal azimuth: 180 degrees (South)
-- System losses (inverter, wiring, dirt): 15%
-- Average peak sun hours per day:
+**Advanced Parameters (Jordan Market):**
+- **Electricity Tariff:** {{{kwhPrice}}} JOD/kWh
+- **Cost per Watt (Full System):** {{{costPerWatt}}} JOD/Wp
+- **System Losses (Inverter, Wiring, Dirt):** {{{systemLoss}}}%
+- **Panel Wattage to Use:** {{{panelWattage}}} Wp
+- **Panel Degradation per Year:** 0.5%
+- **Area per Panel (including spacing):** 3.5 m² (This is an approximation for a {{{panelWattage}}}Wp panel)
+- **Optimal Tilt/Azimuth:** 30 degrees / 180 degrees (South)
+- **Average peak sun hours per day:**
   - amman: 5.5
   - zarqa: 5.6
   - irbid: 5.4
@@ -50,23 +49,23 @@ Your goal is to find the optimal solar PV system design that maximizes the 25-ye
 **Your Task (Think Step-by-Step):**
 
 1.  **Estimate Target System Size:**
-    - Calculate the user's average monthly kWh consumption: ({{{monthlyBill}}} / 0.12).
+    - Calculate the user's average monthly kWh consumption: ({{{monthlyBill}}} / {{{kwhPrice}}}).
     - Calculate the daily kWh consumption.
-    - Calculate the required system size (kWp) to cover this daily consumption, considering sun hours for {{{location}}} and system losses. Let's call this 'ConsumptionBasedSize'.
+    - Calculate the required system size (kWp) to cover this daily consumption, considering sun hours for {{{location}}} and system losses ( (100-{{{systemLoss}}})/100 ). Let's call this 'ConsumptionBasedSize'.
 
 2.  **Determine Constraints-Based System Size:**
-    - Calculate the maximum system size based on budget: ({{{budget}}} / 0.85) / 1000 = 'BudgetBasedSize' (in kWp).
-    - Calculate the maximum system size based on area: ({{{surfaceArea}}} / 3.5) * 550 / 1000 = 'AreaBasedSize' (in kWp).
+    - Calculate the maximum system size based on budget: ({{{budget}}} / {{{costPerWatt}}}) / 1000 = 'BudgetBasedSize' (in kWp).
+    - Calculate the maximum system size based on area: ({{{surfaceArea}}} / 3.5) * {{{panelWattage}}} / 1000 = 'AreaBasedSize' (in kWp).
 
 3.  **Select the Optimized System Size:**
     - The 'optimizedSystemSize' is the **smallest** of the three calculated sizes: ConsumptionBasedSize, BudgetBasedSize, and AreaBasedSize. This ensures the design is realistic and meets all constraints. Round it to one decimal place.
 
 4.  **Design the System based on 'optimizedSystemSize':**
-    - **Total Cost:** 'optimizedSystemSize' * 1000 * 0.85
+    - **Total Cost:** 'optimizedSystemSize' * 1000 * {{{costPerWatt}}}
     - **Panel Configuration:**
-      - 'panelCount': Math.floor(('optimizedSystemSize' * 1000) / 550).
-      - 'panelWattage': 550.
-      - 'totalDcPower': ('panelCount' * 550) / 1000.
+      - 'panelCount': Math.floor(('optimizedSystemSize' * 1000) / {{{panelWattage}}}).
+      - 'panelWattage': {{{panelWattage}}}.
+      - 'totalDcPower': ('panelCount' * {{{panelWattage}}}) / 1000.
       - 'tilt': 30.
       - 'azimuth': 180.
     - **Inverter Configuration:**
@@ -79,8 +78,8 @@ Your goal is to find the optimal solar PV system design that maximizes the 25-ye
       - 'wireSize': Use 6mm² as a standard recommendation for systems of this size.
 
 5.  **Calculate Financials:**
-    - Calculate annual energy production (kWh): 'totalDcPower' * (sun hours for {{{location}}}) * 365 * (1 - 0.15 system loss).
-    - Calculate annual savings: annual energy production * 0.12 JOD/kWh.
+    - Calculate annual energy production (kWh): 'totalDcPower' * (sun hours for {{{location}}}) * 365 * (1 - {{{systemLoss}}}/100).
+    - Calculate annual savings: annual energy production * {{{kwhPrice}}} JOD/kWh.
     - **Payback Period:** 'totalCost' / annual savings.
     - **25-Year Profit:** (annual savings * 25 * (1 - 0.005 * 12.5) [for average degradation]) - 'totalCost'.
 

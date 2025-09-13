@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { BrainCircuit, ArrowRight, Loader2, DollarSign, Ruler, BarChart3, PlusCircle } from "lucide-react";
+import { BrainCircuit, ArrowRight, Loader2, DollarSign, Ruler, BarChart3, PlusCircle, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -22,6 +22,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
 import { optimizeDesign } from "@/ai/flows/optimize-design";
 import { OptimizeDesignInputSchema, type OptimizeDesignOutput } from '@/ai/tool-schemas';
@@ -44,6 +50,11 @@ export default function DesignOptimizerPage() {
       surfaceArea: 80,
       monthlyBill: 120,
       location: "amman",
+      // Advanced defaults
+      kwhPrice: 0.12,
+      costPerWatt: 0.85,
+      systemLoss: 15,
+      panelWattage: 550,
     },
   });
 
@@ -98,7 +109,7 @@ export default function DesignOptimizerPage() {
       <div className="grid gap-8 lg:grid-cols-5">
         <Card className="lg:col-span-2 h-fit">
           <CardHeader>
-            <CardTitle>أدخل قيود التصميم</CardTitle>
+            <CardTitle>أدخل قيود ومعلمات التصميم</CardTitle>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -166,6 +177,73 @@ export default function DesignOptimizerPage() {
                       </FormItem>
                     )}
                   />
+
+                  <Accordion type="single" collapsible className="w-full">
+                    <AccordionItem value="item-1">
+                      <AccordionTrigger>
+                        <span className="flex items-center gap-2">
+                            <Settings className="h-4 w-4"/>
+                            إعدادات متقدمة (اختياري)
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-4 pt-4">
+                        <FormField
+                          control={form.control}
+                          name="kwhPrice"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>سعر الكهرباء (دينار/ك.و.س)</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="costPerWatt"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>تكلفة الواط الشمسي (دينار/واط)</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.05" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="systemLoss"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>نسبة الفقد في النظام (%)</FormLabel>
+                              <FormControl>
+                                <Input type="number" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                         <FormField
+                          control={form.control}
+                          name="panelWattage"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>قدرة اللوح المستخدم (واط)</FormLabel>
+                              <FormControl>
+                                <Input type="number" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+
+
                 </fieldset>
                 <Button type="submit" disabled={isLoading} className="w-full">
                   {isLoading ? (
