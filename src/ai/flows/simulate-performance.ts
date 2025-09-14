@@ -2,8 +2,10 @@
 
 /**
  * @fileOverview AI-powered live solar performance simulation.
+ * This is a hybrid model. It uses physics-based calculations for numerical accuracy
+ * and an AI model for generating the human-readable analysis.
  *
- * - simulatePerformance - A function to simulate the performance of a solar system based on its specs and weather data.
+ * - simulatePerformance - A function to simulate the performance of a solar system.
  */
 
 import { ai } from '@/ai/genkit';
@@ -17,82 +19,63 @@ export async function simulatePerformance(
   return await simulatePerformanceFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'simulatePerformancePrompt',
+// Helper function to perform the physics-based calculation
+function calculatePower(systemSizeKw: number, irradiance: number, temperature: number): number {
+    const systemSizeWatts = systemSizeKw * 1000;
+    const temperatureCoefficient = 0.0035; // Per degree C
+    const systemLosses = 0.85; // Represents total losses (inverter, dirt, wiring, etc.)
+
+    // Temperature derating factor
+    const tempDerating = 1 - ((temperature - 25) * temperatureCoefficient);
+
+    // Irradiance factor
+    const irradianceFactor = irradiance / 1000;
+
+    const powerOutputWatts = systemSizeWatts * irradianceFactor * tempDerating * systemLosses;
+    return powerOutputWatts > 0 ? powerOutputWatts : 0;
+}
+
+// Helper to estimate irradiance from UV and cloud cover
+function estimateIrradiance(uvIndex: number, cloudCover: number): number {
+    // Base irradiance on UV index (very rough approximation)
+    const uvBasedIrradiance = uvIndex * 100;
+
+    // Reduce irradiance based on cloud cover
+    const cloudFactor = 1 - (cloudCover * 0.75 / 100); // Assume 75% of light is blocked by 100% cloud cover
+
+    return uvBasedIrradiance * cloudFactor;
+}
+
+// Define a new, simpler AI prompt that only generates the reasoning.
+const generateAnalysisPrompt = ai.definePrompt({
+  name: 'generatePerformanceAnalysisPrompt',
   input: { schema: z.object({
-      systemSize: SimulatePerformanceInputSchema.shape.systemSize,
-      // Scenario-specific data
-      liveUvIndex: z.number(),
-      liveTemperature: z.number(),
+      liveOutputPower: z.number(),
+      forecastOutputPower: z.number(),
+      clearSkyOutputPower: z.number(),
       liveCloudCover: z.number(),
-      forecastUvIndex: z.number(),
-      forecastTemperature: z.number(),
-      forecastCloudCover: z.number(),
   }) },
   output: { schema: z.object({
-      liveOutputPower: z.number().describe('Calculated output power in Watts for the LIVE scenario.'),
-      forecastOutputPower: z.number().describe('Calculated output power in Watts for the FORECAST scenario.'),
-      clearSkyOutputPower: z.number().describe('Calculated output power in Watts for the CLEAR SKY scenario.'),
-      performanceAnalysis: z.string().describe('A concise, one-sentence analysis in Arabic of the system\'s current performance, comparing live to ideal and forecast, and considering weather conditions.'),
+      performanceAnalysis: SimulatePerformanceOutputSchema.shape.performanceAnalysis,
   }) },
-  prompt: `You are a sophisticated solar energy calculation engine and performance analyst. Your task is to calculate the power output of a solar PV system for three different scenarios and then provide a concise analysis.
+  prompt: `أنت خبير في تحليل أداء أنظمة الطاقة الشمسية. بناءً على الأرقام المحسوبة التالية، قدم جملة تحليلية واحدة وموجزة باللغة العربية.
 
-System Specifications:
-- System Size (DC): {{{systemSize}}} kWp
+**البيانات المحسوبة:**
+- الإنتاج الفعلي: {{{liveOutputPower}}} واط
+- الإنتاج المتوقع: {{{forecastOutputPower}}} واط
+- الإنتاج المثالي (سماء صافية): {{{clearSkyOutputPower}}} واط
+- نسبة الغيوم الحالية: {{{liveCloudCover}}}%
 
----
-Part 1: Power Calculation
+**مهمتك:**
+اكتب جملة التحليل (performanceAnalysis) فقط.
+- قارن "الإنتاج الفعلي" بـ "الإنتاج المثالي" للحصول على فكرة عن الكفاءة.
+- اذكر السبب الرئيسي لأي انخفاض كبير (مثل الغيوم).
+- إذا كان الأداء منخفضًا ولكنه يطابق التوقعات، اذكر أن هذا متوقع.
+- إذا كان الأداء أقل بكثير من المتوقع في ظروف صافية، اقترح فحص النظام.
 
-Formula to use for each scenario:
-Power Output (Watts) = (System Size in Watts) * (Estimated Solar Irradiance / 1000) * (1 - (Temperature - 25) * 0.0035) * 0.85
-
-Where:
-- System Size in Watts = {{{systemSize}}} * 1000
-- Estimated Solar Irradiance is the value you must first estimate for each specific scenario (in W/m^2).
-- Temperature is the value for the specific scenario (in °C).
-- 0.0035 is the temperature coefficient.
-- 0.85 represents total system losses (e.g., inverter, dirt, wiring).
-
----
-
-Task 1: Calculate the output for all three scenarios independently.
-
-Scenario 1: Live Real-Time Weather Conditions
-- UV Index: {{{liveUvIndex}}}
-- Cloud Cover: {{{liveCloudCover}}}%
-- Ambient Temperature: {{{liveTemperature}}} °C
-- Step 1: Estimate the 'liveSolarIrradiance' in W/m^2. A UV index of 1 is low irradiance (~100 W/m^2), while 10+ is high (~1000 W/m^2). Reduce the irradiance based on cloud cover.
-- Step 2: Calculate 'liveOutputPower' using the formula.
-
-Scenario 2: Forecasted Weather Conditions
-- UV Index: {{{forecastUvIndex}}}
-- Cloud Cover: {{{forecastCloudCover}}}%
-- Ambient Temperature: {{{forecastTemperature}}} °C
-- Step 1: Estimate the 'forecastSolarIrradiance' in W/m^2 using the same logic.
-- Step 2: Calculate 'forecastOutputPower' using the formula.
-
-Scenario 3: Ideal Clear Sky Conditions
-- Solar Irradiance: 1000 W/m^2
-- Ambient Temperature: 25 °C
-- Step 1: Use these ideal values directly.
-- Step 2: Calculate 'clearSkyOutputPower' using the formula.
-
----
-Part 2: Performance Analysis
-
-Task 2: Based on the three power values you just calculated, provide a single, concise sentence in ARABIC for 'performanceAnalysis'.
-- Compare 'liveOutputPower' to 'clearSkyOutputPower' to get a sense of efficiency.
-- Mention the reason for any significant drop (e.g., cloud cover).
-- If performance is low but matches the forecast, state that it's expected.
-- If performance is much lower than forecast, suggest checking the system.
-- Example 1 (cloudy): "الأداء الحالي متوقع نظرًا لوجود غطاء سحابي بنسبة {{{liveCloudCover}}}%، مما يقلل الإنتاج مقارنة بالظروف المثالية."
-- Example 2 (clear sky, good performance): "أداء ممتاز، النظام يعمل بكفاءة عالية قريبًا من الأداء المثالي في ظل الظروف الجوية الحالية."
-- Example 3 (clear sky, low performance): "ملاحظة: الأداء الحالي أقل من المتوقع في هذه الظروف الصافية، قد تحتاج الألواح إلى فحص أو تنظيف."
-
----
-
-Instructions:
-- Populate ALL fields in the output object, including the analysis. Do not add extra text.
+- مثال 1 (غائم): "الأداء الحالي متوقع نظرًا لوجود غطاء سحابي بنسبة {{{liveCloudCover}}}%، مما يقلل الإنتاج مقارنة بالظروف المثالية."
+- مثال 2 (سماء صافية، أداء جيد): "أداء ممتاز، النظام يعمل بكفاءة عالية قريبًا من الأداء المثالي في ظل الظروف الجوية الحالية."
+- مثال 3 (سماء صافية، أداء منخفض): "ملاحظة: الأداء الحالي أقل من المتوقع في هذه الظروف الصافية، قد تحتاج الألواح إلى فحص أو تنظيف."
 `,
 });
 
@@ -106,32 +89,33 @@ const simulatePerformanceFlow = ai.defineFlow(
     // 1. Fetch real-world weather data
     const weatherData = await getLiveAndForecastWeatherData(input.location);
     
-    // 2. Call the AI prompt with data for all scenarios
-    const { output } = await prompt({
-      systemSize: input.systemSize,
-      // Live Data
-      liveUvIndex: weatherData.current.uvIndex,
-      liveTemperature: weatherData.current.temperature,
+    // 2. Perform physics-based calculations for all 3 scenarios
+    const liveIrradiance = estimateIrradiance(weatherData.current.uvIndex, weatherData.current.cloudCover);
+    const liveOutputPower = calculatePower(input.systemSize, liveIrradiance, weatherData.current.temperature);
+
+    const forecastIrradiance = estimateIrradiance(weatherData.forecast.uvIndex, weatherData.forecast.cloudCover);
+    const forecastOutputPower = calculatePower(input.systemSize, forecastIrradiance, weatherData.forecast.temperature);
+
+    const clearSkyOutputPower = calculatePower(input.systemSize, 1000, 25);
+
+    // 3. Call the AI model ONLY to generate the analysis, using the accurate data.
+    const { output: analysisOutput } = await generateAnalysisPrompt({
+      liveOutputPower,
+      forecastOutputPower,
+      clearSkyOutputPower,
       liveCloudCover: weatherData.current.cloudCover,
-      // Forecast Data
-      forecastUvIndex: weatherData.forecast.uvIndex,
-      forecastTemperature: weatherData.forecast.temperature,
-      forecastCloudCover: weatherData.forecast.cloudCover,
     });
 
-    if (!output) {
-      throw new Error("AI model did not return an output.");
+    if (!analysisOutput) {
+      throw new Error("AI model did not return an analysis.");
     }
 
-    // 3. Combine AI results with weather data for the final response
+    // 4. Combine calculated data with AI analysis for the final response
     return {
-      // AI calculated power outputs
-      liveOutputPower: output.liveOutputPower,
-      forecastOutputPower: output.forecastOutputPower,
-      clearSkyOutputPower: output.clearSkyOutputPower,
-      // AI generated analysis
-      performanceAnalysis: output.performanceAnalysis,
-      // Pass back the full weather data object
+      liveOutputPower,
+      forecastOutputPower,
+      clearSkyOutputPower,
+      performanceAnalysis: analysisOutput.performanceAnalysis,
       weather: weatherData,
     };
   }
