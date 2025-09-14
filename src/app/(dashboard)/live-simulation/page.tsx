@@ -25,7 +25,6 @@ import {
 import {useToast} from '@/hooks/use-toast';
 import {
   LineChart,
-  AreaChart,
   ComposedChart,
   Line,
   Area,
@@ -657,14 +656,13 @@ export default function LiveSimulationPage() {
                     <div>
                       <p className="text-center text-sm text-muted-foreground mb-2">مخطط إنتاج الطاقة (واط)</p>
                       <LineChart
-                        width={500}
                         height={200}
                         data={powerChartData}
                         syncId="anyId"
                         margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="time" tick={{ display: 'none' }} />
+                        <XAxis dataKey="time" tick={{ display: 'none' }} axisLine={false}/>
                         <YAxis
                           label={{
                             value: 'واط',
@@ -710,8 +708,7 @@ export default function LiveSimulationPage() {
                         />
                       </LineChart>
                       <p className="text-center text-sm text-muted-foreground mt-4 mb-2">مخطط عوامل الطقس</p>
-                      <AreaChart
-                        width={500}
+                      <ComposedChart
                         height={200}
                         data={weatherChartData}
                         syncId="anyId"
@@ -728,9 +725,9 @@ export default function LiveSimulationPage() {
                           }}
                         />
                         <Legend verticalAlign="top" wrapperStyle={{ top: -4, right: 20, direction: 'rtl' }} />
-                        <Area yAxisId="left" type="monotone" dataKey="uv" name="مؤشر UV" stroke="#ca8a04" fill="#ca8a04" fillOpacity={0.2} />
                         <Area yAxisId="right" type="monotone" dataKey="cloud" name="نسبة الغيوم" stroke="#6b7280" fill="#6b7280" fillOpacity={0.2}/>
-                      </AreaChart>
+                        <Line yAxisId="left" type="monotone" dataKey="uv" name="مؤشر UV" stroke="#ca8a04" strokeWidth={2} dot={false} />
+                      </ComposedChart>
                     </div>
                   </ResponsiveContainer>
                 </CardContent>
