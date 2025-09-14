@@ -3,14 +3,6 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Coordinates for major Jordanian cities
-const locations: Record<string, { lat: number; lon: number }> = {
-    amman: { lat: 31.95, lon: 35.91 },
-    zarqa: { lat: 32.09, lon: 36.10 },
-    irbid: { lat: 32.56, lon: 35.85 },
-    aqaba: { lat: 29.53, lon: 35.01 },
-};
-
 export interface WeatherPoint {
     time?: string; // Optional time for forecast points
     temperature: number;
@@ -25,22 +17,18 @@ export interface WeatherData {
 
 /**
  * Fetches live and 24-hour forecast weather data for a given location from WeatherAPI.com.
- * @param location A string representing one of the predefined Jordanian cities.
+ * @param lat The latitude of the location.
+ * @param lon The longitude of the location.
  * @returns A promise that resolves to the live and forecast weather data.
  */
-export async function getLiveAndForecastWeatherData(location: string): Promise<WeatherData> {
-    const coords = locations[location.toLowerCase()];
-    if (!coords) {
-        throw new Error(`Location '${location}' is not supported. Supported locations are: Amman, Zarqa, Irbid, Aqaba.`);
-    }
-
+export async function getLiveAndForecastWeatherData(lat: number, lon: number): Promise<WeatherData> {
     const apiKey = process.env.WEATHER_API_KEY;
     if (!apiKey) {
         console.error("WeatherAPI.com API key is missing. Please add WEATHER_API_KEY to your .env file.");
         throw new Error("WeatherAPI.com API key is not configured.");
     }
     
-    const url = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${coords.lat},${coords.lon}&days=1&aqi=no&alerts=no`;
+    const url = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${lat},${lon}&days=1&aqi=no&alerts=no`;
 
     try {
         const response = await axios.get(url);

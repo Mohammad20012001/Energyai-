@@ -86,8 +86,8 @@ const simulatePerformanceFlow = ai.defineFlow(
     outputSchema: SimulatePerformanceOutputSchema,
   },
   async (input): Promise<SimulatePerformanceOutput> => {
-    // 1. Fetch real-world and full-day forecast weather data
-    const weatherData = await getLiveAndForecastWeatherData(input.location);
+    // 1. Fetch real-world and full-day forecast weather data using coordinates
+    const weatherData = await getLiveAndForecastWeatherData(input.latitude, input.longitude);
     
     // 2. Perform physics-based calculations for all 3 LIVE scenarios
     const liveIrradiance = estimateIrradiance(weatherData.current.uvIndex, weatherData.current.cloudCover);

@@ -93,7 +93,8 @@ export type OptimizeDesignOutput = z.infer<typeof OptimizeDesignOutputSchema>;
 // #region Performance Simulation Schemas
 export const SimulatePerformanceInputSchema = z.object({
   systemSize: z.coerce.number().positive(),
-  location: z.enum(['amman', 'zarqa', 'irbid', 'aqaba']),
+  latitude: z.coerce.number(),
+  longitude: z.coerce.number(),
   panelTilt: z.coerce.number().min(0).max(90),
   panelAzimuth: z.coerce.number().min(0).max(360),
   kwhPrice: z.coerce.number().positive("يجب أن يكون السعر إيجابياً"),

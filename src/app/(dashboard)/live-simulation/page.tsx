@@ -1,7 +1,7 @@
 
 'use client';
 
-import {useState, useEffect, useRef, useMemo} from 'react';
+import {useState, useEffect, useRef, useMemo, useCallback} from 'react';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {useForm} from 'react-hook-form';
 import type {z} from 'zod';
@@ -15,12 +15,12 @@ import {
   BarChart,
   Thermometer,
   BrainCircuit,
-  ShieldCheck,
   TrendingUp,
   SunDim,
   Lightbulb,
   DollarSign,
   CalendarClock,
+  MapPin,
 } from 'lucide-react';
 import {useToast} from '@/hooks/use-toast';
 import {
@@ -33,6 +33,8 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import dynamic from 'next/dynamic';
+
 
 import {Button} from '@/components/ui/button';
 import {
@@ -52,21 +54,18 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import {Alert, AlertTitle, AlertDescription} from '@/components/ui/alert';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {startSimulationAction} from '@/app/actions/simulation';
 import {cn} from '@/lib/utils';
 import {
   SimulatePerformanceInputSchema,
   type SimulatePerformanceOutput,
-  type SimulatePerformanceInput,
 } from '@/ai/tool-schemas';
 import { type WeatherPoint } from '@/services/weather-service';
+
+const LocationPickerMap = dynamic(() => import('@/components/location-picker-map'), { 
+    loading: () => <p className="text-center text-muted-foreground">...تحميل الخريطة</p>,
+    ssr: false 
+});
 
 
 const formSchema = SimulatePerformanceInputSchema;
@@ -119,12 +118,24 @@ export default function LiveSimulationPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       systemSize: 5,
-      location: 'amman',
+      latitude: 31.9539,
+      longitude: 35.9106,
       panelTilt: 30,
       panelAzimuth: 180,
       kwhPrice: 0.12,
     },
   });
+  
+  const onLocationSelected = useCallback((lat: number, lng: number) => {
+    form.setValue('latitude', lat, { shouldValidate: true });
+    form.setValue('longitude', lng, { shouldValidate: true });
+    
+    toast({
+        title: "تم تحديد الموقع",
+        description: `تم تحديث الإحداثيات: ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+    });
+  }, [form, toast]);
+
 
   const prepareForecastChartData = (forecast: WeatherPoint[], systemSize: number) => {
     const chartData = forecast.map(hourlyData => {
@@ -267,8 +278,7 @@ export default function LiveSimulationPage() {
           المحاكاة الحية والتحليل المقارن
         </h1>
         <p className="text-muted-foreground mt-2">
-          قارن أداء نظامك الفعلي مع الأداء المتوقع والمثالي بناءً على بيانات
-          الطقس الحية والمتوقعة.
+          حدد موقع مشروعك على الخريطة، ثم قارن أداء نظامك الفعلي مع الأداء المتوقع والمثالي.
         </p>
       </div>
 
@@ -283,7 +293,31 @@ export default function LiveSimulationPage() {
                 onSubmit={form.handleSubmit(onSubmit)}
                 className="space-y-6 text-right"
               >
-                <fieldset disabled={isSimulating} className="space-y-4">
+                 <fieldset disabled={isSimulating} className="space-y-4">
+                  
+                  <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2"><MapPin className="text-primary"/> حدد موقع المشروع</CardTitle>
+                        <CardDescription className="text-xs">انقر على الخريطة لتحديد الموقع الدقيق</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="h-[250px] w-full rounded-md border overflow-hidden relative z-10">
+                            <LocationPickerMap 
+                                onLocationSelected={onLocationSelected} 
+                                initialCenter={{lat: form.getValues('latitude'), lng: form.getValues('longitude')}} 
+                            />
+                        </div>
+                         <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
+                             <FormField control={form.control} name="latitude" render={({field}) => (
+                                 <FormItem><FormControl><Input type="number" readOnly className="bg-muted/50" {...field} /></FormControl></FormItem>
+                             )}/>
+                             <FormField control={form.control} name="longitude" render={({field}) => (
+                                 <FormItem><FormControl><Input type="number" readOnly className="bg-muted/50" {...field} /></FormControl></FormItem>
+                             )}/>
+                         </div>
+                    </CardContent>
+                  </Card>
+
                   <FormField
                     control={form.control}
                     name="systemSize"
@@ -306,33 +340,6 @@ export default function LiveSimulationPage() {
                         <FormControl>
                           <Input type="number" placeholder="e.g., 0.12" {...field} />
                         </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="location"
-                    render={({field}) => (
-                      <FormItem>
-                        <FormLabel>الموقع</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          dir="rtl"
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="اختر مدينة..." />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="amman">عمان</SelectItem>
-                            <SelectItem value="zarqa">الزرقاء</SelectItem>
-                            <SelectItem value="irbid">إربد</SelectItem>
-                            <SelectItem value="aqaba">العقبة</SelectItem>
-                          </SelectContent>
-                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -696,5 +703,3 @@ export default function LiveSimulationPage() {
     </div>
   );
 }
-
-    
