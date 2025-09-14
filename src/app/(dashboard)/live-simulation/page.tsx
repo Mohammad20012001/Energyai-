@@ -656,79 +656,81 @@ export default function LiveSimulationPage() {
                     <ResponsiveContainer width="100%" height="100%">
                       <div>
                         <p className="text-center text-sm text-muted-foreground mb-2">مخطط إنتاج الطاقة (واط)</p>
-                        <LineChart
-                          height={200}
-                          data={powerChartData}
-                          syncId="anyId"
-                          margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="time" tick={{ display: 'none' }} axisLine={false}/>
-                          <YAxis
-                            label={{
-                              value: 'واط',
-                              angle: -90,
-                              position: 'insideLeft',
-                            }}
-                          />
-                          <Tooltip
-                            contentStyle={{
-                              background: 'hsl(var(--background))',
-                              direction: 'rtl',
-                            }}
-                          />
-                          <Legend
-                            verticalAlign="top"
-                            wrapperStyle={{ top: -4, right: 20, direction: 'rtl' }}
-                          />
-                          <Line
-                            name="الفعلي"
-                            type="monotone"
-                            dataKey="live"
-                            stroke="hsl(var(--primary))"
-                            strokeWidth={3}
-                            dot={false}
-                          />
-                          <Line
-                            name="المتوقع"
-                            type="monotone"
-                            dataKey="forecast"
-                            stroke="#3b82f6"
-                            strokeWidth={2}
-                            dot={false}
-                            strokeDasharray="5 5"
-                          />
-                          <Line
-                            name="المثالي"
-                            type="monotone"
-                            dataKey="ideal"
-                            stroke="#8f8f8f"
-                            strokeWidth={2}
-                            dot={false}
-                            strokeDasharray="3 3"
-                          />
-                        </LineChart>
+                        <ResponsiveContainer width="100%" height={200}>
+                            <LineChart
+                            data={powerChartData}
+                            syncId="anyId"
+                            margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
+                            >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="time" tick={{ display: 'none' }} axisLine={false}/>
+                            <YAxis
+                                label={{
+                                value: 'واط',
+                                angle: -90,
+                                position: 'insideLeft',
+                                }}
+                            />
+                            <Tooltip
+                                contentStyle={{
+                                background: 'hsl(var(--background))',
+                                direction: 'rtl',
+                                }}
+                            />
+                            <Legend
+                                verticalAlign="top"
+                                wrapperStyle={{ top: -4, right: 20, direction: 'rtl' }}
+                            />
+                            <Line
+                                name="الفعلي"
+                                type="monotone"
+                                dataKey="live"
+                                stroke="hsl(var(--primary))"
+                                strokeWidth={3}
+                                dot={false}
+                            />
+                            <Line
+                                name="المتوقع"
+                                type="monotone"
+                                dataKey="forecast"
+                                stroke="#3b82f6"
+                                strokeWidth={2}
+                                dot={false}
+                                strokeDasharray="5 5"
+                            />
+                            <Line
+                                name="المثالي"
+                                type="monotone"
+                                dataKey="ideal"
+                                stroke="#8f8f8f"
+                                strokeWidth={2}
+                                dot={false}
+                                strokeDasharray="3 3"
+                            />
+                            </LineChart>
+                        </ResponsiveContainer>
                         <p className="text-center text-sm text-muted-foreground mt-4 mb-2">مخطط عوامل الطقس</p>
-                        <ComposedChart
-                          height={200}
-                          data={weatherChartData}
-                          syncId="anyId"
-                          margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="time" />
-                          <YAxis yAxisId="left" orientation="left" stroke="#ca8a04" label={{ value: 'UV', angle: -90, position: 'insideLeft', fill: '#ca8a04' }} />
-                          <YAxis yAxisId="right" orientation="right" stroke="#6b7280" label={{ value: '%', angle: -90, position: 'insideRight', fill: '#6b7280' }} />
-                          <Tooltip
-                            contentStyle={{
-                              background: 'hsl(var(--background))',
-                              direction: 'rtl',
-                            }}
-                          />
-                          <Legend verticalAlign="top" wrapperStyle={{ top: -4, right: 20, direction: 'rtl' }} />
-                          <Area yAxisId="right" type="monotone" dataKey="cloud" name="نسبة الغيوم" stroke="#6b7280" fill="#6b7280" fillOpacity={0.2}/>
-                          <Line yAxisId="left" type="monotone" dataKey="uv" name="مؤشر UV" stroke="#ca8a04" strokeWidth={2} dot={false} />
-                        </ComposedChart>
+                        <ResponsiveContainer width="100%" height={200}>
+                            <ComposedChart
+                            data={weatherChartData}
+                            syncId="anyId"
+                            margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
+                            >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="time" />
+                            <YAxis yAxisId="left" orientation="left" stroke="#ca8a04" label={{ value: 'UV', angle: -90, position: 'insideLeft', fill: '#ca8a04' }} />
+                            <YAxis yAxisId="right" orientation="right" stroke="#6b7280" label={{ value: '%', angle: -90, position: 'insideRight', fill: '#6b7280' }} />
+                            <Tooltip
+                                contentStyle={{
+                                background: 'hsl(var(--background))',
+                                direction: 'rtl',
+                                }}
+                            />
+                            <Legend verticalAlign="top" wrapperStyle={{ top: -4, right: 20, direction: 'rtl' }} />
+                            <Area yAxisId="right" type="monotone" dataKey="cloud" name="نسبة الغيوم" stroke="#6b7280" fill="#6b7280" fillOpacity={0.2}/>
+                            <Line yAxisId="left" type="monotone" dataKey="uv" name="مؤشر UV" stroke="#ca8a04" strokeWidth={2} dot={false} />
+                            </ComposedChart>
+                        </ResponsiveContainer>
                       </div>
                     </ResponsiveContainer>
                   </CardContent>
@@ -741,3 +743,5 @@ export default function LiveSimulationPage() {
     </div>
   );
 }
+
+    
