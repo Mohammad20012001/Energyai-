@@ -79,8 +79,8 @@ const LeafletMap = ({ onAreaCalculated }: LeafletMapProps) => {
     if (!mapInstanceRef.current) {
         mapInstanceRef.current = L.map(mapContainerRef.current).setView([31.9539, 35.9106], 13);
         
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
         }).addTo(mapInstanceRef.current);
     }
     
