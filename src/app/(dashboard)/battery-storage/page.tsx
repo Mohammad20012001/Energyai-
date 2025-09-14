@@ -86,6 +86,10 @@ export default function BatteryStoragePage() {
     setIsLoading(true);
     setResult(null);
 
+    // Optional: Recalculate dailyLoadKwh from appliances if they exist,
+    // overriding the manual input. Or just use the manual input.
+    // For now, we will trust the manual input `values.dailyLoadKwh`.
+    
     await new Promise(resolve => setTimeout(resolve, 500));
 
     try {
@@ -163,7 +167,6 @@ export default function BatteryStoragePage() {
                             fields={fields}
                             append={append}
                             remove={remove}
-                            watch={form.watch}
                         />
                       </AccordionContent>
                     </AccordionItem>

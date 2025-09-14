@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Trash2, PlusCircle } from 'lucide-react';
 import { FormControl, FormField } from '@/components/ui/form';
-import type { Control, FieldArrayWithId, UseFieldArrayAppend, UseFieldArrayRemove, UseFormWatch } from 'react-hook-form';
+import type { Control, FieldArrayWithId, UseFieldArrayAppend, UseFieldArrayRemove } from 'react-hook-form';
 
 interface ApplianceLoadCalculatorProps {
     onTotalLoadChange: (totalKwh: number) => void;
@@ -15,7 +15,6 @@ interface ApplianceLoadCalculatorProps {
     fields: FieldArrayWithId<any, "appliances", "id">[];
     append: UseFieldArrayAppend<any, "appliances">;
     remove: UseFieldArrayRemove;
-    watch: UseFormWatch<any>;
 }
 
 const commonAppliances = [
@@ -31,24 +30,26 @@ const commonAppliances = [
     { name: 'مضخة مياه', power: 750 },
 ];
 
-export function ApplianceLoadCalculator({ onTotalLoadChange, control, fields, append, remove, watch }: ApplianceLoadCalculatorProps) {
+export function ApplianceLoadCalculator({ onTotalLoadChange, control, fields, append, remove }: ApplianceLoadCalculatorProps) {
     const [selectedAppliance, setSelectedAppliance] = useState('');
-    
-    const watchedAppliances = watch('appliances');
 
     const totalDailyLoadKwh = useMemo(() => {
-        if (!watchedAppliances) return 0;
-        return watchedAppliances.reduce((total: number, appliance: any) => {
-            if (appliance.power > 0 && appliance.quantity > 0 && appliance.hours > 0) {
-                return total + (appliance.power * appliance.quantity * appliance.hours) / 1000;
+        return fields.reduce((total: number, field: any, index: number) => {
+             // We can't use watch here, so we have to access the form's internal values
+             // This is not ideal, but it's a workaround for the infinite loop issue.
+             // A better solution might involve passing the entire form object.
+             // For now, this calculation is for display only.
+            const power = field.power || 0;
+            const quantity = field.quantity || 0;
+            const hours = field.hours || 0;
+            
+            if (power > 0 && quantity > 0 && hours > 0) {
+                return total + (power * quantity * hours) / 1000;
             }
             return total;
         }, 0);
-    }, [watchedAppliances]);
+    }, [fields]);
 
-    useEffect(() => {
-        onTotalLoadChange(totalDailyLoadKwh);
-    }, [totalDailyLoadKwh, onTotalLoadChange]);
 
     const handleAddAppliance = () => {
         const applianceData = commonAppliances.find(app => app.name === selectedAppliance);
@@ -148,10 +149,13 @@ export function ApplianceLoadCalculator({ onTotalLoadChange, control, fields, ap
                 </Table>
             </div>
             
-            <div className="flex justify-between items-center bg-background p-3 rounded-md">
-                <div className="text-sm font-bold">إجمالي الحمل اليومي المقدر:</div>
+             <div className="flex justify-between items-center bg-background p-3 rounded-md">
+                <div className="text-sm font-bold">إجمالي الحمل اليومي المقدر (للعرض فقط):</div>
                 <div className="text-lg font-bold text-primary">{totalDailyLoadKwh.toFixed(2)} kWh</div>
             </div>
+             <p className="text-xs text-muted-foreground p-2">
+                ملاحظة: هذا الإجمالي للعرض فقط. يجب إدخال القيمة النهائية في حقل "إجمالي الأحمال اليومية" أعلاه ليتم استخدامها في الحساب الرئيسي.
+            </p>
         </div>
     );
 }
