@@ -166,40 +166,8 @@ export function calculateProductionFromArea(input: AreaCalculationInput): AreaCa
 }
 // #endregion
 
-// #region Financial Viability Calculator
-export interface FinancialViabilityInput {
-    investmentAmount: number;
-    costPerWatt: number;
-    kwhPrice: number;
-    sunHours: number;
-    systemLoss: number;
-}
-
-export interface FinancialViabilityResult {
-    systemSizeKw: number;
-    annualProductionKwh: number;
-    annualRevenue: number;
-    paybackPeriodYears: number;
-    netProfit25Years: number;
-}
-
-export function calculateFinancialViability(input: FinancialViabilityInput): FinancialViabilityResult {
-    const systemSizeWatts = input.investmentAmount / input.costPerWatt;
-    const systemSizeKw = systemSizeWatts / 1000;
-    const dailyProductionKwh = systemSizeKw * input.sunHours * (1 - input.systemLoss / 100);
-    const annualProductionKwh = dailyProductionKwh * 365;
-    const annualRevenue = annualProductionKwh * input.kwhPrice;
-    const paybackPeriodYears = annualRevenue > 0 ? input.investmentAmount / annualRevenue : Infinity;
-    const netProfit25Years = (annualRevenue * 25) - input.investmentAmount;
-
-    return {
-        systemSizeKw,
-        annualProductionKwh,
-        annualRevenue,
-        paybackPeriodYears,
-        netProfit25Years,
-    };
-}
+// #region Financial Viability Calculator - DEPRECATED / MERGED
+// This logic has been merged into calculateOptimalDesign
 // #endregion
 
 
@@ -231,6 +199,51 @@ export function calculateInverterSize(input: InverterSizingInput): InverterSizin
         recommendedVoc,
         recommendedIsc,
         gridPhase: input.gridPhase === 'single' ? 'أحادي الطور' : 'ثلاثي الطور',
+    };
+}
+// #endregion
+
+// #region Battery Storage Calculator
+export interface BatteryCalculationInput {
+    dailyLoadKwh: number;
+    autonomyDays: number;
+    depthOfDischarge: number;
+    batteryVoltage: number;
+    batteryCapacityAh: number;
+    systemVoltage: number;
+}
+
+export interface BatteryCalculationResult {
+    requiredBankEnergyKwh: number;
+    requiredBankCapacityAh: number;
+    batteriesInSeries: number;
+    parallelStrings: number;
+    totalBatteries: number;
+}
+
+export function calculateBatteryBank(input: BatteryCalculationInput): BatteryCalculationResult {
+    // 1. Calculate the total energy needed, accounting for DoD and autonomy
+    const dodFactor = input.depthOfDischarge / 100;
+    const requiredBankEnergyKwh = (input.dailyLoadKwh * input.autonomyDays) / dodFactor;
+
+    // 2. Convert the required energy (kWh) to Amp-hours at the desired system voltage
+    const requiredBankCapacityAh = (requiredBankEnergyKwh * 1000) / input.systemVoltage;
+
+    // 3. Determine the battery connection configuration
+    const batteriesInSeries = Math.round(input.systemVoltage / input.batteryVoltage);
+    
+    // 4. Calculate how many parallel strings are needed
+    const parallelStrings = Math.ceil(requiredBankCapacityAh / input.batteryCapacityAh);
+
+    // 5. Calculate the total number of batteries
+    const totalBatteries = batteriesInSeries * parallelStrings;
+
+    return {
+        requiredBankEnergyKwh: parseFloat(requiredBankEnergyKwh.toFixed(2)),
+        requiredBankCapacityAh: parseFloat(requiredBankCapacityAh.toFixed(2)),
+        batteriesInSeries,
+        parallelStrings,
+        totalBatteries,
     };
 }
 // #endregion

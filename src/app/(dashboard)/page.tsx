@@ -109,6 +109,25 @@ export default function DashboardOverviewPage() {
           </CardContent>
         </Card>
 
+         <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BatteryCharging className="text-primary" />
+              حاسبة تخزين الطاقة (البطاريات)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">
+              احسب حجم بنك البطاريات المطلوب وعددها وطريقة توصيلها.
+            </p>
+            <Button asChild>
+              <Link href="/battery-storage">
+                اذهب للحاسبة <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
