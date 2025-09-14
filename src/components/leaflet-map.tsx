@@ -75,39 +75,51 @@ const LeafletMap = ({ onAreaCalculated }: LeafletMapProps) => {
       return;
     }
 
-    // Define base layers
-    const streetLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-    });
-
-    const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-    });
-    
-    const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-    });
-
-
     // Initialize the map only if it hasn't been initialized yet
     if (!mapInstanceRef.current) {
-        mapInstanceRef.current = L.map(mapContainerRef.current, {
-            layers: [streetLayer] // Default layer
-        }).setView([31.9539, 35.9106], 13);
+        mapInstanceRef.current = L.map(mapContainerRef.current).setView([31.9539, 35.9106], 13);
         
+        // --- Define Base Layers ---
+        const streetLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            maxZoom: 19
+        });
+
+        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, & the GIS User Community'
+        });
+        
+        const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            maxZoom: 19
+        });
+
+        // --- Define Overlay Layer for Labels ---
+        const labelsLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a>',
+            pane: 'shadowPane' // Ensures labels appear on top of other layers
+        });
+        
+        streetLayer.addTo(mapInstanceRef.current); // Set default layer
+        labelsLayer.addTo(mapInstanceRef.current); // Show labels by default
+
+        // --- Create Layer Control ---
         const baseMaps = {
             "شوارع": streetLayer,
             "قمر صناعي": satelliteLayer,
             "مظلم": darkLayer
         };
 
-        L.control.layers(baseMaps).addTo(mapInstanceRef.current);
+        const overlayMaps = {
+            "إظهار التقسيمات": labelsLayer
+        };
+
+        L.control.layers(baseMaps, overlayMaps).addTo(mapInstanceRef.current);
     }
     
     const map = mapInstanceRef.current;
 
     // --- Add Geoman Controls ---
-    // Check if controls are already added to prevent duplicates
     if (!(map as any).pm) {
       console.error("Leaflet-Geoman not initialized on map instance.");
       return;
@@ -122,14 +134,13 @@ const LeafletMap = ({ onAreaCalculated }: LeafletMapProps) => {
           drawRectangle: true,
           drawPolyline: false,
           drawPolygon: true,
-          cutPolygon: true, // Enable the cut tool
+          cutPolygon: true,
           editMode: true,
           dragMode: true,
           removalMode: true,
         });
     }
     
-    // Set global options for snapping
     (map as any).pm.setGlobalOptions({
         snappable: true,
         snapDistance: 20,
@@ -142,12 +153,9 @@ const LeafletMap = ({ onAreaCalculated }: LeafletMapProps) => {
         }
     };
 
-
-    // --- Event Listener for when a shape is created ---
     const handleCreate = (e: any) => {
         const { layer } = e;
 
-        // Remove all previously drawn layers to keep only one main shape
         map.eachLayer((l: any) => {
             if (l.pm && (l instanceof L.Polygon || l instanceof L.Rectangle) && l !== layer) {
                 l.remove();
@@ -156,7 +164,6 @@ const LeafletMap = ({ onAreaCalculated }: LeafletMapProps) => {
         
         recalculateArea(layer);
 
-        // Add listeners to the new layer to update on changes
         layer.on('pm:edit', (editEvent: any) => recalculateArea(editEvent.layer));
         layer.on('pm:cut', (cutEvent: any) => recalculateArea(cutEvent.layer));
     };
@@ -164,12 +171,11 @@ const LeafletMap = ({ onAreaCalculated }: LeafletMapProps) => {
     map.on('pm:create', handleCreate);
 
 
-    // Cleanup function to run when the component unmounts
+    // Cleanup function
     return () => {
         map.off('pm:create', handleCreate);
-        // Do not remove map instance on cleanup to prevent re-initialization errors
     };
-  }, []); // Empty dependency array ensures this effect runs only once
+  }, []); 
 
   return <div ref={mapContainerRef} style={{ height: '100%', width: '100%' }} />;
 };
