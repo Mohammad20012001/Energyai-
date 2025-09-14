@@ -36,13 +36,28 @@ const LocationPickerMap = ({ onLocationSelected, initialCenter }: LocationPicker
       return;
     }
 
+    // Define base layers
+    const streetLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    });
+
+    const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+    });
+
+
     // Initialize the map only if it hasn't been initialized yet
     if (!mapInstanceRef.current) {
-        mapInstanceRef.current = L.map(mapContainerRef.current).setView([initialCenter.lat, initialCenter.lng], 10);
+        mapInstanceRef.current = L.map(mapContainerRef.current, {
+            layers: [streetLayer] // Default layer
+        }).setView([initialCenter.lat, initialCenter.lng], 10);
         
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-        }).addTo(mapInstanceRef.current);
+        const baseMaps = {
+            "شوارع": streetLayer,
+            "قمر صناعي": satelliteLayer
+        };
+
+        L.control.layers(baseMaps).addTo(mapInstanceRef.current);
     }
     
     const map = mapInstanceRef.current;
