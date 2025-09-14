@@ -1,3 +1,5 @@
+
+      
 'use server';
 
 /**
@@ -11,7 +13,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { SimulatePerformanceInputSchema, SimulatePerformanceOutputSchema, type SimulatePerformanceInput, type SimulatePerformanceOutput } from '@/ai/tool-schemas';
-import { getLiveAndForecastWeatherData, type WeatherData } from '@/services/weather-service';
+import { getLiveAndForecastWeatherData, type WeatherData, type WeatherPoint } from '@/services/weather-service';
 
 export async function simulatePerformance(
   input: SimulatePerformanceInput
@@ -20,29 +22,25 @@ export async function simulatePerformance(
 }
 
 // Helper function to perform the physics-based calculation
-function calculatePower(systemSizeKw: number, irradiance: number, temperature: number): number {
+function calculatePower(systemSizeKw: number, irradiance: number, temperature: number, systemLossPercentage: number): number {
     const systemSizeWatts = systemSizeKw * 1000;
-    const temperatureCoefficient = 0.0035; // Per degree C
-    const systemLosses = 0.85; // Represents total losses (inverter, dirt, wiring, etc.)
+    const temperatureCoefficient = -0.0035; // Standard is negative, per degree C
+    const systemLossFactor = 1 - (systemLossPercentage / 100);
 
     // Temperature derating factor
-    const tempDerating = 1 - ((temperature - 25) * temperatureCoefficient);
+    const tempDerating = 1 + ((temperature - 25) * temperatureCoefficient);
 
     // Irradiance factor
     const irradianceFactor = irradiance / 1000;
 
-    const powerOutputWatts = systemSizeWatts * irradianceFactor * tempDerating * systemLosses;
+    const powerOutputWatts = systemSizeWatts * irradianceFactor * tempDerating * systemLossFactor;
     return powerOutputWatts > 0 ? powerOutputWatts : 0;
 }
 
 // Helper to estimate irradiance from UV and cloud cover
 function estimateIrradiance(uvIndex: number, cloudCover: number): number {
-    // Base irradiance on UV index (very rough approximation)
     const uvBasedIrradiance = uvIndex * 100;
-
-    // Reduce irradiance based on cloud cover
     const cloudFactor = 1 - (cloudCover * 0.75 / 100); // Assume 75% of light is blocked by 100% cloud cover
-
     return uvBasedIrradiance * cloudFactor;
 }
 
@@ -79,6 +77,36 @@ const generateAnalysisPrompt = ai.definePrompt({
 `,
 });
 
+// Helper function to process the full day's forecast data
+function calculateFullDayForecast(forecast: WeatherPoint[], systemSize: number, kwhPrice: number, systemLoss: number) {
+    if (!forecast || forecast.length === 0) {
+      return { totalProductionKwh: 0, totalRevenue: 0, chartData: [] };
+    }
+
+    const chartData = forecast.map(hourlyData => {
+        const irradiance = estimateIrradiance(hourlyData.uvIndex, hourlyData.cloudCover);
+        const power = calculatePower(systemSize, irradiance, hourlyData.temperature, systemLoss);
+        return {
+            time: new Date(hourlyData.time!).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+            power: parseFloat(power.toFixed(0)),
+        };
+    });
+
+    const totalProductionKwh = forecast.reduce((total, hourlyData) => {
+      const irradiance = estimateIrradiance(hourlyData.uvIndex, hourlyData.cloudCover);
+      const hourlyPowerWatts = calculatePower(systemSize, irradiance, hourlyData.temperature, systemLoss);
+      const hourlyProductionKwh = hourlyPowerWatts / 1000;
+      return total + hourlyProductionKwh;
+    }, 0);
+
+    return {
+      totalProductionKwh: totalProductionKwh,
+      totalRevenue: totalProductionKwh * kwhPrice,
+      chartData: chartData,
+    };
+  };
+
+
 const simulatePerformanceFlow = ai.defineFlow(
   {
     name: 'simulatePerformanceFlow',
@@ -88,10 +116,11 @@ const simulatePerformanceFlow = ai.defineFlow(
   async (input): Promise<SimulatePerformanceOutput> => {
     // 1. Fetch real-world and full-day forecast weather data using coordinates
     const weatherData = await getLiveAndForecastWeatherData(input.latitude, input.longitude);
+    const systemLoss = 15; // Assume a 15% system loss for all calculations for now
     
     // 2. Perform physics-based calculations for all 3 LIVE scenarios
     const liveIrradiance = estimateIrradiance(weatherData.current.uvIndex, weatherData.current.cloudCover);
-    const liveOutputPower = calculatePower(input.systemSize, liveIrradiance, weatherData.current.temperature);
+    const liveOutputPower = calculatePower(input.systemSize, liveIrradiance, weatherData.current.temperature, systemLoss);
     
     // Find the forecast for the current hour to use for comparison
     const now = new Date();
@@ -99,9 +128,10 @@ const simulatePerformanceFlow = ai.defineFlow(
     const currentHourForecast = weatherData.forecast.find(f => new Date(f.time!).getHours() === currentHour) || weatherData.forecast[currentHour];
     
     const forecastIrradiance = estimateIrradiance(currentHourForecast.uvIndex, currentHourForecast.cloudCover);
-    const forecastOutputPower = calculatePower(input.systemSize, forecastIrradiance, currentHourForecast.temperature);
+    const forecastOutputPower = calculatePower(input.systemSize, forecastIrradiance, currentHourForecast.temperature, systemLoss);
 
-    const clearSkyOutputPower = calculatePower(input.systemSize, 1000, 25);
+    // For ideal power, assume 0% loss and ideal temp/irradiance
+    const clearSkyOutputPower = calculatePower(input.systemSize, 1000, 25, 0);
 
     // 3. Call the AI model ONLY to generate the analysis, using the accurate data.
     const { output: analysisOutput } = await generateAnalysisPrompt({
@@ -114,15 +144,21 @@ const simulatePerformanceFlow = ai.defineFlow(
     if (!analysisOutput) {
       throw new Error("AI model did not return an analysis.");
     }
+    
+    // 4. Calculate full-day forecast metrics
+    const dailyForecast = calculateFullDayForecast(weatherData.forecast, input.systemSize, input.kwhPrice, systemLoss);
 
-    // 4. Combine calculated data with AI analysis for the final response
-    // The full weatherData object (including 24h forecast) is passed to the client
+
+    // 5. Combine calculated data with AI analysis for the final response
     return {
       liveOutputPower,
       forecastOutputPower,
       clearSkyOutputPower,
       performanceAnalysis: analysisOutput.performanceAnalysis,
       weather: weatherData,
+      dailyForecast: dailyForecast,
     };
   }
 );
+
+    

@@ -1,3 +1,5 @@
+
+      
 import {z} from 'zod';
 
 // #region String Configuration Schemas
@@ -108,6 +110,16 @@ const WeatherPointSchema = z.object({
     uvIndex: z.number(),
 });
 
+const DailyForecastSchema = z.object({
+    totalProductionKwh: z.number(),
+    totalRevenue: z.number(),
+    chartData: z.array(z.object({
+        time: z.string(),
+        power: z.number(),
+    })),
+});
+
+
 export const SimulatePerformanceOutputSchema = z.object({
   liveOutputPower: z.number().describe('The calculated output power of the system in Watts at this instant based on LIVE weather.'),
   forecastOutputPower: z.number().describe('The calculated output power of the system in Watts for the same instant based on FORECASTED weather.'),
@@ -117,6 +129,9 @@ export const SimulatePerformanceOutputSchema = z.object({
       current: WeatherPointSchema,
       forecast: z.array(WeatherPointSchema),
   }).describe('The full weather data object used for the simulation.'),
+  dailyForecast: DailyForecastSchema.optional().describe('The calculated forecast for the entire day, including total production, revenue, and data for the forecast chart.'),
 });
 export type SimulatePerformanceOutput = z.infer<typeof SimulatePerformanceOutputSchema>;
 // #endregion
+
+    

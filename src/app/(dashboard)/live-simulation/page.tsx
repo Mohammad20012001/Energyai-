@@ -1,4 +1,5 @@
 
+      
 'use client';
 
 import {useState, useEffect, useRef, useMemo, useCallback} from 'react';
@@ -62,7 +63,6 @@ import {
   SimulatePerformanceInputSchema,
   type SimulatePerformanceOutput,
 } from '@/ai/tool-schemas';
-import { type WeatherPoint } from '@/services/weather-service';
 
 const LocationPickerMap = dynamic(() => import('@/components/location-picker-map'), { 
     loading: () => <p className="text-center text-muted-foreground">...تحميل الخريطة</p>,
@@ -78,36 +78,11 @@ interface SimulationDataPoint extends SimulatePerformanceOutput {
     time: string;
 }
 
-interface ForecastChartDataPoint {
-    time: string;
-    power: number;
-}
-
 interface WeatherChartDataPoint {
   time: string;
   uv: number;
   cloud: number;
 }
-
-
-// Helper functions for calculation, kept on client for responsiveness
-function estimateIrradiance(uvIndex: number, cloudCover: number): number {
-    const uvBasedIrradiance = (uvIndex || 0) * 100;
-    const cloudFactor = 1 - ((cloudCover || 0) * 0.75 / 100);
-    return uvBasedIrradiance * cloudFactor;
-}
-
-function calculatePower(systemSizeKw: number, irradiance: number, temperature: number): number {
-    const temp = temperature ?? 25; // Fallback temperature
-    const systemSizeWatts = systemSizeKw * 1000;
-    const temperatureCoefficient = 0.0035;
-    const systemLosses = 0.85;
-    const tempDerating = 1 - ((temp - 25) * temperatureCoefficient);
-    const irradianceFactor = irradiance / 1000;
-    const powerOutputWatts = systemSizeWatts * irradianceFactor * tempDerating * systemLosses;
-    return powerOutputWatts > 0 ? powerOutputWatts : 0;
-}
-
 
 export default function LiveSimulationPage() {
   const [simulationData, setSimulationData] = useState<SimulationDataPoint[]>(
@@ -118,9 +93,7 @@ export default function LiveSimulationPage() {
   const [isSimulating, setIsSimulating] = useState(false);
   const [currentDataPoint, setCurrentDataPoint] =
     useState<SimulationDataPoint | null>(null);
-  const [dailyExpected, setDailyExpected] = useState<{ productionKwh: number, revenue: number } | null>(null);
-  const [forecastChartData, setForecastChartData] = useState<ForecastChartDataPoint[]>([]);
-
+  
   const simulationIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const {toast} = useToast();
 
@@ -147,41 +120,9 @@ export default function LiveSimulationPage() {
   }, [form, toast]);
 
 
-  const prepareForecastChartData = (forecast: WeatherPoint[], systemSize: number) => {
-    const chartData = forecast.map(hourlyData => {
-        const irradiance = estimateIrradiance(hourlyData.uvIndex, hourlyData.cloudCover);
-        const power = calculatePower(systemSize, irradiance, hourlyData.temperature);
-        return {
-            time: new Date(hourlyData.time!).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-            power: parseFloat(power.toFixed(0)),
-        };
-    });
-    setForecastChartData(chartData);
-  }
-
-  // Calculate daily expected production and revenue
-  const calculateDailyExpected = (forecast: WeatherPoint[], systemSize: number, kwhPrice: number) => {
-    if (!forecast || forecast.length === 0) {
-      setDailyExpected(null);
-      return;
-    }
-
-    const totalDailyProductionKwh = forecast.reduce((total, hourlyData) => {
-      const irradiance = estimateIrradiance(hourlyData.uvIndex, hourlyData.cloudCover);
-      // Assuming calculatePower returns power in Watts for one hour
-      const hourlyPowerWatts = calculatePower(systemSize, irradiance, hourlyData.temperature);
-      const hourlyProductionKwh = hourlyPowerWatts / 1000; // Convert Watt-hour to kWh
-      return total + hourlyProductionKwh;
-    }, 0);
-
-    setDailyExpected({
-      productionKwh: totalDailyProductionKwh,
-      revenue: totalDailyProductionKwh * kwhPrice,
-    });
-  };
-
   const runSimulationStep = async (values: FormValues) => {
     try {
+      // The backend action now returns all necessary data, including forecast charts
       const result = await startSimulationAction(values);
       
       if (result.success && result.data) {
@@ -202,12 +143,7 @@ export default function LiveSimulationPage() {
           setCurrentDataPoint(dataPoint);
           setSimulationData(prevData => [...prevData, dataPoint].slice(-15));
           setWeatherChartData(prevData => [...prevData, weatherDataPoint].slice(-15));
-          
-          // Calculate daily expected production and chart data only on the first run
-          if (simulationData.length === 0) {
-             calculateDailyExpected(result.data.weather.forecast, values.systemSize, values.kwhPrice);
-             prepareForecastChartData(result.data.weather.forecast, values.systemSize);
-          }
+
       } else {
         toast({
           variant: 'destructive',
@@ -231,8 +167,6 @@ export default function LiveSimulationPage() {
     setIsSimulating(true);
     setSimulationData([]);
     setCurrentDataPoint(null);
-    setDailyExpected(null);
-    setForecastChartData([]);
     setWeatherChartData([]);
 
     runSimulationStep(values);
@@ -434,9 +368,9 @@ export default function LiveSimulationPage() {
             </Card>
           )}
 
-          {(isSimulating || simulationData.length > 0) && (
+          {(isSimulating || simulationData.length > 0) && currentDataPoint && (
             <div className="space-y-6">
-              {dailyExpected && (
+              {currentDataPoint.dailyForecast && (
                   <Card className="bg-primary/5 border-primary/20">
                       <CardHeader>
                           <CardTitle className="flex items-center gap-2 text-lg">
@@ -446,11 +380,11 @@ export default function LiveSimulationPage() {
                       </CardHeader>
                       <CardContent className="grid grid-cols-2 gap-4 text-center">
                           <div className="border bg-background/50 rounded-lg p-3">
-                              <div className="text-2xl font-bold">{dailyExpected.productionKwh.toFixed(2)}</div>
+                              <div className="text-2xl font-bold">{currentDataPoint.dailyForecast.totalProductionKwh.toFixed(2)}</div>
                               <div className="text-sm text-muted-foreground">كيلوواط/ساعة</div>
                           </div>
                           <div className="border bg-background/50 rounded-lg p-3">
-                              <div className="text-2xl font-bold text-green-600">{dailyExpected.revenue.toFixed(2)}</div>
+                              <div className="text-2xl font-bold text-green-600">{currentDataPoint.dailyForecast.totalRevenue.toFixed(2)}</div>
                               <div className="text-sm text-muted-foreground">دينار أردني</div>
                           </div>
                       </CardContent>
@@ -600,7 +534,7 @@ export default function LiveSimulationPage() {
                 </CardContent>
               </Card>
 
-              {forecastChartData.length > 0 && (
+              {currentDataPoint.dailyForecast?.chartData.length > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -610,7 +544,7 @@ export default function LiveSimulationPage() {
                   <CardContent className="h-72">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart
-                        data={forecastChartData}
+                        data={currentDataPoint.dailyForecast.chartData}
                         margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" />
@@ -643,7 +577,6 @@ export default function LiveSimulationPage() {
                   </CardContent>
                 </Card>
               )}
-
 
               {simulationData.length > 0 && (
                 <Card>
