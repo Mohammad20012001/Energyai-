@@ -4,7 +4,7 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { BatteryCharging, Rows, Columns, ArrowRight, Loader2, PlusCircle, AlertTriangle } from "lucide-react";
+import { BatteryCharging, Rows, Columns, ArrowRight, Loader2, PlusCircle, AlertTriangle, Calculator } from "lucide-react";
 import { useReport } from "@/context/ReportContext";
 
 import { Button } from "@/components/ui/button";
@@ -19,10 +19,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
 import { calculateBatteryBank, type BatteryCalculationResult } from "@/services/calculations";
 import { BatteryBankVisualization } from "@/components/battery-bank-visualization";
-import { Separator } from "@/components/ui/separator";
+import { ApplianceLoadCalculator } from "@/components/appliance-load-calculator";
 
 const formSchema = z.object({
   dailyLoadKwh: z.coerce.number().positive("يجب أن يكون الحمل اليومي رقمًا موجبًا"),
@@ -53,6 +59,14 @@ export default function BatteryStoragePage() {
       systemVoltage: 48,
     },
   });
+
+  const handleLoadCalculated = (totalKwh: number) => {
+    form.setValue('dailyLoadKwh', parseFloat(totalKwh.toFixed(2)), { shouldValidate: true });
+    toast({
+      title: "تم تحديث الحمل",
+      description: `تم تحديث إجمالي الأحمال اليومية إلى ${totalKwh.toFixed(2)} kWh.`,
+    });
+  };
 
   async function onSubmit(values: FormValues) {
     setIsLoading(true);
@@ -119,6 +133,21 @@ export default function BatteryStoragePage() {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 text-right">
+                
+                <Accordion type="single" collapsible className="w-full border rounded-md px-4">
+                    <AccordionItem value="item-1" className="border-b-0">
+                      <AccordionTrigger>
+                        <span className="flex items-center gap-2">
+                            <Calculator className="h-4 w-4"/>
+                            هل تحتاج مساعدة في تقدير أحمالك؟
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-4 pt-4">
+                        <ApplianceLoadCalculator onTotalLoadChange={handleLoadCalculated} />
+                      </AccordionContent>
+                    </AccordionItem>
+                </Accordion>
+                
                 <fieldset disabled={isLoading} className="space-y-4">
                   <FormField
                     control={form.control}
