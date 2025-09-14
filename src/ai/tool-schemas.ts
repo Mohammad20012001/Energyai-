@@ -101,6 +101,7 @@ export const SimulatePerformanceInputSchema = z.object({
 export type SimulatePerformanceInput = z.infer<typeof SimulatePerformanceInputSchema>;
 
 const WeatherPointSchema = z.object({
+    time: z.string().optional(),
     temperature: z.number(),
     cloudCover: z.number(),
     uvIndex: z.number(),
@@ -113,7 +114,7 @@ export const SimulatePerformanceOutputSchema = z.object({
   performanceAnalysis: z.string().describe('A concise, one-sentence analysis of the system\'s current performance.'),
   weather: z.object({
       current: WeatherPointSchema,
-      forecast: WeatherPointSchema,
+      forecast: z.array(WeatherPointSchema),
   }).describe('The full weather data object used for the simulation.'),
 });
 export type SimulatePerformanceOutput = z.infer<typeof SimulatePerformanceOutputSchema>;

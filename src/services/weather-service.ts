@@ -11,7 +11,8 @@ const locations: Record<string, { lat: number; lon: number }> = {
     aqaba: { lat: 29.53, lon: 35.01 },
 };
 
-interface WeatherPoint {
+export interface WeatherPoint {
+    time?: string; // Optional time for forecast points
     temperature: number;
     cloudCover: number;
     uvIndex: number;
@@ -19,11 +20,11 @@ interface WeatherPoint {
 
 export interface WeatherData {
     current: WeatherPoint,
-    forecast: WeatherPoint,
+    forecast: WeatherPoint[], // Changed to an array of hourly forecast points
 }
 
 /**
- * Fetches live and forecast weather data for a given location from WeatherAPI.com.
+ * Fetches live and 24-hour forecast weather data for a given location from WeatherAPI.com.
  * @param location A string representing one of the predefined Jordanian cities.
  * @returns A promise that resolves to the live and forecast weather data.
  */
@@ -50,27 +51,20 @@ export async function getLiveAndForecastWeatherData(location: string): Promise<W
         }
 
         const current_weather = data.current;
-        
-        const now = new Date();
-        const currentHour = now.getHours();
         const hourly_forecasts = data.forecast.forecastday[0].hour;
-        const current_hour_forecast = hourly_forecasts.find((h: any) => new Date(h.time_epoch * 1000).getHours() === currentHour) ?? hourly_forecasts[currentHour];
 
-        if (!current_hour_forecast) {
-            throw new Error(`Could not find forecast for the current hour (${currentHour}).`);
-        }
-        
         return {
             current: {
                 temperature: parseFloat(current_weather.temp_c?.toFixed(1) ?? "0"),
                 cloudCover: parseFloat(current_weather.cloud?.toFixed(1) ?? "0"),
                 uvIndex: parseFloat(current_weather.uv?.toFixed(1) ?? "0"),
             },
-            forecast: {
-                temperature: parseFloat(current_hour_forecast.temp_c?.toFixed(1) ?? "0"),
-                cloudCover: parseFloat(current_hour_forecast.cloud?.toFixed(1) ?? "0"),
-                uvIndex: parseFloat(current_hour_forecast.uv?.toFixed(1) ?? "0"),
-            }
+            forecast: hourly_forecasts.map((h: any) => ({
+                time: h.time,
+                temperature: parseFloat(h.temp_c?.toFixed(1) ?? "0"),
+                cloudCover: parseFloat(h.cloud?.toFixed(1) ?? "0"),
+                uvIndex: parseFloat(h.uv?.toFixed(1) ?? "0"),
+            }))
         };
     } catch (error) {
         console.error("Error fetching weather data from WeatherAPI.com:", error);

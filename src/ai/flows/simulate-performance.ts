@@ -86,15 +86,20 @@ const simulatePerformanceFlow = ai.defineFlow(
     outputSchema: SimulatePerformanceOutputSchema,
   },
   async (input): Promise<SimulatePerformanceOutput> => {
-    // 1. Fetch real-world weather data
+    // 1. Fetch real-world and full-day forecast weather data
     const weatherData = await getLiveAndForecastWeatherData(input.location);
     
-    // 2. Perform physics-based calculations for all 3 scenarios
+    // 2. Perform physics-based calculations for all 3 LIVE scenarios
     const liveIrradiance = estimateIrradiance(weatherData.current.uvIndex, weatherData.current.cloudCover);
     const liveOutputPower = calculatePower(input.systemSize, liveIrradiance, weatherData.current.temperature);
-
-    const forecastIrradiance = estimateIrradiance(weatherData.forecast.uvIndex, weatherData.forecast.cloudCover);
-    const forecastOutputPower = calculatePower(input.systemSize, forecastIrradiance, weatherData.forecast.temperature);
+    
+    // Find the forecast for the current hour to use for comparison
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentHourForecast = weatherData.forecast.find(f => new Date(f.time!).getHours() === currentHour) || weatherData.forecast[currentHour];
+    
+    const forecastIrradiance = estimateIrradiance(currentHourForecast.uvIndex, currentHourForecast.cloudCover);
+    const forecastOutputPower = calculatePower(input.systemSize, forecastIrradiance, currentHourForecast.temperature);
 
     const clearSkyOutputPower = calculatePower(input.systemSize, 1000, 25);
 
@@ -111,6 +116,7 @@ const simulatePerformanceFlow = ai.defineFlow(
     }
 
     // 4. Combine calculated data with AI analysis for the final response
+    // The full weatherData object (including 24h forecast) is passed to the client
     return {
       liveOutputPower,
       forecastOutputPower,

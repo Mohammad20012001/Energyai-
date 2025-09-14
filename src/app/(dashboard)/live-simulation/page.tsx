@@ -20,6 +20,7 @@ import {
   SunDim,
   Lightbulb,
   DollarSign,
+  CalendarClock,
 } from 'lucide-react';
 import {useToast} from '@/hooks/use-toast';
 import {
@@ -65,6 +66,8 @@ import {
   type SimulatePerformanceOutput,
   type SimulatePerformanceInput,
 } from '@/ai/tool-schemas';
+import { type WeatherPoint } from '@/services/weather-service';
+
 
 const formSchema = SimulatePerformanceInputSchema;
 type FormValues = z.infer<typeof formSchema>;
@@ -72,6 +75,23 @@ type FormValues = z.infer<typeof formSchema>;
 // This type now represents the full data point, including the time added on the client-side.
 interface SimulationDataPoint extends SimulatePerformanceOutput {
     time: string;
+}
+
+// Helper functions for calculation, kept on client for responsiveness
+function estimateIrradiance(uvIndex: number, cloudCover: number): number {
+    const uvBasedIrradiance = uvIndex * 100;
+    const cloudFactor = 1 - (cloudCover * 0.75 / 100);
+    return uvBasedIrradiance * cloudFactor;
+}
+
+function calculatePower(systemSizeKw: number, irradiance: number, temperature: number): number {
+    const systemSizeWatts = systemSizeKw * 1000;
+    const temperatureCoefficient = 0.0035;
+    const systemLosses = 0.85;
+    const tempDerating = 1 - ((temperature - 25) * temperatureCoefficient);
+    const irradianceFactor = irradiance / 1000;
+    const powerOutputWatts = systemSizeWatts * irradianceFactor * tempDerating * systemLosses;
+    return powerOutputWatts > 0 ? powerOutputWatts : 0;
 }
 
 
@@ -82,6 +102,7 @@ export default function LiveSimulationPage() {
   const [isSimulating, setIsSimulating] = useState(false);
   const [currentDataPoint, setCurrentDataPoint] =
     useState<SimulationDataPoint | null>(null);
+  const [dailyExpected, setDailyExpected] = useState<{ productionKwh: number, revenue: number } | null>(null);
   const simulationIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const {toast} = useToast();
 
@@ -95,6 +116,27 @@ export default function LiveSimulationPage() {
       kwhPrice: 0.12,
     },
   });
+
+  // Calculate daily expected production and revenue
+  const calculateDailyExpected = (forecast: WeatherPoint[], systemSize: number, kwhPrice: number) => {
+    if (!forecast || forecast.length === 0) {
+      setDailyExpected(null);
+      return;
+    }
+
+    const totalDailyProductionKwh = forecast.reduce((total, hourlyData) => {
+      const irradiance = estimateIrradiance(hourlyData.uvIndex, hourlyData.cloudCover);
+      // Assuming calculatePower returns power in Watts for one hour
+      const hourlyPowerWatts = calculatePower(systemSize, irradiance, hourlyData.temperature);
+      const hourlyProductionKwh = hourlyPowerWatts / 1000; // Convert Watt-hour to kWh
+      return total + hourlyProductionKwh;
+    }, 0);
+
+    setDailyExpected({
+      productionKwh: totalDailyProductionKwh,
+      revenue: totalDailyProductionKwh * kwhPrice,
+    });
+  };
 
   const runSimulationStep = async (values: FormValues) => {
     try {
@@ -114,6 +156,11 @@ export default function LiveSimulationPage() {
             const newData = [...prevData, dataPoint];
             return newData.slice(-15);
           });
+          
+          // Calculate daily expected production only on the first run
+          if (simulationData.length === 0) {
+             calculateDailyExpected(result.data.weather.forecast, values.systemSize, values.kwhPrice);
+          }
       } else {
         toast({
           variant: 'destructive',
@@ -137,6 +184,7 @@ export default function LiveSimulationPage() {
     setIsSimulating(true);
     setSimulationData([]);
     setCurrentDataPoint(null);
+    setDailyExpected(null);
 
     runSimulationStep(values);
 
@@ -343,6 +391,26 @@ export default function LiveSimulationPage() {
 
           {(isSimulating || simulationData.length > 0) && (
             <div className="space-y-6">
+              {dailyExpected && (
+                  <Card className="bg-primary/5 border-primary/20">
+                      <CardHeader>
+                          <CardTitle className="flex items-center gap-2 text-lg">
+                              <CalendarClock className="text-primary"/>
+                              ملخص الإنتاج اليومي المتوقع
+                          </CardTitle>
+                      </CardHeader>
+                      <CardContent className="grid grid-cols-2 gap-4 text-center">
+                          <div className="border bg-background/50 rounded-lg p-3">
+                              <div className="text-2xl font-bold">{dailyExpected.productionKwh.toFixed(2)}</div>
+                              <div className="text-sm text-muted-foreground">كيلوواط/ساعة</div>
+                          </div>
+                          <div className="border bg-background/50 rounded-lg p-3">
+                              <div className="text-2xl font-bold text-green-600">{dailyExpected.revenue.toFixed(2)}</div>
+                              <div className="text-sm text-muted-foreground">دينار أردني</div>
+                          </div>
+                      </CardContent>
+                  </Card>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card>
                   <CardHeader>

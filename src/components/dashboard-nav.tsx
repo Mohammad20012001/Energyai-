@@ -18,6 +18,7 @@ import {
   Combine,
   BrainCircuit,
   ListChecks,
+  CalendarClock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
