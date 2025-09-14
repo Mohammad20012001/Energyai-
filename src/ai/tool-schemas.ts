@@ -96,6 +96,7 @@ export const SimulatePerformanceInputSchema = z.object({
   location: z.enum(['amman', 'zarqa', 'irbid', 'aqaba']),
   panelTilt: z.coerce.number().min(0).max(90),
   panelAzimuth: z.coerce.number().min(0).max(360),
+  kwhPrice: z.coerce.number().positive("يجب أن يكون السعر إيجابياً"),
 });
 export type SimulatePerformanceInput = z.infer<typeof SimulatePerformanceInputSchema>;
 

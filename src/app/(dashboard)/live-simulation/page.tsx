@@ -1,6 +1,6 @@
 'use client';
 
-import {useState, useEffect, useRef} from 'react';
+import {useState, useEffect, useRef, useMemo} from 'react';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {useForm} from 'react-hook-form';
 import type {z} from 'zod';
@@ -18,6 +18,7 @@ import {
   TrendingUp,
   SunDim,
   Lightbulb,
+  DollarSign,
 } from 'lucide-react';
 import {useToast} from '@/hooks/use-toast';
 import {
@@ -90,6 +91,7 @@ export default function LiveSimulationPage() {
       location: 'amman',
       panelTilt: 30,
       panelAzimuth: 180,
+      kwhPrice: 0.12,
     },
   });
 
@@ -101,7 +103,6 @@ export default function LiveSimulationPage() {
           const now = new Date();
           const time = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
           
-          // The server now returns the complete, structured data. We just add the time.
           const dataPoint: SimulationDataPoint = {
               ...result.data,
               time: time,
@@ -110,7 +111,6 @@ export default function LiveSimulationPage() {
           setCurrentDataPoint(dataPoint);
           setSimulationData(prevData => {
             const newData = [...prevData, dataPoint];
-            // Keep only the last 15 minutes (assuming 1 data point per minute)
             return newData.slice(-15);
           });
       } else {
@@ -137,10 +137,8 @@ export default function LiveSimulationPage() {
     setSimulationData([]);
     setCurrentDataPoint(null);
 
-    // Run first step immediately
     runSimulationStep(values);
 
-    // Then run every 1 minute
     simulationIntervalRef.current = setInterval(() => {
       runSimulationStep(values);
     }, 60000); // 1 minute
@@ -154,7 +152,6 @@ export default function LiveSimulationPage() {
     }
   };
 
-  // Cleanup on component unmount
   useEffect(() => {
     return () => {
       if (simulationIntervalRef.current) {
@@ -178,12 +175,18 @@ export default function LiveSimulationPage() {
     ideal: parseFloat(d.clearSkyOutputPower.toFixed(0)),
   }));
 
-  const performancePercentage =
-    currentDataPoint && currentDataPoint.clearSkyOutputPower > 0
-      ? (currentDataPoint.liveOutputPower /
-          currentDataPoint.clearSkyOutputPower) *
-        100
-      : 0;
+  const performancePercentage = useMemo(() => {
+    if (!currentDataPoint || currentDataPoint.clearSkyOutputPower <= 0) return 0;
+    return (currentDataPoint.liveOutputPower / currentDataPoint.clearSkyOutputPower) * 100;
+  }, [currentDataPoint]);
+
+  const instantaneousSavings = useMemo(() => {
+    if (!currentDataPoint) return 0;
+    const kwhPrice = form.getValues('kwhPrice');
+    const powerKw = currentDataPoint.liveOutputPower / 1000;
+    return powerKw * kwhPrice;
+  }, [currentDataPoint, form]);
+
 
   return (
     <div className="flex flex-col gap-8">
@@ -217,6 +220,19 @@ export default function LiveSimulationPage() {
                         <FormLabel>حجم النظام (kWp)</FormLabel>
                         <FormControl>
                           <Input type="number" placeholder="e.g., 5" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                   <FormField
+                    control={form.control}
+                    name="kwhPrice"
+                    render={({field}) => (
+                      <FormItem>
+                        <FormLabel>سعر الكيلوواط/ساعة (دينار)</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="e.g., 0.12" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -326,30 +342,49 @@ export default function LiveSimulationPage() {
 
           {(isSimulating || simulationData.length > 0) && (
             <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Zap className="text-primary" /> الإنتاج اللحظي الفعلي
-                    </span>
-                    {currentDataPoint && (
-                      <span className="text-sm font-normal text-muted-foreground">
-                        {currentDataPoint.time}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between text-base">
+                      <span className="flex items-center gap-2">
+                        <Zap className="text-primary" /> الإنتاج الفعلي
                       </span>
+                      {currentDataPoint && (
+                        <span className="text-sm font-normal text-muted-foreground">
+                          {currentDataPoint.time}
+                        </span>
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    {currentDataPoint ? (
+                      <div className="text-4xl font-bold text-primary">
+                        {currentDataPoint.liveOutputPower.toFixed(0)}
+                      </div>
+                    ) : (
+                      <Loader2 className="h-10 w-10 text-primary animate-spin mx-auto" />
                     )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="text-center">
-                  {currentDataPoint ? (
-                    <div className="text-6xl font-bold text-primary">
-                      {currentDataPoint.liveOutputPower.toFixed(0)}
-                    </div>
-                  ) : (
-                    <Loader2 className="h-12 w-12 text-primary animate-spin mx-auto" />
-                  )}
-                  <p className="text-muted-foreground mt-2 text-lg">واط</p>
-                </CardContent>
-              </Card>
+                    <p className="text-muted-foreground mt-1 text-base">واط</p>
+                  </CardContent>
+                </Card>
+                 <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <DollarSign className="text-green-500" /> معدل التوفير اللحظي
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    {currentDataPoint ? (
+                      <div className="text-4xl font-bold text-green-500">
+                        {instantaneousSavings.toFixed(3)}
+                      </div>
+                    ) : (
+                      <Loader2 className="h-10 w-10 text-green-500 animate-spin mx-auto" />
+                    )}
+                    <p className="text-muted-foreground mt-1 text-base">دينار/ساعة</p>
+                  </CardContent>
+                </Card>
+              </div>
 
               <Card>
                 <CardHeader>
