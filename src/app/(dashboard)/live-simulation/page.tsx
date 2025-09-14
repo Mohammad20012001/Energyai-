@@ -85,16 +85,17 @@ interface ForecastChartDataPoint {
 
 // Helper functions for calculation, kept on client for responsiveness
 function estimateIrradiance(uvIndex: number, cloudCover: number): number {
-    const uvBasedIrradiance = uvIndex * 100;
-    const cloudFactor = 1 - (cloudCover * 0.75 / 100);
+    const uvBasedIrradiance = (uvIndex || 0) * 100;
+    const cloudFactor = 1 - ((cloudCover || 0) * 0.75 / 100);
     return uvBasedIrradiance * cloudFactor;
 }
 
 function calculatePower(systemSizeKw: number, irradiance: number, temperature: number): number {
+    const temp = temperature ?? 25; // Fallback temperature
     const systemSizeWatts = systemSizeKw * 1000;
     const temperatureCoefficient = 0.0035;
     const systemLosses = 0.85;
-    const tempDerating = 1 - ((temperature - 25) * temperatureCoefficient);
+    const tempDerating = 1 - ((temp - 25) * temperatureCoefficient);
     const irradianceFactor = irradiance / 1000;
     const powerOutputWatts = systemSizeWatts * irradianceFactor * tempDerating * systemLosses;
     return powerOutputWatts > 0 ? powerOutputWatts : 0;
