@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { BatteryCharging, Rows, Columns, ArrowRight, Loader2, PlusCircle, AlertTriangle, Calculator } from "lucide-react";
 import { useReport } from "@/context/ReportContext";
@@ -30,6 +30,13 @@ import { calculateBatteryBank, type BatteryCalculationResult } from "@/services/
 import { BatteryBankVisualization } from "@/components/battery-bank-visualization";
 import { ApplianceLoadCalculator } from "@/components/appliance-load-calculator";
 
+const applianceSchema = z.object({
+    name: z.string().min(1, "اسم الجهاز مطلوب"),
+    power: z.coerce.number().positive("القدرة يجب أن تكون موجبة"),
+    quantity: z.coerce.number().int().min(1, "الكمية يجب أن تكون 1 على الأقل"),
+    hours: z.coerce.number().min(0.1, "ساعات التشغيل يجب أن تكون موجبة").max(24, "لا يمكن أن تتجاوز 24 ساعة"),
+});
+
 const formSchema = z.object({
   dailyLoadKwh: z.coerce.number().positive("يجب أن يكون الحمل اليومي رقمًا موجبًا"),
   autonomyDays: z.coerce.number().min(1, "يجب أن يكون يومًا واحدًا على الأقل"),
@@ -37,6 +44,7 @@ const formSchema = z.object({
   batteryVoltage: z.coerce.number().positive("يجب أن يكون جهد البطارية موجبًا"),
   batteryCapacityAh: z.coerce.number().positive("يجب أن تكون سعة البطارية موجبة"),
   systemVoltage: z.coerce.number().positive("يجب أن يكون جهد النظام موجبًا"),
+  appliances: z.array(applianceSchema).optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -57,7 +65,13 @@ export default function BatteryStoragePage() {
       batteryVoltage: 12,
       batteryCapacityAh: 200,
       systemVoltage: 48,
+      appliances: [],
     },
+  });
+  
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "appliances",
   });
 
   const handleLoadCalculated = (totalKwh: number) => {
@@ -143,7 +157,14 @@ export default function BatteryStoragePage() {
                         </span>
                       </AccordionTrigger>
                       <AccordionContent className="space-y-4 pt-4">
-                        <ApplianceLoadCalculator onTotalLoadChange={handleLoadCalculated} />
+                        <ApplianceLoadCalculator 
+                            onTotalLoadChange={handleLoadCalculated}
+                            control={form.control}
+                            fields={fields}
+                            append={append}
+                            remove={remove}
+                            watch={form.watch}
+                        />
                       </AccordionContent>
                     </AccordionItem>
                 </Accordion>

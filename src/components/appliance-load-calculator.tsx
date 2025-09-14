@@ -1,32 +1,22 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { z } from 'zod';
-import { useForm, useFieldArray } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Trash2, PlusCircle } from 'lucide-react';
-import { Form, FormControl, FormField } from '@/components/ui/form';
+import { FormControl, FormField } from '@/components/ui/form';
+import type { Control, FieldArrayWithId, UseFieldArrayAppend, UseFieldArrayRemove, UseFormWatch } from 'react-hook-form';
 
 interface ApplianceLoadCalculatorProps {
     onTotalLoadChange: (totalKwh: number) => void;
+    control: Control<any>;
+    fields: FieldArrayWithId<any, "appliances", "id">[];
+    append: UseFieldArrayAppend<any, "appliances">;
+    remove: UseFieldArrayRemove;
+    watch: UseFormWatch<any>;
 }
-
-const applianceSchema = z.object({
-    name: z.string().min(1, "اسم الجهاز مطلوب"),
-    power: z.coerce.number().positive("القدرة يجب أن تكون موجبة"),
-    quantity: z.coerce.number().int().min(1, "الكمية يجب أن تكون 1 على الأقل"),
-    hours: z.coerce.number().min(0.1, "ساعات التشغيل يجب أن تكون موجبة").max(24, "لا يمكن أن تتجاوز 24 ساعة"),
-});
-
-type Appliance = z.infer<typeof applianceSchema>;
-
-const formSchema = z.object({
-    appliances: z.array(applianceSchema),
-});
 
 const commonAppliances = [
     { name: 'ثلاجة', power: 150 },
@@ -41,25 +31,14 @@ const commonAppliances = [
     { name: 'مضخة مياه', power: 750 },
 ];
 
-export function ApplianceLoadCalculator({ onTotalLoadChange }: ApplianceLoadCalculatorProps) {
+export function ApplianceLoadCalculator({ onTotalLoadChange, control, fields, append, remove, watch }: ApplianceLoadCalculatorProps) {
     const [selectedAppliance, setSelectedAppliance] = useState('');
-
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            appliances: [],
-        },
-    });
-
-    const { fields, append, remove } = useFieldArray({
-        control: form.control,
-        name: "appliances",
-    });
-
-    const watchedAppliances = form.watch('appliances');
+    
+    const watchedAppliances = watch('appliances');
 
     const totalDailyLoadKwh = useMemo(() => {
-        return watchedAppliances.reduce((total, appliance) => {
+        if (!watchedAppliances) return 0;
+        return watchedAppliances.reduce((total: number, appliance: any) => {
             if (appliance.power > 0 && appliance.quantity > 0 && appliance.hours > 0) {
                 return total + (appliance.power * appliance.quantity * appliance.hours) / 1000;
             }
@@ -94,7 +73,7 @@ export function ApplianceLoadCalculator({ onTotalLoadChange }: ApplianceLoadCalc
                         ))}
                     </SelectContent>
                 </Select>
-                <Button size="sm" onClick={handleAddAppliance} disabled={!selectedAppliance}>
+                <Button type="button" size="sm" onClick={handleAddAppliance} disabled={!selectedAppliance}>
                     <PlusCircle className="ml-1 h-4 w-4" />
                     إضافة
                 </Button>
@@ -116,7 +95,7 @@ export function ApplianceLoadCalculator({ onTotalLoadChange }: ApplianceLoadCalc
                             <TableRow key={field.id}>
                                 <TableCell>
                                     <FormField
-                                        control={form.control}
+                                        control={control}
                                         name={`appliances.${index}.name`}
                                         render={({ field }) => (
                                           <FormControl>
@@ -127,7 +106,7 @@ export function ApplianceLoadCalculator({ onTotalLoadChange }: ApplianceLoadCalc
                                 </TableCell>
                                  <TableCell>
                                      <FormField
-                                        control={form.control}
+                                        control={control}
                                         name={`appliances.${index}.power`}
                                         render={({ field }) => (
                                           <FormControl>
@@ -138,7 +117,7 @@ export function ApplianceLoadCalculator({ onTotalLoadChange }: ApplianceLoadCalc
                                 </TableCell>
                                 <TableCell>
                                     <FormField
-                                        control={form.control}
+                                        control={control}
                                         name={`appliances.${index}.quantity`}
                                         render={({ field }) => (
                                           <FormControl>
@@ -149,7 +128,7 @@ export function ApplianceLoadCalculator({ onTotalLoadChange }: ApplianceLoadCalc
                                 </TableCell>
                                 <TableCell>
                                      <FormField
-                                        control={form.control}
+                                        control={control}
                                         name={`appliances.${index}.hours`}
                                         render={({ field }) => (
                                           <FormControl>
@@ -159,7 +138,7 @@ export function ApplianceLoadCalculator({ onTotalLoadChange }: ApplianceLoadCalc
                                     />
                                 </TableCell>
                                 <TableCell>
-                                    <Button variant="ghost" size="icon" onClick={() => remove(index)} className="h-8 w-8">
+                                    <Button variant="ghost" size="icon" onClick={() => remove(index)} className="h-8 w-8" type="button">
                                         <Trash2 className="h-4 w-4 text-destructive" />
                                     </Button>
                                 </TableCell>
