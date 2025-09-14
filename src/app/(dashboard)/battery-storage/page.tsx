@@ -21,6 +21,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { calculateBatteryBank, type BatteryCalculationResult } from "@/services/calculations";
+import { BatteryBankVisualization } from "@/components/battery-bank-visualization";
+import { Separator } from "@/components/ui/separator";
 
 const formSchema = z.object({
   dailyLoadKwh: z.coerce.number().positive("يجب أن يكون الحمل اليومي رقمًا موجبًا"),
@@ -263,6 +265,18 @@ export default function BatteryStoragePage() {
                     </div>
                 </CardContent>
               </Card>
+              
+              <Card>
+                <CardHeader>
+                    <CardTitle className="text-xl">مخطط التوصيل المرئي</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <BatteryBankVisualization 
+                        batteriesInSeries={result.batteriesInSeries}
+                        parallelStrings={result.parallelStrings}
+                    />
+                </CardContent>
+              </Card>
 
               <Alert>
                 <AlertTriangle className="h-4 w-4" />
@@ -299,3 +313,5 @@ export default function BatteryStoragePage() {
     </div>
   );
 }
+
+    
