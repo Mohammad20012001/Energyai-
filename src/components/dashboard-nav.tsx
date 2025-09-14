@@ -37,7 +37,6 @@ const navItems = [
   { href: "/system-sizer", label: "حاسبة النظام المتكامل", icon: Combine },
   { href: "/string-configuration", label: "تهيئة السلاسل", icon: Settings },
   { href: "/area-calculator", label: "حاسبة المساحة", icon: Maximize },
-  { href: "/financial-viability", label: "الجدوى الاقتصادية", icon: TrendingUp },
   { href: "/wire-sizing", label: "حجم الأسلاك", icon: Zap },
   { type: 'divider', label: 'Data & Reports'},
   { href: "/pricing", label: "بيانات التسعير", icon: DollarSign },

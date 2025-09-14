@@ -52,16 +52,16 @@ export default function DashboardOverviewPage() {
           </CardContent>
         </Card>
         
-        <Card className="hover:shadow-lg transition-shadow">
+        <Card className="hover:shadow-lg transition-shadow col-span-1 md:col-span-2 lg:col-span-1">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BrainCircuit className="text-primary" />
-              حاسبة حجم النظام الفني
+              حاسبة حجم النظام الفني والمالي
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-4">
-              أدخل استهلاكك ومساحتك ودع الذكاء الاصطناعي يصمم لك النظام الأمثل.
+              أدخل استهلاكك ومساحتك ودع الذكاء الاصطناعي يصمم لك النظام الأمثل ويحلل جدواه المالية.
             </p>
             <Button asChild>
               <Link href="/design-optimizer">
@@ -104,25 +104,6 @@ export default function DashboardOverviewPage() {
             <Button asChild>
               <Link href="/area-calculator">
                 اذهب للحاسبة <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-        
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="text-primary" />
-              حاسبة الجدوى الاقتصادية
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              حلل العائد على الاستثمار في الطاقة الشمسية وفترة استرداد رأس المال.
-            </p>
-            <Button asChild>
-              <Link href="/financial-viability">
-                حلل الآن <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
           </CardContent>
