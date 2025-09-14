@@ -243,7 +243,7 @@ export type CalculationOutput = Omit<OptimizeDesignOutput, 'reasoning'> & {
 
 export function calculateOptimalDesign(input: OptimizeDesignInput): CalculationOutput {
     
-    // 1. Sun Hours
+    // 1. Sun Hours & Location Data
     const sunHoursMap = { amman: 5.5, zarqa: 5.6, irbid: 5.4, aqaba: 6.0 };
     const sunHours = sunHoursMap[input.location];
     
@@ -262,10 +262,12 @@ export function calculateOptimalDesign(input: OptimizeDesignInput): CalculationO
     let optimizedSystemSize = Math.min(consumptionBasedSize, areaBasedSize);
     let limitingFactor: 'consumption' | 'area';
     
-    if (optimizedSystemSize === consumptionBasedSize) {
+    if (consumptionBasedSize <= areaBasedSize) {
         limitingFactor = 'consumption';
+        optimizedSystemSize = consumptionBasedSize;
     } else {
         limitingFactor = 'area';
+        optimizedSystemSize = areaBasedSize;
     }
     optimizedSystemSize = parseFloat(optimizedSystemSize.toFixed(2));
     
@@ -281,6 +283,15 @@ export function calculateOptimalDesign(input: OptimizeDesignInput): CalculationO
     // Wiring
     const panelsPerString = panelCount <= 20 ? panelCount : Math.floor(panelCount / 2);
     const parallelStrings = panelCount <= 20 ? 1 : 2;
+
+    // 5. Financial Analysis
+    const totalInvestment = totalDcPower * 1000 * input.costPerWatt;
+    const dailyProductionKwh = totalDcPower * sunHours * systemLossFactor;
+    const annualProductionKwh = dailyProductionKwh * 365;
+    const annualRevenue = annualProductionKwh * input.kwhPrice;
+    const paybackPeriodYears = annualRevenue > 0 ? totalInvestment / annualRevenue : Infinity;
+    const netProfit25Years = (annualRevenue * 25) - totalInvestment;
+
 
     return {
         panelConfig: {
@@ -300,6 +311,12 @@ export function calculateOptimalDesign(input: OptimizeDesignInput): CalculationO
             panelsPerString,
             parallelStrings,
             wireSize: 6,
+        },
+        financialAnalysis: {
+            totalInvestment,
+            annualRevenue,
+            paybackPeriodYears,
+            netProfit25Years,
         },
         limitingFactor: limitingFactor,
     };

@@ -64,6 +64,8 @@ export const OptimizeDesignInputSchema = z.object({
   location: z.enum(['amman', 'zarqa', 'irbid', 'aqaba'], {required_error: 'الرجاء اختيار الموقع'}),
   systemLoss: z.coerce.number().min(0).max(99, 'نسبة الفقد يجب أن تكون بين 0 و 99'),
   panelWattage: z.coerce.number().positive('قدرة اللوح يجب أن تكون رقماً موجباً'),
+  costPerWatt: z.coerce.number().positive("التكلفة يجب أن تكون رقماً موجباً"),
+  kwhPrice: z.coerce.number().positive("السعر يجب أن يكون رقماً موجباً"),
 });
 export type OptimizeDesignInput = z.infer<typeof OptimizeDesignInputSchema>;
 
@@ -85,6 +87,12 @@ export const OptimizeDesignOutputSchema = z.object({
     panelsPerString: z.number().describe('Number of panels to be connected in each series string.'),
     parallelStrings: z.number().describe('Number of parallel strings.'),
     wireSize: z.number().describe('The recommended main DC wire size in mm².')
+  }),
+  financialAnalysis: z.object({
+    totalInvestment: z.number().describe('The total estimated cost of the system in JOD.'),
+    annualRevenue: z.number().describe('The estimated annual savings or revenue in JOD.'),
+    paybackPeriodYears: z.number().describe('The estimated time to recoup the investment in years.'),
+    netProfit25Years: z.number().describe('The estimated net profit over a 25-year lifespan in JOD.'),
   }),
   reasoning: z.string().describe('A step-by-step explanation in Arabic of how the AI reached this design, explaining the trade-offs and why this design is optimal for the user\'s constraints.'),
   limitingFactor: z.enum(['consumption', 'area']).describe('The primary constraint that determined the final system size.'),
