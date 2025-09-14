@@ -25,7 +25,10 @@ import {
 import {useToast} from '@/hooks/use-toast';
 import {
   LineChart,
+  AreaChart,
+  ComposedChart,
   Line,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -81,6 +84,12 @@ interface ForecastChartDataPoint {
     power: number;
 }
 
+interface WeatherChartDataPoint {
+  time: string;
+  uv: number;
+  cloud: number;
+}
+
 
 // Helper functions for calculation, kept on client for responsiveness
 function estimateIrradiance(uvIndex: number, cloudCover: number): number {
@@ -105,6 +114,8 @@ export default function LiveSimulationPage() {
   const [simulationData, setSimulationData] = useState<SimulationDataPoint[]>(
     []
   );
+  const [weatherChartData, setWeatherChartData] = useState<WeatherChartDataPoint[]>([]);
+
   const [isSimulating, setIsSimulating] = useState(false);
   const [currentDataPoint, setCurrentDataPoint] =
     useState<SimulationDataPoint | null>(null);
@@ -182,12 +193,16 @@ export default function LiveSimulationPage() {
               ...result.data,
               time: time,
           };
+          
+          const weatherDataPoint: WeatherChartDataPoint = {
+            time: time,
+            uv: result.data.weather.current.uvIndex,
+            cloud: result.data.weather.current.cloudCover,
+          }
 
           setCurrentDataPoint(dataPoint);
-          setSimulationData(prevData => {
-            const newData = [...prevData, dataPoint];
-            return newData.slice(-15);
-          });
+          setSimulationData(prevData => [...prevData, dataPoint].slice(-15));
+          setWeatherChartData(prevData => [...prevData, weatherDataPoint].slice(-15));
           
           // Calculate daily expected production and chart data only on the first run
           if (simulationData.length === 0) {
@@ -219,6 +234,7 @@ export default function LiveSimulationPage() {
     setCurrentDataPoint(null);
     setDailyExpected(null);
     setForecastChartData([]);
+    setWeatherChartData([]);
 
     runSimulationStep(values);
 
@@ -251,7 +267,7 @@ export default function LiveSimulationPage() {
     }
   }
 
-  const chartData = simulationData.map(d => ({
+  const powerChartData = simulationData.map(d => ({
     time: d.time,
     live: parseFloat(d.liveOutputPower.toFixed(0)),
     forecast: parseFloat(d.forecastOutputPower.toFixed(0)),
@@ -585,114 +601,137 @@ export default function LiveSimulationPage() {
                 </CardContent>
               </Card>
 
-                {forecastChartData.length > 0 && (
-                    <Card>
-                        <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <BarChart className="text-primary" /> منحنى الإنتاج المتوقع على مدار اليوم
-                        </CardTitle>
-                        </CardHeader>
-                        <CardContent className="h-72">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart
-                            data={forecastChartData}
-                            margin={{top: 5, right: 20, left: -10, bottom: 5}}
-                            >
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="time" />
-                            <YAxis
-                                label={{
-                                value: 'واط',
-                                angle: -90,
-                                position: 'insideLeft',
-                                }}
-                            />
-                            <Tooltip
-                                contentStyle={{
-                                background: 'hsl(var(--background))',
-                                direction: 'rtl',
-                                }}
-                                formatter={(value) => [`${value} واط`, 'الإنتاج المتوقع']}
-                            />
-                            <Legend verticalAlign="top" align="right" wrapperStyle={{top: -4, direction: 'rtl'}}/>
-                            <Line
-                                name="الإنتاج المتوقع"
-                                type="monotone"
-                                dataKey="power"
-                                stroke="hsl(var(--primary))"
-                                strokeWidth={2}
-                                dot={false}
-                            />
-                            </LineChart>
-                        </ResponsiveContainer>
-                        </CardContent>
-                    </Card>
-                )}
+              {forecastChartData.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <BarChart className="text-primary" /> منحنى الإنتاج المتوقع على مدار اليوم
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={forecastChartData}
+                        margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="time" />
+                        <YAxis
+                          label={{
+                            value: 'واط',
+                            angle: -90,
+                            position: 'insideLeft',
+                          }}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            background: 'hsl(var(--background))',
+                            direction: 'rtl',
+                          }}
+                          formatter={(value) => [`${value} واط`, 'الإنتاج المتوقع']}
+                        />
+                        <Legend verticalAlign="top" align="right" wrapperStyle={{ top: -4, direction: 'rtl' }} />
+                        <Line
+                          name="الإنتاج المتوقع"
+                          type="monotone"
+                          dataKey="power"
+                          stroke="hsl(var(--primary))"
+                          strokeWidth={2}
+                          dot={false}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              )}
 
 
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <BarChart className="text-primary" /> التحليل المقارن للأداء
-                    (آخر 15 دقيقة)
+                    <BarChart className="text-primary" /> التحليل المقارن للأداء والطقس (آخر 15 دقيقة)
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="h-72">
+                <CardContent className="h-[450px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                      data={chartData}
-                      margin={{top: 5, right: 20, left: -10, bottom: 20}}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis
-                        dataKey="time"
-                        type="category"
-                        domain={['dataMin', 'dataMax']}
-                      />
-                      <YAxis
-                        label={{
-                          value: 'واط',
-                          angle: -90,
-                          position: 'insideLeft',
-                        }}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          background: 'hsl(var(--background))',
-                          direction: 'rtl',
-                        }}
-                      />
-                      <Legend
-                        verticalAlign="top"
-                        wrapperStyle={{top: -4, right: 20, direction: 'rtl'}}
-                      />
-                      <Line
-                        name="الفعلي"
-                        type="monotone"
-                        dataKey="live"
-                        stroke="hsl(var(--primary))"
-                        strokeWidth={3}
-                        dot={false}
-                      />
-                      <Line
-                        name="المتوقع"
-                        type="monotone"
-                        dataKey="forecast"
-                        stroke="#3b82f6"
-                        strokeWidth={2}
-                        dot={false}
-                        strokeDasharray="5 5"
-                      />
-                      <Line
-                        name="المثالي"
-                        type="monotone"
-                        dataKey="ideal"
-                        stroke="#8f8f8f"
-                        strokeWidth={2}
-                        dot={false}
-                        strokeDasharray="3 3"
-                      />
-                    </LineChart>
+                    <div>
+                      <p className="text-center text-sm text-muted-foreground mb-2">مخطط إنتاج الطاقة (واط)</p>
+                      <LineChart
+                        width={500}
+                        height={200}
+                        data={powerChartData}
+                        syncId="anyId"
+                        margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="time" tick={{ display: 'none' }} />
+                        <YAxis
+                          label={{
+                            value: 'واط',
+                            angle: -90,
+                            position: 'insideLeft',
+                          }}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            background: 'hsl(var(--background))',
+                            direction: 'rtl',
+                          }}
+                        />
+                        <Legend
+                          verticalAlign="top"
+                          wrapperStyle={{ top: -4, right: 20, direction: 'rtl' }}
+                        />
+                        <Line
+                          name="الفعلي"
+                          type="monotone"
+                          dataKey="live"
+                          stroke="hsl(var(--primary))"
+                          strokeWidth={3}
+                          dot={false}
+                        />
+                        <Line
+                          name="المتوقع"
+                          type="monotone"
+                          dataKey="forecast"
+                          stroke="#3b82f6"
+                          strokeWidth={2}
+                          dot={false}
+                          strokeDasharray="5 5"
+                        />
+                        <Line
+                          name="المثالي"
+                          type="monotone"
+                          dataKey="ideal"
+                          stroke="#8f8f8f"
+                          strokeWidth={2}
+                          dot={false}
+                          strokeDasharray="3 3"
+                        />
+                      </LineChart>
+                      <p className="text-center text-sm text-muted-foreground mt-4 mb-2">مخطط عوامل الطقس</p>
+                      <AreaChart
+                        width={500}
+                        height={200}
+                        data={weatherChartData}
+                        syncId="anyId"
+                        margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="time" />
+                        <YAxis yAxisId="left" orientation="left" stroke="#ca8a04" label={{ value: 'UV', angle: -90, position: 'insideLeft', fill: '#ca8a04' }} />
+                        <YAxis yAxisId="right" orientation="right" stroke="#6b7280" label={{ value: '%', angle: -90, position: 'insideRight', fill: '#6b7280' }} />
+                        <Tooltip
+                           contentStyle={{
+                            background: 'hsl(var(--background))',
+                            direction: 'rtl',
+                          }}
+                        />
+                        <Legend verticalAlign="top" wrapperStyle={{ top: -4, right: 20, direction: 'rtl' }} />
+                        <Area yAxisId="left" type="monotone" dataKey="uv" name="مؤشر UV" stroke="#ca8a04" fill="#ca8a04" fillOpacity={0.2} />
+                        <Area yAxisId="right" type="monotone" dataKey="cloud" name="نسبة الغيوم" stroke="#6b7280" fill="#6b7280" fillOpacity={0.2}/>
+                      </AreaChart>
+                    </div>
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
