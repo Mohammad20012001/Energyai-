@@ -1,4 +1,7 @@
 import axios from 'axios';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 // Coordinates for major Jordanian cities
 const locations: Record<string, { lat: number; lon: number }> = {
