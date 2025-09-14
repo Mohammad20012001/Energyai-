@@ -77,6 +77,12 @@ interface SimulationDataPoint extends SimulatePerformanceOutput {
     time: string;
 }
 
+interface ForecastChartDataPoint {
+    time: string;
+    power: number;
+}
+
+
 // Helper functions for calculation, kept on client for responsiveness
 function estimateIrradiance(uvIndex: number, cloudCover: number): number {
     const uvBasedIrradiance = uvIndex * 100;
@@ -103,6 +109,8 @@ export default function LiveSimulationPage() {
   const [currentDataPoint, setCurrentDataPoint] =
     useState<SimulationDataPoint | null>(null);
   const [dailyExpected, setDailyExpected] = useState<{ productionKwh: number, revenue: number } | null>(null);
+  const [forecastChartData, setForecastChartData] = useState<ForecastChartDataPoint[]>([]);
+
   const simulationIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const {toast} = useToast();
 
@@ -116,6 +124,18 @@ export default function LiveSimulationPage() {
       kwhPrice: 0.12,
     },
   });
+
+  const prepareForecastChartData = (forecast: WeatherPoint[], systemSize: number) => {
+    const chartData = forecast.map(hourlyData => {
+        const irradiance = estimateIrradiance(hourlyData.uvIndex, hourlyData.cloudCover);
+        const power = calculatePower(systemSize, irradiance, hourlyData.temperature);
+        return {
+            time: new Date(hourlyData.time!).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '00' }),
+            power: parseFloat(power.toFixed(0)),
+        };
+    });
+    setForecastChartData(chartData);
+  }
 
   // Calculate daily expected production and revenue
   const calculateDailyExpected = (forecast: WeatherPoint[], systemSize: number, kwhPrice: number) => {
@@ -157,9 +177,10 @@ export default function LiveSimulationPage() {
             return newData.slice(-15);
           });
           
-          // Calculate daily expected production only on the first run
+          // Calculate daily expected production and chart data only on the first run
           if (simulationData.length === 0) {
              calculateDailyExpected(result.data.weather.forecast, values.systemSize, values.kwhPrice);
+             prepareForecastChartData(result.data.weather.forecast, values.systemSize);
           }
       } else {
         toast({
@@ -185,6 +206,7 @@ export default function LiveSimulationPage() {
     setSimulationData([]);
     setCurrentDataPoint(null);
     setDailyExpected(null);
+    setForecastChartData([]);
 
     runSimulationStep(values);
 
@@ -554,6 +576,51 @@ export default function LiveSimulationPage() {
                   </div>
                 </CardContent>
               </Card>
+
+                {forecastChartData.length > 0 && (
+                    <Card>
+                        <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <BarChart className="text-primary" /> منحنى الإنتاج المتوقع على مدار اليوم
+                        </CardTitle>
+                        </CardHeader>
+                        <CardContent className="h-72">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart
+                            data={forecastChartData}
+                            margin={{top: 5, right: 20, left: -10, bottom: 5}}
+                            >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="time" />
+                            <YAxis
+                                label={{
+                                value: 'واط',
+                                angle: -90,
+                                position: 'insideLeft',
+                                }}
+                            />
+                            <Tooltip
+                                contentStyle={{
+                                background: 'hsl(var(--background))',
+                                direction: 'rtl',
+                                }}
+                                formatter={(value) => [`${value} واط`, 'الإنتاج المتوقع']}
+                            />
+                            <Legend verticalAlign="top" align="right" wrapperStyle={{top: -4, direction: 'rtl'}}/>
+                            <Line
+                                name="الإنتاج المتوقع"
+                                type="monotone"
+                                dataKey="power"
+                                stroke="hsl(var(--primary))"
+                                strokeWidth={2}
+                                dot={false}
+                            />
+                            </LineChart>
+                        </ResponsiveContainer>
+                        </CardContent>
+                    </Card>
+                )}
+
 
               <Card>
                 <CardHeader>
