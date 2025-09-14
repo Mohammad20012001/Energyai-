@@ -131,7 +131,7 @@ export default function LiveSimulationPage() {
         const irradiance = estimateIrradiance(hourlyData.uvIndex, hourlyData.cloudCover);
         const power = calculatePower(systemSize, irradiance, hourlyData.temperature);
         return {
-            time: new Date(hourlyData.time!).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '00' }),
+            time: new Date(hourlyData.time!).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
             power: parseFloat(power.toFixed(0)),
         };
     });
@@ -696,3 +696,5 @@ export default function LiveSimulationPage() {
     </div>
   );
 }
+
+    
