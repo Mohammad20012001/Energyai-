@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Trash2, PlusCircle, Lightbulb } from 'lucide-react';
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
+import { Trash2, PlusCircle } from 'lucide-react';
+import { Form, FormControl, FormField } from '@/components/ui/form';
 
 interface ApplianceLoadCalculatorProps {
     onTotalLoadChange: (totalKwh: number) => void;
@@ -100,7 +100,6 @@ export function ApplianceLoadCalculator({ onTotalLoadChange }: ApplianceLoadCalc
                 </Button>
             </div>
             
-            <Form {...form}>
             <div className="max-h-60 overflow-y-auto pr-2">
                 <Table>
                     <TableHeader>
@@ -120,7 +119,9 @@ export function ApplianceLoadCalculator({ onTotalLoadChange }: ApplianceLoadCalc
                                         control={form.control}
                                         name={`appliances.${index}.name`}
                                         render={({ field }) => (
-                                          <Input {...field} className="h-8"/>
+                                          <FormControl>
+                                            <Input {...field} className="h-8"/>
+                                          </FormControl>
                                         )}
                                     />
                                 </TableCell>
@@ -129,7 +130,9 @@ export function ApplianceLoadCalculator({ onTotalLoadChange }: ApplianceLoadCalc
                                         control={form.control}
                                         name={`appliances.${index}.power`}
                                         render={({ field }) => (
-                                          <Input type="number" {...field} className="h-8 w-20"/>
+                                          <FormControl>
+                                            <Input type="number" {...field} className="h-8 w-20"/>
+                                          </FormControl>
                                         )}
                                     />
                                 </TableCell>
@@ -138,7 +141,9 @@ export function ApplianceLoadCalculator({ onTotalLoadChange }: ApplianceLoadCalc
                                         control={form.control}
                                         name={`appliances.${index}.quantity`}
                                         render={({ field }) => (
-                                          <Input type="number" {...field} className="h-8 w-16"/>
+                                          <FormControl>
+                                            <Input type="number" {...field} className="h-8 w-16"/>
+                                          </FormControl>
                                         )}
                                     />
                                 </TableCell>
@@ -147,7 +152,9 @@ export function ApplianceLoadCalculator({ onTotalLoadChange }: ApplianceLoadCalc
                                         control={form.control}
                                         name={`appliances.${index}.hours`}
                                         render={({ field }) => (
-                                          <Input type="number" {...field} className="h-8 w-16"/>
+                                          <FormControl>
+                                            <Input type="number" {...field} className="h-8 w-16"/>
+                                          </FormControl>
                                         )}
                                     />
                                 </TableCell>
@@ -161,7 +168,6 @@ export function ApplianceLoadCalculator({ onTotalLoadChange }: ApplianceLoadCalc
                     </TableBody>
                 </Table>
             </div>
-            </Form>
             
             <div className="flex justify-between items-center bg-background p-3 rounded-md">
                 <div className="text-sm font-bold">إجمالي الحمل اليومي المقدر:</div>
