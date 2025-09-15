@@ -17,7 +17,7 @@ export interface WeatherData {
 
 export interface HistoricalDataPoint {
     month: number;
-    total_irrad_Wh_m2: number;
+    total_irrad_Wh_m2: number; // This value is actually in kWh/m²/day
 }
 
 
@@ -93,17 +93,34 @@ export async function getHistoricalWeatherForYear(lat: number, lon: number): Pro
     try {
         const responses = await Promise.all(promises);
         
-        const historicalData: HistoricalDataPoint[] = responses.map(response => {
+        const monthlyAverages = new Map<number, { sum: number, count: number }>();
+
+        responses.forEach(response => {
             const dayData = response.data.forecast.forecastday[0].day;
-            // The API provides total_irrad_Wh_m2 which is what we need.
-            const totalIrradiation = dayData.total_irrad_Wh_m2 ?? 0;
+            // The API provides total_irrad_Wh_m2. This is the TOTAL irradiation for the day.
+            // We want the average daily irradiation for the month (equivalent to PSSH).
+            // Unit is Wh/m^2. To get kWh/m^2/day (PSSH), we divide by 1000.
+            const dailyIrradiationKWh = (dayData.total_irrad_Wh_m2 ?? 0) / 1000;
             const date = new Date(response.data.forecast.forecastday[0].date);
-            
-            return {
-                month: date.getMonth(),
-                total_irrad_Wh_m2: parseFloat(totalIrradiation.toFixed(2)),
-            };
+            const month = date.getMonth();
+
+            if (!monthlyAverages.has(month)) {
+                monthlyAverages.set(month, { sum: 0, count: 0 });
+            }
+            const current = monthlyAverages.get(month)!;
+            current.sum += dailyIrradiationKWh;
+            current.count += 1;
         });
+
+        const historicalData: HistoricalDataPoint[] = [];
+        for (let i = 0; i < 12; i++) {
+            const data = monthlyAverages.get(i);
+            const averageIrradiation = data ? data.sum / data.count : 0;
+            historicalData.push({
+                month: i,
+                total_irrad_Wh_m2: parseFloat(averageIrradiation.toFixed(2)),
+            });
+        }
         
         // Sort data by month (January = 0, December = 11)
         historicalData.sort((a, b) => a.month - b.month);
