@@ -41,7 +41,7 @@ async function calculateFinancialViability(input: FinancialViabilityInput): Prom
     const historicalData = await getHistoricalWeatherForYear(lat, lon);
 
     const monthlyBreakdown = monthNames.map((month, index) => {
-        const monthData = historicalData[index];
+        const monthData = historicalData.find(d => d.month === index) || { total_irrad_Wh_m2: 0 };
         const sunHours = (monthData.total_irrad_Wh_m2 / 1000); 
 
         const dailyProduction = input.systemSize * sunHours * systemLossFactor;
