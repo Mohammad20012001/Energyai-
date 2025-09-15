@@ -36,7 +36,8 @@ import {
 } from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { calculateFinancialViability, type FinancialViabilityResult } from "@/services/calculations";
+import { calculateFinancialViabilityAction } from "@/app/actions/solar";
+import type { FinancialViabilityResult } from "@/services/calculations";
 
 const formSchema = z.object({
   systemSize: z.coerce.number().positive("يجب أن يكون حجم النظام إيجابياً"),
@@ -73,14 +74,19 @@ export default function FinancialViabilityPage() {
     setIsLoading(true);
     setResult(null);
     try {
-      const calculationResult = await calculateFinancialViability(values);
-      setResult(calculationResult);
+      const response = await calculateFinancialViabilityAction(values);
+      if (response.success && response.data) {
+        setResult(response.data);
+      } else {
+         throw new Error(response.error || "فشل في جلب البيانات المناخية التاريخية.");
+      }
     } catch (error) {
+       const errorMessage = error instanceof Error ? error.message : "فشل في جلب البيانات المناخية التاريخية. يرجى التحقق من اتصالك بالإنترنت أو مفتاح API الخاص بالطقس.";
        console.error("Error in financial viability calculation:", error);
        toast({
         variant: "destructive",
         title: "خطأ في جلب البيانات",
-        description: "فشل في جلب البيانات المناخية التاريخية. يرجى التحقق من اتصالك بالإنترنت أو مفتاح API الخاص بالطقس.",
+        description: errorMessage,
        });
     } finally {
         setIsLoading(false);
