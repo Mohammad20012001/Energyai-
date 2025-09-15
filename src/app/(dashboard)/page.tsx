@@ -4,7 +4,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Settings, Calculator, Zap, Maximize, TrendingUp, DollarSign, FileText, BatteryCharging, Wind, Bot, Combine, MessageCircle, BrainCircuit, ListChecks } from "lucide-react";
+import { ArrowRight, Settings, Calculator, Zap, Maximize, TrendingUp, DollarSign, FileText, BatteryCharging, Wind, Bot, Combine, MessageCircle, BrainCircuit, ListChecks, Camera } from "lucide-react";
 
 export default function DashboardOverviewPage() {
   return (
@@ -15,7 +15,27 @@ export default function DashboardOverviewPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="hover:shadow-lg transition-shadow border-primary/20 bg-primary/5 col-span-1 md:col-span-2">
+        
+        <Card className="hover:shadow-lg transition-shadow border-primary/20 bg-primary/5 col-span-1 md:col-span-2 lg:col-span-3">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Camera className="text-primary" />
+              المفتش الميداني الذكي (جديد!)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">
+              التقط صورة لمصفوفة ألواح شمسية ودع الذكاء الاصطناعي يفحصها لك، ليكشف عن مشاكل مثل الغبار والتظليل والأضرار المحتملة.
+            </p>
+            <Button asChild>
+              <Link href="/field-inspector">
+                ابدأ الفحص الآن <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow col-span-1 md:col-span-1">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MessageCircle className="text-primary" />
@@ -24,7 +44,7 @@ export default function DashboardOverviewPage() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-4">
-              اسأل أي شيء، من حجم السلك المناسب إلى تصميم نظام كامل بناءً على ميزانيتك واحتياجك.
+              اسأل أي شيء، من حجم السلك المناسب إلى تصميم نظام كامل بناءً على ميزانيتك.
             </p>
             <Button asChild>
               <Link href="/chat">
@@ -34,7 +54,7 @@ export default function DashboardOverviewPage() {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow">
+        <Card className="hover:shadow-lg transition-shadow col-span-1 md:col-span-1">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Wind className="text-primary" />
@@ -53,7 +73,7 @@ export default function DashboardOverviewPage() {
           </CardContent>
         </Card>
         
-        <Card className="hover:shadow-lg transition-shadow col-span-1 md:col-span-2 lg:col-span-1">
+        <Card className="hover:shadow-lg transition-shadow col-span-1 md:col-span-1">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BrainCircuit className="text-primary" />
@@ -62,7 +82,7 @@ export default function DashboardOverviewPage() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-4">
-              أدخل استهلاكك ومساحتك ودع الذكاء الاصطناعي يصمم لك النظام الأمثل ويحلل جدواه المالية.
+              دع الذكاء الاصطناعي يصمم لك النظام الأمثل ويحلل جدواه المالية.
             </p>
             <Button asChild>
               <Link href="/design-optimizer">
@@ -81,7 +101,7 @@ export default function DashboardOverviewPage() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-4">
-              استخدم الذكاء الاصطناعي لتحديد أفضل تهيئة لسلاسل الألواح وتجنب الأخطاء الشائعة.
+              تحديد أفضل تهيئة لسلاسل الألواح وتجنب الأخطاء الشائعة.
             </p>
             <Button asChild>
               <Link href="/string-configuration">
@@ -209,5 +229,3 @@ export default function DashboardOverviewPage() {
     </div>
   );
 }
-
-    

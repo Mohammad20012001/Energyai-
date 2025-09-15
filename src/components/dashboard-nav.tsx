@@ -20,6 +20,7 @@ import {
   BrainCircuit,
   ListChecks,
   CalendarClock,
+  Camera,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -34,6 +35,7 @@ const navItems = [
   { href: "/chat", label: "المساعد الذكي", icon: MessageCircle },
   { href: "/live-simulation", label: "المحاكاة الحية", icon: Wind },
   { href: "/design-optimizer", label: "حاسبة حجم النظام", icon: BrainCircuit },
+  { href: "/field-inspector", label: "المفتش الميداني", icon: Camera },
   { type: 'divider', label: 'Calculators'},
   { href: "/system-sizer", label: "حاسبة النظام المتكامل", icon: Combine },
   { href: "/string-configuration", label: "تهيئة السلاسل", icon: Settings },
@@ -76,4 +78,3 @@ export function DashboardNav() {
   );
 }
 
-    
