@@ -37,12 +37,7 @@ export async function inspectPanelArray(input: InspectionInput): Promise<Inspect
 }
 
 
-// 1. Define the AI Prompt with structured input and output schemas.
-const inspectionPrompt = ai.definePrompt({
-  name: 'panelInspectionPrompt',
-  input: { schema: InspectionInputSchema },
-  output: { schema: InspectionResultSchema }, // We tell the model to respond in this JSON format.
-  prompt: `You are a meticulous and critical expert solar panel installation inspector. Your primary task is to find and report problems. Do not be lenient. Your analysis of the provided image(s) of a solar panel array must be thorough.
+const INSPECTION_PROMPT = `You are a meticulous and critical expert solar panel installation inspector. Your primary task is to find and report problems. Do not be lenient. Your analysis of the provided image(s) of a solar panel array must be thorough.
 
 Your analysis must cover the following categories across all images. Your focus is to identify defects:
 1.  **Soiling (اتساخ):** Your highest priority. Scrutinize panel surfaces for any dust, dirt, bird droppings, grime, or other debris. Even light layers of dust count. Estimate the severity and its direct impact on energy production. If you see any dirt, you MUST report it.
@@ -60,9 +55,7 @@ Analyze the following images critically:
 {{#each photoDataUris}}
 {{media url=this}}
 {{/each}}
-`,
-});
-
+`;
 
 // 2. Define the Genkit Flow that returns data or throws an error
 const panelInspectionFlow = ai.defineFlow(
@@ -72,24 +65,37 @@ const panelInspectionFlow = ai.defineFlow(
     outputSchema: InspectionResultSchema,
   },
   async (input) => {
+    // Define primary and fallback models explicitly
+    const primaryModel = 'googleai/gemini-2.5-flash';
+    const fallbackModel = 'googleai/gemini-1.5-flash-latest';
+
     try {
       // Main attempt with the primary model
-      const { output } = await inspectionPrompt(input);
+      console.log(`Attempting analysis with primary model: ${primaryModel}`);
+      const { output } = await ai.generate({
+        model: primaryModel,
+        prompt: INSPECTION_PROMPT,
+        input: input,
+        output: { schema: InspectionResultSchema },
+      });
+
       if (!output) {
         throw new Error("The primary AI model failed to return a structured analysis.");
       }
       return output;
     } catch (error) {
-      console.error("Primary model failed:", error);
+      console.error(`Primary model (${primaryModel}) failed:`, error);
+      
       // Check if it's a service availability issue
       if (error instanceof Error && (error.message.includes('503') || error.message.toLowerCase().includes('overloaded'))) {
         console.log("Primary model overloaded. Attempting failover to secondary model...");
+        
         try {
-          // Failover attempt with a different, more available model
-          const fallbackModel = ai.model('googleai/gemini-1.5-flash-latest');
+          // Failover attempt with the secondary model
+          console.log(`Attempting analysis with fallback model: ${fallbackModel}`);
           const { output: fallbackOutput } = await ai.generate({
             model: fallbackModel,
-            prompt: inspectionPrompt.prompt, // Use the same prompt structure
+            prompt: INSPECTION_PROMPT,
             input: input,
             output: { schema: InspectionResultSchema },
           });
@@ -97,11 +103,12 @@ const panelInspectionFlow = ai.defineFlow(
           if (!fallbackOutput) {
             throw new Error("The fallback AI model also failed to return a structured analysis.");
           }
+
           console.log("Failover to secondary model was successful.");
           return fallbackOutput;
 
         } catch (failoverError) {
-          console.error("Failover model also failed:", failoverError);
+          console.error(`Fallback model (${fallbackModel}) also failed:`, failoverError);
           // If the failover also fails, then we throw the user-friendly error.
           throw new Error("نموذج الذكاء الاصطناعي مشغول حاليًا أو غير متاح. يرجى المحاولة مرة أخرى بعد لحظات.");
         }
