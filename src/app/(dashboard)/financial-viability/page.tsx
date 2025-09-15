@@ -5,7 +5,7 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { TrendingUp, ArrowRight, Loader2, PlusCircle, BarChart3, FileText, CalendarDays, AreaChart, Activity, ChevronsRight, ChevronsLeft, ChevronsUpDown } from "lucide-react";
+import { TrendingUp, ArrowRight, Loader2, PlusCircle, BarChart3, FileText, CalendarDays, AreaChart, Activity, ChevronsRight, ChevronsLeft, ChevronsUpDown, Settings } from "lucide-react";
 import { useReport } from "@/context/ReportContext";
 import {
   BarChart,
@@ -46,6 +46,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { calculateFinancialViabilityAction } from "@/app/actions/solar";
@@ -84,12 +90,13 @@ export default function FinancialViabilityPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       systemSize: 5,
-      systemLoss: 15,
-      tilt: 30,
-      azimuth: 180,
       location: 'amman',
       costPerKw: 700,
       kwhPrice: 0.12,
+      // Advanced defaults
+      systemLoss: 15,
+      tilt: 30,
+      azimuth: 180,
       degradationRate: 0.5,
     },
   });
@@ -197,32 +204,6 @@ export default function FinancialViabilityPage() {
                   />
                   <FormField
                     control={form.control}
-                    name="systemLoss"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>إجمالي الفقد في النظام (%)</FormLabel>
-                        <FormControl>
-                          <Input type="number" placeholder="e.g., 15" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="tilt"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>زاوية الميل (°)</FormLabel>
-                        <FormControl>
-                          <Input type="number" placeholder="e.g., 30" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
                     name="costPerKw"
                     render={({ field }) => (
                       <FormItem>
@@ -247,19 +228,71 @@ export default function FinancialViabilityPage() {
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="degradationRate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>نسبة التهالك السنوي للألواح (%)</FormLabel>
-                        <FormControl>
-                          <Input type="number" step="0.1" placeholder="e.g., 0.5" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+
+                  <Accordion type="single" collapsible className="w-full">
+                    <AccordionItem value="item-1">
+                      <AccordionTrigger>
+                        <span className="flex items-center gap-2">
+                          <Settings className="h-4 w-4" />
+                          إعدادات متقدمة (اختياري)
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-4 pt-4">
+                        <FormField
+                          control={form.control}
+                          name="systemLoss"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>إجمالي الفقد في النظام (%)</FormLabel>
+                              <FormControl>
+                                <Input type="number" placeholder="e.g., 15" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="tilt"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>زاوية الميل (°)</FormLabel>
+                              <FormControl>
+                                <Input type="number" placeholder="e.g., 30" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="azimuth"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>زاوية الاتجاه (°)</FormLabel>
+                                <FormControl>
+                                    <Input type="number" placeholder="e.g., 180" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="degradationRate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>نسبة التهالك السنوي للألواح (%)</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.1" placeholder="e.g., 0.5" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                 </fieldset>
                 <Button type="submit" disabled={isLoading} className="w-full">
                   {isLoading ? (
