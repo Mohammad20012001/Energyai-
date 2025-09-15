@@ -10,49 +10,14 @@
  * specific issues found, along with recommendations for each.
  *
  * - inspectPanelArray: The main function that orchestrates the inspection process.
- * - InspectionInputSchema: The Zod schema for the input (a data URI of the photo).
- * - InspectionResultSchema: The Zod schema for the structured output report.
- * - InspectionResult: The TypeScript type inferred from the output schema.
+ * - InspectionInput: The TypeScript type for the input.
+ * - InspectionResult: The TypeScript type for the structured output report.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
+import { InspectionInputSchema, InspectionResultSchema, type InspectionInput, type InspectionResult } from '@/ai/tool-schemas';
 
-// Define the schema for the input, which is just the image data URI.
-const InspectionInputSchema = z.object({
-  photoDataUri: z
-    .string()
-    .describe(
-      "A photo of a solar panel array, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
-    ),
-});
-export type InspectionInput = z.infer<typeof InspectionInputSchema>;
-
-// Define the schema for the structured JSON output we want from the AI model.
-// This is the core of "structured output" and guides the model's response.
-export const InspectionResultSchema = z.object({
-  overallHealthScore: z.number().min(0).max(100).describe(
-    "An overall health score for the solar panel array from 0 (very poor) to 100 (excellent), based on the identified issues."
-  ),
-  overallAssessment: z.string().describe(
-    "A brief, one-sentence overall assessment of the system's condition in Arabic."
-  ),
-  issues: z.array(z.object({
-    category: z.enum(['soiling', 'shading', 'damage', 'installation', 'other']).describe(
-        "The category of the issue. 'soiling' for dirt/dust, 'shading' for shadows, 'damage' for physical harm, 'installation' for mounting/wiring issues."
-    ),
-    description: z.string().describe(
-        "A short, specific description of the identified issue in Arabic (e.g., 'تراكم غبار متوسط على الألواح السفلية')."
-    ),
-    severity: z.enum(['Low', 'Medium', 'High', 'Critical']).describe(
-        "The estimated severity of the issue's impact on performance or safety."
-    ),
-    recommendation: z.string().describe(
-        "A concise, actionable recommendation in Arabic to address the issue (e.g., 'يوصى بجدولة تنظيف للألواح.')."
-    ),
-  })).describe("A list of all detected issues. If no issues are found, return an empty array."),
-});
-export type InspectionResult = z.infer<typeof InspectionResultSchema>;
 
 // This is the main exported function that the UI will call via a server action.
 export async function inspectPanelArray(input: InspectionInput): Promise<InspectionResult> {

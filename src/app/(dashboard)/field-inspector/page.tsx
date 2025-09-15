@@ -20,7 +20,8 @@ import {
 } from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { inspectPanelArray, type InspectionResult } from '@/ai/flows/inspect-panel-array';
+import { inspectPanelArray } from '@/ai/flows/inspect-panel-array';
+import { type InspectionResult } from '@/ai/tool-schemas';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 
@@ -280,4 +281,3 @@ export default function FieldInspectorPage() {
         </div>
     );
 }
-
