@@ -36,14 +36,13 @@ async function calculateFinancialViability(input: FinancialViabilityInput): Prom
     const totalInvestment = input.systemSize * input.costPerKw;
     const systemLossFactor = 1 - input.systemLoss / 100;
     
-    // Fetch real historical data from the weather service
     const coordinates = locationCoordinates[input.location];
     const historicalData = await getHistoricalWeatherForYear(coordinates.lat, coordinates.lon);
 
     const monthlyBreakdown = monthNames.map((month, index) => {
-        // Find the historical data for the current month
         const monthData = historicalData.find(d => d.month === index);
-        const sunHours = monthData ? monthData.total_irrad_Wh_m2 : 0; // This is actually kWh/m²/day
+        // Correctly use the fetched historical irradiation data (sunHours) for the calculation.
+        const sunHours = monthData ? monthData.total_irrad_Wh_m2 : 0; 
 
         const dailyProduction = input.systemSize * sunHours * systemLossFactor;
         const monthlyProduction = dailyProduction * daysInMonth[index];
@@ -95,7 +94,6 @@ export async function suggestStringConfigurationAction(
 export async function calculateFinancialViabilityAction(input: FinancialViabilityInput) {
     try {
         const validatedInput = FinancialViabilityInputSchema.parse(input);
-        // This function now internally fetches real historical data
         const result = await calculateFinancialViability(validatedInput);
         return { success: true, data: result };
     } catch (error) {
