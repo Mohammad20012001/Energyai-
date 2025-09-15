@@ -57,6 +57,7 @@ const formSchema = z.object({
   location: z.enum(['amman', 'zarqa', 'irbid', 'aqaba'], { required_error: "الرجاء اختيار الموقع" }),
   costPerKw: z.coerce.number().positive("التكلفة يجب أن تكون إيجابية"),
   kwhPrice: z.coerce.number().positive("السعر يجب أن يكون إيجابياً"),
+  degradationRate: z.coerce.number().min(0, "لا يمكن أن يكون سالباً").max(5, "النسبة مرتفعة جداً"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -77,6 +78,7 @@ export default function FinancialViabilityPage() {
       location: 'amman',
       costPerKw: 700,
       kwhPrice: 0.12,
+      degradationRate: 0.5,
     },
   });
 
@@ -115,9 +117,10 @@ export default function FinancialViabilityPage() {
       values: {
         "حجم النظام": `${form.getValues("systemSize")} kWp`,
         "التكلفة التقديرية": `${result.totalInvestment.toFixed(0)} دينار`,
-        "الإنتاج السنوي": `${result.totalAnnualProduction.toFixed(0)} kWh`,
-        "الإيرادات السنوية": `${result.annualRevenue.toFixed(0)} دينار`,
-        "فترة الاسترداد": `${paybackYears} سنوات و ${paybackMonths} أشهر`,
+        "الإنتاج السنوي (السنة الأولى)": `${result.totalAnnualProduction.toFixed(0)} kWh`,
+        "الإيرادات السنوية (السنة الأولى)": `${result.annualRevenue.toFixed(0)} دينار`,
+        "فترة الاسترداد": isFinite(result.paybackPeriodMonths) ? `${paybackYears} سنوات و ${paybackMonths} أشهر` : 'أكثر من 25 سنة',
+        "صافي الربح (25 سنة)": `${result.netProfit25Years.toFixed(0)} دينار`,
       }
     });
     toast({
@@ -226,7 +229,20 @@ export default function FinancialViabilityPage() {
                       <FormItem>
                         <FormLabel>سعر بيع الكهرباء (دينار/kWh)</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="e.g., 0.12" {...field} />
+                          <Input type="number" step="0.01" placeholder="e.g., 0.12" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="degradationRate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>نسبة التهالك السنوي للألواح (%)</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.1" placeholder="e.g., 0.5" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -276,7 +292,7 @@ export default function FinancialViabilityPage() {
                     <div className="text-xs text-muted-foreground">دينار</div>
                   </div>
                   <div className="border rounded-lg p-3">
-                    <div className="text-sm text-muted-foreground">الإيرادات السنوية</div>
+                    <div className="text-sm text-muted-foreground">الإيرادات (السنة الأولى)</div>
                     <div className="text-2xl font-bold text-green-600">{result.annualRevenue.toFixed(0)}</div>
                     <div className="text-xs text-muted-foreground">دينار</div>
                   </div>
@@ -285,7 +301,7 @@ export default function FinancialViabilityPage() {
                     <div className="text-xl font-bold">{isFinite(result.paybackPeriodMonths) ? `${Math.floor(result.paybackPeriodMonths / 12)} سنة و ${result.paybackPeriodMonths % 12} أشهر` : "أكثر من 25 سنة"}</div>
                   </div>
                    <div className="border rounded-lg p-3 col-span-2 md:col-span-3">
-                    <div className="text-sm text-muted-foreground">صافي الربح (25 سنة)</div>
+                    <div className="text-sm text-muted-foreground">صافي الربح (25 سنة, مع التهالك)</div>
                     <div className="text-3xl font-bold text-green-700">{result.netProfit25Years.toFixed(0)}</div>
                      <div className="text-xs text-muted-foreground">دينار</div>
                   </div>
@@ -296,7 +312,7 @@ export default function FinancialViabilityPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <BarChart3 className="text-primary"/>
-                     الإنتاج الشهري المتوقع (kWh)
+                     الإنتاج الشهري المتوقع (kWh) - السنة الأولى
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="h-72">
@@ -323,7 +339,7 @@ export default function FinancialViabilityPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <CalendarDays className="text-primary"/>
-                    جدول البيانات الشهري
+                    جدول بيانات السنة الأولى
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -346,7 +362,7 @@ export default function FinancialViabilityPage() {
                         </TableRow>
                       ))}
                        <TableRow className="font-bold bg-muted/50">
-                          <TableCell>الإجمالي السنوي</TableCell>
+                          <TableCell>الإجمالي السنوي (السنة الأولى)</TableCell>
                           <TableCell className="text-center">-</TableCell>
                           <TableCell className="text-center">{result.totalAnnualProduction.toFixed(1)}</TableCell>
                           <TableCell className="text-right">{result.annualRevenue.toFixed(2)}</TableCell>

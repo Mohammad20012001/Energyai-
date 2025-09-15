@@ -18,6 +18,7 @@ const FinancialViabilityInputSchema = z.object({
   location: z.enum(['amman', 'zarqa', 'irbid', 'aqaba'], { required_error: "الرجاء اختيار الموقع" }),
   costPerKw: z.coerce.number().positive("التكلفة يجب أن تكون إيجابية"),
   kwhPrice: z.coerce.number().positive("السعر يجب أن يكون إيجابياً"),
+  degradationRate: z.coerce.number().min(0, "لا يمكن أن يكون سالباً").max(5, "النسبة مرتفعة جداً"),
 });
 
 const locationCoordinates = {
@@ -41,23 +42,23 @@ const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "م�
 const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
 
-async function calculateFinancialViability(input: FinancialViabilityInput): Promise<FinancialViabilityResult> {
+async function calculateFinancialViability(input: z.infer<typeof FinancialViabilityInputSchema>): Promise<FinancialViabilityResult> {
     const totalInvestment = input.systemSize * input.costPerKw;
     const systemLossFactor = 1 - input.systemLoss / 100;
-    
+    const degradationFactor = 1 - (input.degradationRate / 100);
+
     const locationPSSH = monthlyPSSH[input.location];
 
+    // --- First year calculations ---
     const monthlyBreakdown = monthNames.map((month, index) => {
         const dailyIrradiation = locationPSSH[index];
-        
-        // Daily Production (kWh) = System Size (kWp) * Daily Irradiation (kWh/m²/day) * System Loss Factor
         const dailyProduction = input.systemSize * dailyIrradiation * systemLossFactor;
         const monthlyProduction = dailyProduction * daysInMonth[index];
         const monthlyRevenue = monthlyProduction * input.kwhPrice;
         
         return {
             month: month,
-            sunHours: parseFloat(dailyIrradiation.toFixed(2)), // This now represents kWh/m²/day
+            sunHours: parseFloat(dailyIrradiation.toFixed(2)),
             production: monthlyProduction,
             revenue: monthlyRevenue,
         };
@@ -65,8 +66,38 @@ async function calculateFinancialViability(input: FinancialViabilityInput): Prom
 
     const totalAnnualProduction = monthlyBreakdown.reduce((sum, item) => sum + item.production, 0);
     const annualRevenue = monthlyBreakdown.reduce((sum, item) => sum + item.revenue, 0);
-    const paybackPeriodMonths = annualRevenue > 0 ? Math.ceil((totalInvestment / annualRevenue) * 12) : Infinity;
-    const netProfit25Years = (annualRevenue * 25) - totalInvestment;
+
+    // --- Long-term calculations with degradation ---
+    let cumulativeRevenue = 0;
+    let paybackPeriodMonths = Infinity;
+    let netProfit25Years = 0;
+    let total25YearRevenue = 0;
+
+    for (let year = 1; year <= 25; year++) {
+        // Apply degradation starting from the second year
+        const currentYearProduction = totalAnnualProduction * Math.pow(degradationFactor, year - 1);
+        const currentYearRevenue = currentYearProduction * input.kwhPrice;
+        total25YearRevenue += currentYearRevenue;
+        
+        // Check for payback period
+        if (paybackPeriodMonths === Infinity) {
+            cumulativeRevenue += currentYearRevenue;
+            if (cumulativeRevenue >= totalInvestment) {
+                 // Find the month within the year
+                const revenueUpToPreviousYear = total25YearRevenue - currentYearRevenue;
+                const remainingInvestment = totalInvestment - revenueUpToPreviousYear;
+                const monthlyRevenueThisYear = currentYearRevenue / 12;
+                const monthsIntoYear = Math.ceil(remainingInvestment / monthlyRevenueThisYear);
+                paybackPeriodMonths = ((year - 1) * 12) + monthsIntoYear;
+            }
+        }
+    }
+    netProfit25Years = total25YearRevenue - totalInvestment;
+
+    if (paybackPeriodMonths > 25 * 12) {
+        paybackPeriodMonths = Infinity;
+    }
+
 
     return {
         totalInvestment,
