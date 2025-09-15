@@ -4,10 +4,9 @@
 /**
  * @fileOverview An AI agent for inspecting solar panel arrays from an image.
  *
- * This flow takes a user-provided image of a solar panel installation and uses a multimodal AI model
- * to identify potential issues related to soiling, shading, physical damage, and installation quality.
- * It returns a structured report with an overall health score, a summary assessment, and a list of
- * specific issues found, along with recommendations for each.
+ * NOTE: This feature is temporarily disabled due to persistent model availability issues.
+ * The core logic is preserved but the main function will return an error message
+ * until the underlying service becomes stable.
  *
  * - inspectPanelArray: The main function that orchestrates the inspection process.
  * - InspectionInput: The TypeScript type for the input.
@@ -26,18 +25,27 @@ export type InspectionResponse =
 
 // This is the main exported function that the UI will call via a server action.
 export async function inspectPanelArray(input: InspectionInput): Promise<InspectionResponse> {
+  // Immediately return the maintenance error message.
+  return { 
+    success: false, 
+    error: "ميزة المفتش الميداني قيد الصيانة حاليًا بسبب عدم استقرار نماذج تحليل الصور. نعتذر عن هذا الإزعاج." 
+  };
+
+  // The original logic is kept below for when the feature is re-enabled.
+  /*
   try {
     const output = await panelInspectionFlow(input);
     return { success: true, data: output };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred during image analysis.";
     console.error("Error in inspectPanelArray server action:", errorMessage);
-    // Return a user-friendly error message if the model is overloaded or another error occurs.
+    
     if (errorMessage.includes('503') || errorMessage.toLowerCase().includes('overloaded')) {
         return { success: false, error: "نموذج الذكاء الاصطناعي مشغول حاليًا أو غير متاح. يرجى المحاولة مرة أخرى بعد لحظات." };
     }
     return { success: false, error: errorMessage };
   }
+  */
 }
 
 // 1. Define the prompt separately for clarity and reusability.
