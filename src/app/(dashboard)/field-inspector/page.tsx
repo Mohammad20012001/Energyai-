@@ -165,7 +165,7 @@ export default function FieldInspectorPage() {
                                     render={() => (
                                         <FormItem>
                                             <FormControl>
-                                                <>
+                                                <div>
                                                     <input
                                                         type="file"
                                                         accept="image/png, image/jpeg, image/webp"
@@ -217,7 +217,7 @@ export default function FieldInspectorPage() {
                                                             </div>
                                                         </div>
                                                      )}
-                                                </>
+                                                </div>
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -334,5 +334,3 @@ export default function FieldInspectorPage() {
         </div>
     );
 }
-
-    
