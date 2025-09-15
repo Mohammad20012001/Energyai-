@@ -119,18 +119,28 @@ export default function FieldInspectorPage() {
         setResult(null);
         try {
             const response = await inspectPanelArray({ photoDataUris: values.panelImages });
-            setResult(response);
-            toast({
-                title: "اكتمل التحليل",
-                description: `تم تحديد ${response.issues.length} مشكلة محتملة.`,
-            });
+            
+            if (response.success) {
+                setResult(response.data);
+                toast({
+                    title: "اكتمل التحليل",
+                    description: `تم تحديد ${response.data.issues.length} مشكلة محتملة.`,
+                });
+            } else {
+                 toast({
+                    variant: "destructive",
+                    title: "خطأ في التحليل",
+                    description: response.error,
+                });
+            }
+
         } catch (error) {
-            console.error("Error fetching panel inspection:", error);
-            const errorMessage = error instanceof Error ? error.message : "فشل في تحليل الصورة. يرجى المحاولة بصورة مختلفة أو التحقق من اتصالك."
+            // This catch block is for unexpected client-side errors during the fetch itself.
+            console.error("Fatal error during submission:", error);
             toast({
                 variant: "destructive",
-                title: "خطأ في التحليل",
-                description: errorMessage,
+                title: "خطأ فادح",
+                description: "حدث خطأ غير متوقع أثناء إرسال الطلب.",
             });
         } finally {
             setIsLoading(false);
@@ -165,7 +175,7 @@ export default function FieldInspectorPage() {
                                     render={() => (
                                         <FormItem>
                                             <FormControl>
-                                                <div>
+                                                <div >
                                                     <input
                                                         type="file"
                                                         accept="image/png, image/jpeg, image/webp"

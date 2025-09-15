@@ -19,9 +19,21 @@ import { z } from 'zod';
 import { InspectionInputSchema, InspectionResultSchema, type InspectionInput, type InspectionResult } from '@/ai/tool-schemas';
 
 
+// Define the return type for the server action
+export type InspectionResponse = 
+    | { success: true; data: InspectionResult }
+    | { success: false; error: string };
+
 // This is the main exported function that the UI will call via a server action.
-export async function inspectPanelArray(input: InspectionInput): Promise<InspectionResult> {
-  return await panelInspectionFlow(input);
+export async function inspectPanelArray(input: InspectionInput): Promise<InspectionResponse> {
+  try {
+    const output = await panelInspectionFlow(input);
+    return { success: true, data: output };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred during image analysis.";
+    console.error("Error in inspectPanelArray server action:", errorMessage);
+    return { success: false, error: errorMessage };
+  }
 }
 
 
@@ -52,7 +64,7 @@ Analyze the following images:
 });
 
 
-// 2. Define the Genkit Flow
+// 2. Define the Genkit Flow that returns data or throws an error
 const panelInspectionFlow = ai.defineFlow(
   {
     name: 'panelInspectionFlow',
