@@ -78,14 +78,14 @@ export default function FinancialViabilityPage() {
       if (response.success && response.data) {
         setResult(response.data);
       } else {
-         throw new Error(response.error || "فشل في جلب البيانات المناخية التاريخية.");
+         throw new Error(response.error || "فشل في إجراء الحسابات.");
       }
     } catch (error) {
-       const errorMessage = error instanceof Error ? error.message : "فشل في جلب البيانات المناخية التاريخية. يرجى التحقق من اتصالك بالإنترنت أو مفتاح API الخاص بالطقس.";
+       const errorMessage = error instanceof Error ? error.message : "فشل في إجراء الحسابات. يرجى مراجعة المدخلات.";
        console.error("Error in financial viability calculation:", error);
        toast({
         variant: "destructive",
-        title: "خطأ في جلب البيانات",
+        title: "خطأ في الحساب",
         description: errorMessage,
        });
     } finally {
@@ -269,7 +269,7 @@ export default function FinancialViabilityPage() {
                   </div>
                   <div className="border rounded-lg p-3">
                     <div className="text-sm text-muted-foreground">فترة الاسترداد</div>
-                    <div className="text-xl font-bold">{Math.floor(result.paybackPeriodMonths / 12)} <span className="text-sm">سنة</span> و {result.paybackPeriodMonths % 12} <span className="text-sm">أشهر</span></div>
+                    <div className="text-xl font-bold">{isFinite(result.paybackPeriodMonths) ? `${Math.floor(result.paybackPeriodMonths / 12)} سنة و ${result.paybackPeriodMonths % 12} أشهر` : "أكثر من 25 سنة"}</div>
                   </div>
                    <div className="border rounded-lg p-3 col-span-2 md:col-span-3">
                     <div className="text-sm text-muted-foreground">صافي الربح (25 سنة)</div>
