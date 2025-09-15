@@ -83,5 +83,3 @@ const panelInspectionFlow = ai.defineFlow(
     }
   }
 );
-
-    
