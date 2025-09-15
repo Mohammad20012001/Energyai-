@@ -174,6 +174,13 @@ export const InspectionResultSchema = z.object({
   })).describe("A list of all detected issues. If no issues are found, return an empty array."),
 });
 export type InspectionResult = z.infer<typeof InspectionResultSchema>;
+
+// Define the return type for the server action
+export type InspectionResponse = 
+    | { success: true; data: InspectionResult }
+    | { success: false; error: string };
 // #endregion
+
+    
 
     

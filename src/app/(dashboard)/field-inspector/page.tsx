@@ -21,7 +21,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { inspectPanelArray } from '@/ai/flows/inspect-panel-array';
-import { type InspectionResult } from '@/ai/tool-schemas';
+import { type InspectionResult, type InspectionResponse } from '@/ai/tool-schemas';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 
@@ -56,6 +56,7 @@ export default function FieldInspectorPage() {
     const [result, setResult] = useState<InspectionResult | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [previews, setPreviews] = useState<string[]>([]);
+    const [lastError, setLastError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
 
@@ -117,8 +118,9 @@ export default function FieldInspectorPage() {
     async function onSubmit(values: FormValues) {
         setIsLoading(true);
         setResult(null);
+        setLastError(null);
         try {
-            const response = await inspectPanelArray({ photoDataUris: values.panelImages });
+            const response: InspectionResponse = await inspectPanelArray({ photoDataUris: values.panelImages });
             
             if (response.success) {
                 setResult(response.data);
@@ -127,6 +129,7 @@ export default function FieldInspectorPage() {
                     description: `تم تحديد ${response.data.issues.length} مشكلة محتملة.`,
                 });
             } else {
+                 setLastError(response.error); // Store the error message to display it
                  toast({
                     variant: "destructive",
                     title: "خطأ في التحليل",
@@ -136,11 +139,13 @@ export default function FieldInspectorPage() {
 
         } catch (error) {
             // This catch block is for unexpected client-side errors during the fetch itself.
+            const errorMessage = "حدث خطأ غير متوقع أثناء إرسال الطلب.";
+            setLastError(errorMessage);
             console.error("Fatal error during submission:", error);
             toast({
                 variant: "destructive",
                 title: "خطأ فادح",
-                description: "حدث خطأ غير متوقع أثناء إرسال الطلب.",
+                description: errorMessage,
             });
         } finally {
             setIsLoading(false);
@@ -196,6 +201,7 @@ export default function FieldInspectorPage() {
                                                                         size="icon"
                                                                         className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
                                                                         onClick={() => removePreview(index)}
+                                                                        disabled={isLoading}
                                                                     >
                                                                         <X className="h-4 w-4" />
                                                                     </Button>
@@ -203,10 +209,10 @@ export default function FieldInspectorPage() {
                                                             ))}
                                                             <div 
                                                                 className="w-full aspect-video rounded-md border-2 border-dashed border-input flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors"
-                                                                onClick={handleTriggerUpload}
-                                                                onKeyDown={(e) => { if (e.key === 'Enter') handleTriggerUpload() }}
+                                                                onClick={!isLoading ? handleTriggerUpload : undefined}
+                                                                onKeyDown={(e) => { if (e.key === 'Enter' && !isLoading) handleTriggerUpload() }}
                                                                 role="button"
-                                                                tabIndex={0}
+                                                                tabIndex={isLoading ? -1 : 0}
                                                             >
                                                                 <PlusCircle className="h-8 w-8 text-muted-foreground" />
                                                                 <span className="text-xs mt-1 text-muted-foreground">إضافة المزيد</span>
@@ -215,10 +221,10 @@ export default function FieldInspectorPage() {
                                                      ) : (
                                                         <div 
                                                             className="w-full aspect-video rounded-md border-2 border-dashed border-input flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors"
-                                                            onClick={handleTriggerUpload}
-                                                            onKeyDown={(e) => { if (e.key === 'Enter') handleTriggerUpload() }}
+                                                            onClick={!isLoading ? handleTriggerUpload : undefined}
+                                                            onKeyDown={(e) => { if (e.key === 'Enter' && !isLoading) handleTriggerUpload() }}
                                                             role="button"
-                                                            tabIndex={0}
+                                                            tabIndex={isLoading ? -1 : 0}
                                                         >
                                                             <div className="text-center text-muted-foreground p-4">
                                                                 <FileImage className="h-12 w-12 mx-auto mb-2" />
@@ -260,7 +266,15 @@ export default function FieldInspectorPage() {
                         </Card>
                     )}
 
-                    {result && (
+                    {lastError && !isLoading && (
+                        <Alert variant="destructive">
+                            <AlertTriangle className="h-4 w-4" />
+                            <AlertTitle>خطأ في التحليل</AlertTitle>
+                            <AlertDescription>{lastError}</AlertDescription>
+                        </Alert>
+                    )}
+                    
+                    {result && !isLoading && (
                         <div className="space-y-6">
                             <Card>
                                 <CardHeader>
@@ -330,7 +344,7 @@ export default function FieldInspectorPage() {
                         </div>
                     )}
 
-                    {!isLoading && !result && (
+                    {!isLoading && !result && !lastError && (
                         <Alert>
                             <Sparkles className="h-4 w-4" />
                             <AlertTitle>جاهز للفحص الذكي</AlertTitle>
@@ -344,3 +358,5 @@ export default function FieldInspectorPage() {
         </div>
     );
 }
+
+    
