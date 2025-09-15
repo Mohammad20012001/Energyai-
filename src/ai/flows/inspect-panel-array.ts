@@ -86,7 +86,7 @@ const panelInspectionFlow = ai.defineFlow(
         console.log("Primary model overloaded. Attempting failover to secondary model...");
         try {
           // Failover attempt with a different, potentially more available model
-          const fallbackModel = ai.model('googleai/gemini-pro-vision');
+          const fallbackModel = ai.model('googleai/gemini-1.5-flash-latest');
           const { output: fallbackOutput } = await ai.generate({
             model: fallbackModel,
             prompt: inspectionPrompt.prompt, // Use the same prompt structure
