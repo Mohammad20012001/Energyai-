@@ -140,31 +140,32 @@ export default function FieldInspectorPage() {
                                     name="panelImage"
                                     render={({ field }) => (
                                         <FormItem>
+                                            <input
+                                                type="file"
+                                                accept="image/png, image/jpeg, image/webp"
+                                                ref={fileInputRef}
+                                                onChange={handleFileChange}
+                                                className="hidden"
+                                                disabled={isLoading}
+                                            />
                                             <FormControl>
-                                                <>
-                                                    <input
-                                                        type="file"
-                                                        accept="image/png, image/jpeg, image/webp"
-                                                        ref={fileInputRef}
-                                                        onChange={handleFileChange}
-                                                        className="hidden"
-                                                        disabled={isLoading}
-                                                    />
-                                                    <div 
-                                                        className="w-full aspect-video rounded-md border-2 border-dashed border-input flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors"
-                                                        onClick={handleTriggerUpload}
-                                                    >
-                                                        {preview ? (
-                                                            <Image src={preview} alt="Preview" width={400} height={225} className="object-contain w-full h-full rounded-md" />
-                                                        ) : (
-                                                            <div className="text-center text-muted-foreground p-4">
-                                                                <FileImage className="h-12 w-12 mx-auto mb-2" />
-                                                                <p className="font-semibold">انقر هنا لرفع صورة</p>
-                                                                <p className="text-xs mt-1">PNG, JPG, WEBP (بحد أقصى 4 ميجابايت)</p>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </>
+                                                <div 
+                                                    className="w-full aspect-video rounded-md border-2 border-dashed border-input flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors"
+                                                    onClick={handleTriggerUpload}
+                                                    onKeyDown={(e) => { if (e.key === 'Enter') handleTriggerUpload() }}
+                                                    role="button"
+                                                    tabIndex={0}
+                                                >
+                                                    {preview ? (
+                                                        <Image src={preview} alt="Preview" width={400} height={225} className="object-contain w-full h-full rounded-md" />
+                                                    ) : (
+                                                        <div className="text-center text-muted-foreground p-4">
+                                                            <FileImage className="h-12 w-12 mx-auto mb-2" />
+                                                            <p className="font-semibold">انقر هنا لرفع صورة</p>
+                                                            <p className="text-xs mt-1">PNG, JPG, WEBP (بحد أقصى 4 ميجابايت)</p>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
