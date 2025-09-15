@@ -51,7 +51,8 @@ These tools perform precise calculations based on standard engineering and physi
   - Calculates the maximum number of solar panels that can fit in a given area and estimates the total energy it will produce annually.
 
 - **Financial Viability Calculator (`/financial-viability`)**:
-  - Analyzes the financial return on your solar investment, calculating the payback period and expected profits over 25 years.
+  - A powerful PVWatts/PVGIS alternative. It analyzes the financial return on your solar investment by simulating annual production based on historical weather data, then calculating the payback period and expected profits over 25 years.
+  - **API Dependency**: Yes, **WeatherAPI.com**.
 
 - **Wire Sizing Calculator (`/wire-sizing`)**:
   - Determines the appropriate copper wire cross-section (in mm²) to minimize power loss and ensure system safety.
@@ -77,15 +78,21 @@ For the project to be fully functional, it relies on two external services that 
     - **Status**: **PRE-CONFIGURED**. The project uses the `GEMINI_API_KEY` that is automatically set up in the Firebase hosting environment. **No action is needed from you.**
 
 2.  **WeatherAPI.com**:
-    - **Purpose**: This service is essential for the "Live Simulation" tool to fetch real-time weather data.
-    - **Status**: **CONFIGURED**. The API key you provided has been set in the `.env` file under the variable `WEATHER_API_KEY`. **No further action is needed from you.**
+    - **Purpose**: This service is essential for the **Live Simulation** and **Financial Viability** tools to fetch real-time and historical weather data.
+    - **Status**: **ACTION REQUIRED**. You need to obtain a free API key and add it to the project.
+    - **How to get it**:
+        1. Go to [www.weatherapi.com](https://www.weatherapi.com) and sign up for a free account.
+        2. Copy the API Key from your dashboard.
+        3. Paste the key into the `.env` file in this project, like this: `WEATHER_API_KEY=YOUR_API_KEY_HERE`.
 
-In summary, **all required API keys are already configured**, and the project is ready to use with all its features.
+In summary, you only need to add the WeatherAPI.com key to make all features work.
 
 ## Getting Started
 
-1.  Navigate through the different tools using the sidebar.
-2.  Start with the **AI Design Optimizer** for a high-level system design.
-3.  Use the individual **Technical Calculators** for more specific calculations.
-4.  Add results to the **Comprehensive Report** as you go.
-5.  Use the **Smart Assistant** for any questions you have along the way.
+1.  Add your WeatherAPI.com key to the `.env` file.
+2.  Navigate through the different tools using the sidebar.
+3.  Start with the **AI Design Optimizer** for a high-level system design.
+4.  Use the **Financial Viability** calculator for detailed annual production and financial reports.
+5.  Use the individual **Technical Calculators** for more specific calculations.
+6.  Add results to the **Comprehensive Report** as you go.
+7.  Use the **Smart Assistant** for any questions you have along the way.
