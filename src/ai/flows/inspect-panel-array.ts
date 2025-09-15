@@ -73,25 +73,42 @@ const panelInspectionFlow = ai.defineFlow(
   },
   async (input) => {
     try {
-      // Call the Gemini model with the structured prompt and the user's input.
+      // Main attempt with the primary model
       const { output } = await inspectionPrompt(input);
-
-      // If the model fails to return a structured output, throw a clear error.
       if (!output) {
-        throw new Error("The AI model failed to return a structured analysis. Please try a different image.");
+        throw new Error("The primary AI model failed to return a structured analysis.");
+      }
+      return output;
+    } catch (error) {
+      console.error("Primary model failed:", error);
+      // Check if it's a service availability issue
+      if (error instanceof Error && (error.message.includes('503') || error.message.toLowerCase().includes('overloaded'))) {
+        console.log("Primary model overloaded. Attempting failover to secondary model...");
+        try {
+          // Failover attempt with a different, potentially more available model
+          const fallbackModel = ai.model('googleai/gemini-pro-vision');
+          const { output: fallbackOutput } = await ai.generate({
+            model: fallbackModel,
+            prompt: inspectionPrompt.prompt, // Use the same prompt structure
+            input: input,
+            output: { schema: InspectionResultSchema },
+          });
+
+          if (!fallbackOutput) {
+            throw new Error("The fallback AI model also failed to return a structured analysis.");
+          }
+          console.log("Failover to secondary model was successful.");
+          return fallbackOutput;
+
+        } catch (failoverError) {
+          console.error("Failover model also failed:", failoverError);
+          // If the failover also fails, then we throw the user-friendly error.
+          throw new Error("نموذج الذكاء الاصطناعي مشغول حاليًا أو غير متاح. يرجى المحاولة مرة أخرى بعد لحظات.");
+        }
       }
       
-      // Return the structured JSON object.
-      return output;
-
-    } catch (error) {
-        console.error("Error during panel inspection flow:", error);
-        // Check if the error message indicates a service availability issue.
-        if (error instanceof Error && (error.message.includes('503') || error.message.toLowerCase().includes('overloaded'))) {
-            throw new Error("نموذج الذكاء الاصطناعي مشغول حاليًا أو غير متاح. يرجى المحاولة مرة أخرى بعد لحظات.");
-        }
-        // For any other kind of error, throw a generic message.
-        throw new Error("حدث خطأ غير متوقع أثناء تحليل الصورة.");
+      // For any other kind of non-availability error, throw a generic message.
+      throw new Error("حدث خطأ غير متوقع أثناء تحليل الصورة.");
     }
   }
 );
