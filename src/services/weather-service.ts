@@ -68,7 +68,9 @@ export async function getLiveAndForecastWeatherData(lat: number, lon: number): P
 
 
 /**
- * Fetches historical daily solar irradiation data for each month of the past year.
+ * Fetches historical daily solar irradiation data for each month of the past year from WeatherAPI.com.
+ * This function makes 12 API calls to get a representative day for each month.
+ * 
  * @param lat The latitude of the location.
  * @param lon The longitude of the location.
  * @returns A promise that resolves to an array of historical data points for each month.
@@ -82,9 +84,9 @@ export async function getHistoricalWeatherForYear(lat: number, lon: number): Pro
     const today = new Date();
     const promises: Promise<any>[] = [];
 
-    // Create a promise for each of the last 12 months
+    // Create a promise for each of the last 12 months, fetching data for the 15th of each month.
     for (let i = 0; i < 12; i++) {
-        const date = new Date(today.getFullYear(), today.getMonth() - i, 15); // Use the 15th of the month
+        const date = new Date(today.getFullYear(), today.getMonth() - i, 15);
         const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
         const url = `https://api.weatherapi.com/v1/history.json?key=${apiKey}&q=${lat},${lon}&dt=${dateString}`;
         promises.push(axios.get(url));
@@ -93,42 +95,47 @@ export async function getHistoricalWeatherForYear(lat: number, lon: number): Pro
     try {
         const responses = await Promise.all(promises);
         
-        const monthlyAverages = new Map<number, { sum: number, count: number }>();
+        const monthlyData: HistoricalDataPoint[] = [];
 
         responses.forEach(response => {
-            const dayData = response.data.forecast.forecastday[0].day;
-            // The API provides total_irrad_Wh_m2. This is the TOTAL irradiation for the day.
-            // We want the average daily irradiation for the month (equivalent to PSSH).
-            // Unit is Wh/m^2. To get kWh/m^2/day (PSSH), we divide by 1000.
-            const dailyIrradiationKWh = (dayData.total_irrad_Wh_m2 ?? 0) / 1000;
-            const date = new Date(response.data.forecast.forecastday[0].date);
-            const month = date.getMonth();
+            const forecastDay = response.data.forecast?.forecastday?.[0];
+            if (forecastDay && forecastDay.day) {
+                // The API provides total_irrad_Wh_m2. To get kWh/m²/day (PSSH), we divide by 1000.
+                const dailyIrradiationKWh = (forecastDay.day.total_irrad_Wh_m2 ?? 0) / 1000;
+                const date = new Date(forecastDay.date);
+                const month = date.getMonth(); // 0 for January, 11 for December
 
-            if (!monthlyAverages.has(month)) {
-                monthlyAverages.set(month, { sum: 0, count: 0 });
+                monthlyData.push({
+                    month: month,
+                    total_irrad_Wh_m2: parseFloat(dailyIrradiationKWh.toFixed(2)),
+                });
             }
-            const current = monthlyAverages.get(month)!;
-            current.sum += dailyIrradiationKWh;
-            current.count += 1;
         });
-
-        const historicalData: HistoricalDataPoint[] = [];
+        
+        // Ensure we have data for all 12 months, even if some API calls failed, to prevent crashes.
+        const completeData: HistoricalDataPoint[] = [];
         for (let i = 0; i < 12; i++) {
-            const data = monthlyAverages.get(i);
-            const averageIrradiation = data ? data.sum / data.count : 0;
-            historicalData.push({
-                month: i,
-                total_irrad_Wh_m2: parseFloat(averageIrradiation.toFixed(2)),
-            });
+            const monthEntry = monthlyData.find(d => d.month === i);
+            if (monthEntry) {
+                completeData.push(monthEntry);
+            } else {
+                // Push a zero value if a month's data is missing
+                completeData.push({ month: i, total_irrad_Wh_m2: 0 });
+            }
         }
         
-        // Sort data by month (January = 0, December = 11)
-        historicalData.sort((a, b) => a.month - b.month);
+        // Sort data by month (January = 0, December = 11) to ensure correct order
+        completeData.sort((a, b) => a.month - b.month);
         
-        return historicalData;
+        return completeData;
 
     } catch (error) {
-        console.error("Error fetching historical weather data:", error);
-        throw new Error("Failed to fetch historical weather data.");
+        if (axios.isAxiosError(error) && error.response) {
+             console.error(`Error fetching historical weather data: ${error.response.status} ${error.response.data?.error?.message}`);
+             throw new Error(`Failed to fetch historical weather data: ${error.response.data?.error?.message || 'Check API Key or network.'}`);
+        } else {
+            console.error("Unknown error fetching historical weather data:", error);
+            throw new Error("An unknown error occurred while fetching historical weather data.");
+        }
     }
 }
