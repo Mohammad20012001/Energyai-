@@ -41,16 +41,19 @@ async function calculateFinancialViability(input: FinancialViabilityInput): Prom
 
     const monthlyBreakdown = monthNames.map((month, index) => {
         const monthData = historicalData.find(d => d.month === index);
-        // Correctly use the fetched historical irradiation data (sunHours) for the calculation.
-        const sunHours = monthData ? monthData.total_irrad_Wh_m2 : 0; 
-
-        const dailyProduction = input.systemSize * sunHours * systemLossFactor;
+        const dailyIrradiation_Wh_m2 = monthData ? monthData.total_irrad_Wh_m2 : 0; 
+        
+        // Correct Calculation:
+        // Daily Production (kWh) = [System Size (kWp) * Daily Irradiation (Wh/m²) * System Loss Factor] / 1000
+        // We divide by 1000 because the irradiation is in Watt-hours, and we need kWh.
+        const dailyProduction = (input.systemSize * dailyIrradiation_Wh_m2 * systemLossFactor) / 1000;
         const monthlyProduction = dailyProduction * daysInMonth[index];
         const monthlyRevenue = monthlyProduction * input.kwhPrice;
         
         return {
             month: month,
-            sunHours: sunHours,
+            // The value to display should be in kWh/m²/day, so we divide by 1000.
+            sunHours: parseFloat((dailyIrradiation_Wh_m2 / 1000).toFixed(2)),
             production: monthlyProduction,
             revenue: monthlyRevenue,
         };

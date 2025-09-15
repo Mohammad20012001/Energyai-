@@ -17,7 +17,7 @@ export interface WeatherData {
 
 export interface HistoricalDataPoint {
     month: number;
-    total_irrad_Wh_m2: number; // This value is actually in kWh/m²/day
+    total_irrad_Wh_m2: number; // This value is now in Wh/m²/day, not kWh.
 }
 
 
@@ -86,7 +86,7 @@ export async function getHistoricalWeatherForYear(lat: number, lon: number): Pro
 
     // Create a promise for each of the last 12 months, fetching data for the 15th of each month.
     for (let i = 0; i < 12; i++) {
-        const date = new Date(today.getFullYear(), today.getMonth() - i, 15);
+        const date = new Date(today.getFullYear() - 1, i, 15); // Use last year for consistency
         const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
         const url = `https://api.weatherapi.com/v1/history.json?key=${apiKey}&q=${lat},${lon}&dt=${dateString}`;
         promises.push(axios.get(url));
@@ -100,14 +100,14 @@ export async function getHistoricalWeatherForYear(lat: number, lon: number): Pro
         responses.forEach(response => {
             const forecastDay = response.data.forecast?.forecastday?.[0];
             if (forecastDay && forecastDay.day) {
-                // The API provides total_irrad_Wh_m2. To get kWh/m²/day (PSSH), we divide by 1000.
-                const dailyIrradiationKWh = (forecastDay.day.total_irrad_Wh_m2 ?? 0) / 1000;
+                // The API provides total_irrad_Wh_m2. We will use this value directly.
+                const dailyIrradiation_Wh_m2 = forecastDay.day.total_irrad_Wh_m2 ?? 0;
                 const date = new Date(forecastDay.date);
                 const month = date.getMonth(); // 0 for January, 11 for December
 
                 monthlyData.push({
                     month: month,
-                    total_irrad_Wh_m2: parseFloat(dailyIrradiationKWh.toFixed(2)),
+                    total_irrad_Wh_m2: parseFloat(dailyIrradiation_Wh_m2.toFixed(2)),
                 });
             }
         });
