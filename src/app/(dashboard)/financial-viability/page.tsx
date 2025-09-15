@@ -5,11 +5,14 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { TrendingUp, ArrowRight, Loader2, PlusCircle, BarChart3, FileText, CalendarDays } from "lucide-react";
+import { TrendingUp, ArrowRight, Loader2, PlusCircle, BarChart3, FileText, CalendarDays, AreaChart } from "lucide-react";
 import { useReport } from "@/context/ReportContext";
 import {
   BarChart,
   Bar,
+  LineChart,
+  Line,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -307,6 +310,49 @@ export default function FinancialViabilityPage() {
                   </div>
                 </CardContent>
               </Card>
+              
+              {result.cashFlowAnalysis && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <AreaChart className="text-primary" />
+                      محاكاة التدفق النقدي التراكمي على مدار 25 عامًا
+                    </CardTitle>
+                    <CardDescription>
+                      يوضح الرسم البياني رحلة استرداد رأس المال ونمو الأرباح مع مرور الوقت.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={result.cashFlowAnalysis}
+                        margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="year" name="السنة" fontSize={12} tickLine={false} axisLine={false} />
+                        <YAxis
+                          fontSize={12}
+                          tickLine={false}
+                          axisLine={false}
+                          tickFormatter={(value) => `${value.toLocaleString()}`}
+                          label={{ value: 'دينار', angle: -90, position: 'insideLeft' }}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            background: 'hsl(var(--background))',
+                            direction: 'rtl',
+                          }}
+                          formatter={(value, name, props) => [`${(value as number).toLocaleString()} دينار`, `في السنة ${props.payload.year}`]}
+                          labelFormatter={() => "التدفق النقدي التراكمي"}
+                        />
+                        <Legend verticalAlign="top" wrapperStyle={{top: -4, direction: 'rtl'}} formatter={() => 'التدفق النقدي التراكمي'} />
+                        <Line type="monotone" dataKey="cashFlow" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              )}
+
 
               <Card>
                 <CardHeader>

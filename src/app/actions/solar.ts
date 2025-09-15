@@ -7,7 +7,7 @@ import {
 } from '@/ai/flows/suggest-string-config';
 import {SuggestStringConfigurationInputSchema} from '@/ai/tool-schemas';
 import type {SuggestStringConfigurationInput} from '@/ai/tool-schemas';
-import { FinancialViabilityInput, type FinancialViabilityResult, type MonthlyBreakdown } from '@/services/calculations';
+import { FinancialViabilityInput, type FinancialViabilityResult, type MonthlyBreakdown, type CashFlowPoint } from '@/services/calculations';
 
 
 const FinancialViabilityInputSchema = z.object({
@@ -20,13 +20,6 @@ const FinancialViabilityInputSchema = z.object({
   kwhPrice: z.coerce.number().positive("السعر يجب أن يكون إيجابياً"),
   degradationRate: z.coerce.number().min(0, "لا يمكن أن يكون سالباً").max(5, "النسبة مرتفعة جداً"),
 });
-
-const locationCoordinates = {
-    amman: { lat: 31.95, lon: 35.91 },
-    zarqa: { lat: 32.05, lon: 36.09 },
-    irbid: { lat: 32.55, lon: 35.85 },
-    aqaba: { lat: 29.53, lon: 35.00 },
-};
 
 // Source: Global Solar Atlas / Solargis data for Jordan.
 // These are reliable, long-term average daily total irradiation values (kWh/m²/day) for each month.
@@ -50,7 +43,7 @@ async function calculateFinancialViability(input: z.infer<typeof FinancialViabil
     const locationPSSH = monthlyPSSH[input.location];
 
     // --- First year calculations ---
-    const monthlyBreakdown = monthNames.map((month, index) => {
+    const monthlyBreakdown: MonthlyBreakdown[] = monthNames.map((month, index) => {
         const dailyIrradiation = locationPSSH[index];
         const dailyProduction = input.systemSize * dailyIrradiation * systemLossFactor;
         const monthlyProduction = dailyProduction * daysInMonth[index];
@@ -70,8 +63,10 @@ async function calculateFinancialViability(input: z.infer<typeof FinancialViabil
     // --- Long-term calculations with degradation ---
     let cumulativeRevenue = 0;
     let paybackPeriodMonths = Infinity;
-    let netProfit25Years = 0;
     let total25YearRevenue = 0;
+    
+    const cashFlowAnalysis: CashFlowPoint[] = [{ year: 0, cashFlow: -totalInvestment }];
+
 
     for (let year = 1; year <= 25; year++) {
         // Apply degradation starting from the second year
@@ -79,20 +74,21 @@ async function calculateFinancialViability(input: z.infer<typeof FinancialViabil
         const currentYearRevenue = currentYearProduction * input.kwhPrice;
         total25YearRevenue += currentYearRevenue;
         
+        // Update cash flow analysis
+        const previousCashFlow = cashFlowAnalysis[year-1].cashFlow;
+        cashFlowAnalysis.push({ year: year, cashFlow: previousCashFlow + currentYearRevenue });
+
         // Check for payback period
-        if (paybackPeriodMonths === Infinity) {
-            cumulativeRevenue += currentYearRevenue;
-            if (cumulativeRevenue >= totalInvestment) {
-                 // Find the month within the year
-                const revenueUpToPreviousYear = total25YearRevenue - currentYearRevenue;
-                const remainingInvestment = totalInvestment - revenueUpToPreviousYear;
-                const monthlyRevenueThisYear = currentYearRevenue / 12;
-                const monthsIntoYear = Math.ceil(remainingInvestment / monthlyRevenueThisYear);
-                paybackPeriodMonths = ((year - 1) * 12) + monthsIntoYear;
-            }
+        if (paybackPeriodMonths === Infinity && (previousCashFlow + currentYearRevenue) >= 0) {
+            const revenueUpToPreviousYear = total25YearRevenue - currentYearRevenue;
+            const remainingInvestment = totalInvestment - revenueUpToPreviousYear;
+            const monthlyRevenueThisYear = currentYearRevenue / 12;
+            const monthsIntoYear = Math.ceil(remainingInvestment / monthlyRevenueThisYear);
+            paybackPeriodMonths = ((year - 1) * 12) + monthsIntoYear;
         }
     }
-    netProfit25Years = total25YearRevenue - totalInvestment;
+    
+    const netProfit25Years = total25YearRevenue - totalInvestment;
 
     if (paybackPeriodMonths > 25 * 12) {
         paybackPeriodMonths = Infinity;
@@ -106,6 +102,7 @@ async function calculateFinancialViability(input: z.infer<typeof FinancialViabil
         paybackPeriodMonths,
         netProfit25Years,
         monthlyBreakdown,
+        cashFlowAnalysis,
     };
 }
 

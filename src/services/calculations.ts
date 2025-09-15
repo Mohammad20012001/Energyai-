@@ -215,7 +215,7 @@ export function calculateProductionFromArea(input: AreaCalculationInput): AreaCa
 }
 // #endregion
 
-// #region Financial Viability Calculator (This is now handled by the server action)
+// #region Financial Viability Calculator Types
 export interface FinancialViabilityInput {
     systemSize: number;
     systemLoss: number;
@@ -224,6 +224,7 @@ export interface FinancialViabilityInput {
     location: 'amman' | 'zarqa' | 'irbid' | 'aqaba';
     costPerKw: number;
     kwhPrice: number;
+    degradationRate: number;
 }
 
 export interface MonthlyBreakdown {
@@ -233,6 +234,11 @@ export interface MonthlyBreakdown {
     revenue: number;
 }
 
+export interface CashFlowPoint {
+    year: number;
+    cashFlow: number;
+}
+
 export interface FinancialViabilityResult {
     totalInvestment: number;
     totalAnnualProduction: number;
@@ -240,6 +246,7 @@ export interface FinancialViabilityResult {
     paybackPeriodMonths: number;
     netProfit25Years: number;
     monthlyBreakdown: MonthlyBreakdown[];
+    cashFlowAnalysis: CashFlowPoint[];
 }
 // #endregion
 
