@@ -58,16 +58,26 @@ const panelInspectionFlow = ai.defineFlow(
     outputSchema: InspectionResultSchema,
   },
   async (input) => {
-    // Call the Gemini model with the structured prompt and the user's input.
-    // The 'prompt' function here is the compiled version of the `inspectionPrompt` object.
-    const { output } = await inspectionPrompt(input);
+    try {
+      // Call the Gemini model with the structured prompt and the user's input.
+      const { output } = await inspectionPrompt(input);
 
-    // If the model fails to return a structured output, throw an error.
-    if (!output) {
-      throw new Error("The AI model failed to return a structured analysis.");
+      // If the model fails to return a structured output, throw a clear error.
+      if (!output) {
+        throw new Error("The AI model failed to return a structured analysis. Please try a different image.");
+      }
+      
+      // Return the structured JSON object.
+      return output;
+
+    } catch (error) {
+        console.error("Error during panel inspection flow:", error);
+        // Check if the error message indicates a service availability issue.
+        if (error instanceof Error && (error.message.includes('503') || error.message.toLowerCase().includes('overloaded'))) {
+            throw new Error("نموذج الذكاء الاصطناعي مشغول حاليًا أو غير متاح. يرجى المحاولة مرة أخرى بعد لحظات.");
+        }
+        // For any other kind of error, throw a generic message.
+        throw new Error("حدث خطأ غير متوقع أثناء تحليل الصورة.");
     }
-    
-    // Return the structured JSON object.
-    return output;
   }
 );
