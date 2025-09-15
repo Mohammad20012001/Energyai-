@@ -8,7 +8,6 @@ import {
 import {SuggestStringConfigurationInputSchema} from '@/ai/tool-schemas';
 import type {SuggestStringConfigurationInput} from '@/ai/tool-schemas';
 import { FinancialViabilityInput, type FinancialViabilityResult, type MonthlyBreakdown } from '@/services/calculations';
-import { getHistoricalWeatherForYear } from '@/services/weather-service';
 
 
 const FinancialViabilityInputSchema = z.object({
@@ -52,7 +51,6 @@ async function calculateFinancialViability(input: FinancialViabilityInput): Prom
         const dailyIrradiation = locationPSSH[index];
         
         // Daily Production (kWh) = System Size (kWp) * Daily Irradiation (kWh/m²/day) * System Loss Factor
-        // Note: We don't divide by 1000 here because dailyIrradiation is already in kWh.
         const dailyProduction = input.systemSize * dailyIrradiation * systemLossFactor;
         const monthlyProduction = dailyProduction * daysInMonth[index];
         const monthlyRevenue = monthlyProduction * input.kwhPrice;

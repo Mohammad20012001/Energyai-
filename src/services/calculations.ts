@@ -1,5 +1,4 @@
 
-
 /**
  * @fileoverview This file contains pure, physics-based calculation functions.
  * It follows standard electrical engineering formulas (IEC/NEC/IEEE) and does not involve AI.
@@ -229,7 +228,7 @@ export interface FinancialViabilityInput {
 
 export interface MonthlyBreakdown {
     month: string;
-    sunHours: number; // Replaced PSSH with actual daily irradiation
+    sunHours: number; // Represents average daily irradiation in kWh/m²/day for the month
     production: number;
     revenue: number;
 }
@@ -493,4 +492,3 @@ export function calculateOptimalDesign(input: OptimizeDesignInput): CalculationO
 }
 
 // #endregion
-

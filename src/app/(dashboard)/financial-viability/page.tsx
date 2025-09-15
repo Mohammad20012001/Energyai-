@@ -5,8 +5,18 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { TrendingUp, ArrowRight, Loader2, PlusCircle, BarChart, FileText } from "lucide-react";
+import { TrendingUp, ArrowRight, Loader2, PlusCircle, BarChart3, FileText, CalendarDays } from "lucide-react";
 import { useReport } from "@/context/ReportContext";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 
 import { Button } from "@/components/ui/button";
 import {
@@ -244,7 +254,7 @@ export default function FinancialViabilityPage() {
           {isLoading && (
             <Card className="flex items-center justify-center p-8 lg:min-h-[400px]">
               <div className="flex flex-col items-center gap-4 text-muted-foreground">
-                <BarChart className="h-12 w-12 animate-pulse" />
+                <BarChart3 className="h-12 w-12 animate-pulse" />
                 <p>...نقوم بمحاكاة الأداء على مدار العام</p>
               </div>
             </Card>
@@ -254,7 +264,10 @@ export default function FinancialViabilityPage() {
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-xl">ملخص الجدوى المالية</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="text-primary"/>
+                    ملخص الجدوى المالية
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4 text-center">
                   <div className="border rounded-lg p-3">
@@ -281,14 +294,44 @@ export default function FinancialViabilityPage() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-xl">تفاصيل الإنتاج الشهري</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="text-primary"/>
+                     الإنتاج الشهري المتوقع (kWh)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="h-72">
+                   <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={result.monthlyBreakdown} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" fontSize={12} tickLine={false} axisLine={false} />
+                        <YAxis fontSize={12} tickLine={false} axisLine={false} label={{ value: 'kWh', angle: -90, position: 'insideLeft' }}/>
+                        <Tooltip
+                          contentStyle={{
+                            background: 'hsl(var(--background))',
+                            direction: 'rtl',
+                          }}
+                          formatter={(value) => [`${(value as number).toFixed(0)} kWh`, 'الإنتاج']}
+                        />
+                        <Legend verticalAlign="top" wrapperStyle={{top: -4, direction: 'rtl'}} formatter={() => 'الإنتاج الشهري'}/>
+                        <Bar dataKey="production" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CalendarDays className="text-primary"/>
+                    جدول البيانات الشهري
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>الشهر</TableHead>
-                        <TableHead className="text-center">الإشعاع الشمسي (kWh/m²/day)</TableHead>
+                        <TableHead className="text-center">متوسط الإشعاع (kWh/m²/day)</TableHead>
                         <TableHead className="text-center">الإنتاج (kWh)</TableHead>
                         <TableHead className="text-right">الإيرادات (دينار)</TableHead>
                       </TableRow>
