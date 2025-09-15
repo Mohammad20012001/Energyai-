@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { BatteryCharging, Rows, Columns, ArrowRight, Loader2, PlusCircle, AlertTriangle, Calculator } from "lucide-react";
 import { useReport } from "@/context/ReportContext";
@@ -74,21 +74,14 @@ export default function BatteryStoragePage() {
     name: "appliances",
   });
 
-  const handleLoadCalculated = (totalKwh: number) => {
-    form.setValue('dailyLoadKwh', parseFloat(totalKwh.toFixed(2)), { shouldValidate: true });
-    toast({
-      title: "تم تحديث الحمل",
-      description: `تم تحديث إجمالي الأحمال اليومية إلى ${totalKwh.toFixed(2)} kWh.`,
-    });
-  };
+  const appliances = useWatch({
+    control: form.control,
+    name: 'appliances',
+  });
 
   async function onSubmit(values: FormValues) {
     setIsLoading(true);
     setResult(null);
-
-    // Optional: Recalculate dailyLoadKwh from appliances if they exist,
-    // overriding the manual input. Or just use the manual input.
-    // For now, we will trust the manual input `values.dailyLoadKwh`.
     
     await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -102,8 +95,11 @@ export default function BatteryStoragePage() {
             setIsLoading(false);
             return;
         }
+
+        // The calculation function now handles the appliance list internally.
         const calculationResult = calculateBatteryBank(values);
         setResult(calculationResult);
+
     } catch (error) {
         toast({
             variant: "destructive",
@@ -152,21 +148,21 @@ export default function BatteryStoragePage() {
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 text-right">
                 
-                <Accordion type="single" collapsible className="w-full border rounded-md px-4">
-                    <AccordionItem value="item-1" className="border-b-0">
+                <Accordion type="single" collapsible className="w-full">
+                    <AccordionItem value="item-1">
                       <AccordionTrigger>
                         <span className="flex items-center gap-2">
                             <Calculator className="h-4 w-4"/>
                             هل تحتاج مساعدة في تقدير أحمالك؟
                         </span>
                       </AccordionTrigger>
-                      <AccordionContent className="space-y-4 pt-4">
+                      <AccordionContent>
                         <ApplianceLoadCalculator 
-                            onTotalLoadChange={handleLoadCalculated}
                             control={form.control}
                             fields={fields}
                             append={append}
                             remove={remove}
+                            appliances={appliances}
                         />
                       </AccordionContent>
                     </AccordionItem>
@@ -180,7 +176,7 @@ export default function BatteryStoragePage() {
                       <FormItem>
                         <FormLabel>إجمالي الأحمال اليومية (kWh)</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="e.g., 10" {...field} />
+                          <Input type="number" step="0.1" placeholder="e.g., 10" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

@@ -6,6 +6,7 @@
  */
 
 import type { OptimizeDesignInput, OptimizeDesignOutput, SuggestWireSizeInput, SuggestWireSizeOutput } from "@/ai/tool-schemas";
+import { getHistoricalWeatherForYear } from "./weather-service";
 
 
 /**
@@ -180,6 +181,7 @@ export interface FinancialViabilityInput {
 
 export interface MonthlyBreakdown {
     month: string;
+    sunHours: number; // Replaced PSSH with actual daily irradiation
     production: number;
     revenue: number;
 }
@@ -193,27 +195,41 @@ export interface FinancialViabilityResult {
     monthlyBreakdown: MonthlyBreakdown[];
 }
 
-const climateData = {
-    amman: { pssh: [4.5, 5.5, 6.8, 8.2, 9.5, 10.5, 11, 10.2, 9, 7.5, 5.8, 4.8] },
-    zarqa: { pssh: [4.6, 5.6, 6.9, 8.3, 9.6, 10.6, 11.1, 10.3, 9.1, 7.6, 5.9, 4.9] },
-    irbid: { pssh: [4.2, 5.2, 6.5, 8.0, 9.3, 10.3, 10.8, 10.0, 8.8, 7.2, 5.5, 4.5] },
-    aqaba: { pssh: [5.5, 6.5, 7.5, 9.0, 10.0, 11.0, 11.5, 10.8, 9.8, 8.5, 6.8, 5.8] },
+const locationCoordinates = {
+    amman: { lat: 31.95, lon: 35.91 },
+    zarqa: { lat: 32.05, lon: 36.09 },
+    irbid: { lat: 32.55, lon: 35.85 },
+    aqaba: { lat: 29.53, lon: 35.00 },
 };
 
 const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
 const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
-export function calculateFinancialViability(input: FinancialViabilityInput): FinancialViabilityResult {
+export async function calculateFinancialViability(input: FinancialViabilityInput): Promise<FinancialViabilityResult> {
     const totalInvestment = input.systemSize * input.costPerKw;
     const systemLossFactor = 1 - input.systemLoss / 100;
-    const locationPSSH = climateData[input.location].pssh;
+    
+    const { lat, lon } = locationCoordinates[input.location];
+    
+    // Fetch historical weather data for the last 12 months for the location
+    const historicalData = await getHistoricalWeatherForYear(lat, lon);
 
     const monthlyBreakdown = monthNames.map((month, index) => {
-        const dailyProduction = input.systemSize * locationPSSH[index] * systemLossFactor;
+        const monthData = historicalData[index];
+        // Convert total daily irradiation from W/m^2 to kWh/m^2/day (Peak Sun Hours)
+        // WeatherAPI provides `total_irrad_Wh_m2`. Dividing by 1000 gives kWh/m^2.
+        const sunHours = (monthData.total_irrad_Wh_m2 / 1000); 
+
+        // This is a simplified PV formula: E = A * r * H * PR
+        // Here we use a simpler version based on System Size (kWp) and PSSH (H)
+        // E (kWh) = SystemSize (kWp) * PSSH (h) * SystemLossFactor
+        const dailyProduction = input.systemSize * sunHours * systemLossFactor;
         const monthlyProduction = dailyProduction * daysInMonth[index];
         const monthlyRevenue = monthlyProduction * input.kwhPrice;
+        
         return {
             month: month,
+            sunHours: sunHours,
             production: monthlyProduction,
             revenue: monthlyRevenue,
         };
@@ -276,6 +292,7 @@ export interface BatteryCalculationInput {
     batteryVoltage: number;
     batteryCapacityAh: number;
     systemVoltage: number;
+    appliances?: { power: number; quantity: number; hours: number }[];
 }
 
 export interface BatteryCalculationResult {
@@ -287,9 +304,17 @@ export interface BatteryCalculationResult {
 }
 
 export function calculateBatteryBank(input: BatteryCalculationInput): BatteryCalculationResult {
+    // Recalculate daily load from appliances if provided, otherwise use the direct input
+    let dailyLoadKwh = input.dailyLoadKwh;
+    if (input.appliances && input.appliances.length > 0) {
+        dailyLoadKwh = input.appliances.reduce((total, appliance) => {
+            return total + (appliance.power * appliance.quantity * appliance.hours) / 1000;
+        }, 0);
+    }
+    
     // 1. Calculate the total energy needed, accounting for DoD and autonomy
     const dodFactor = input.depthOfDischarge / 100;
-    const requiredBankEnergyKwh = (input.dailyLoadKwh * input.autonomyDays) / dodFactor;
+    const requiredBankEnergyKwh = (dailyLoadKwh * input.autonomyDays) / dodFactor;
 
     // 2. Convert the required energy (kWh) to Amp-hours at the desired system voltage
     const requiredBankCapacityAh = (requiredBankEnergyKwh * 1000) / input.systemVoltage;

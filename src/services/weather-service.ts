@@ -15,6 +15,12 @@ export interface WeatherData {
     forecast: WeatherPoint[], // Changed to an array of hourly forecast points
 }
 
+export interface HistoricalDataPoint {
+    month: number;
+    total_irrad_Wh_m2: number;
+}
+
+
 /**
  * Fetches live and 24-hour forecast weather data for a given location from WeatherAPI.com.
  * @param lat The latitude of the location.
@@ -57,5 +63,55 @@ export async function getLiveAndForecastWeatherData(lat: number, lon: number): P
     } catch (error) {
         console.error("Error fetching weather data from WeatherAPI.com:", error);
         throw new Error("Failed to fetch live weather data. Please check your network connection or API key.");
+    }
+}
+
+
+/**
+ * Fetches historical daily solar irradiation data for each month of the past year.
+ * @param lat The latitude of the location.
+ * @param lon The longitude of the location.
+ * @returns A promise that resolves to an array of historical data points for each month.
+ */
+export async function getHistoricalWeatherForYear(lat: number, lon: number): Promise<HistoricalDataPoint[]> {
+    const apiKey = process.env.WEATHER_API_KEY;
+    if (!apiKey) {
+        throw new Error("WeatherAPI.com API key is not configured.");
+    }
+    
+    const today = new Date();
+    const promises: Promise<any>[] = [];
+
+    // Create a promise for each of the last 12 months
+    for (let i = 0; i < 12; i++) {
+        const date = new Date(today.getFullYear(), today.getMonth() - i, 15); // Use the 15th of the month
+        const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        const url = `https://api.weatherapi.com/v1/history.json?key=${apiKey}&q=${lat},${lon}&dt=${dateString}`;
+        promises.push(axios.get(url));
+    }
+
+    try {
+        const responses = await Promise.all(promises);
+        
+        const historicalData: HistoricalDataPoint[] = responses.map(response => {
+            const dayData = response.data.forecast.forecastday[0].day;
+            // The API provides total_irrad_Wh_m2 which is what we need.
+            const totalIrradiation = dayData.total_irrad_Wh_m2 ?? 0;
+            const date = new Date(response.data.forecast.forecastday[0].date);
+            
+            return {
+                month: date.getMonth(),
+                total_irrad_Wh_m2: parseFloat(totalIrradiation.toFixed(2)),
+            };
+        });
+        
+        // Sort data by month (January = 0, December = 11)
+        historicalData.sort((a, b) => a.month - b.month);
+        
+        return historicalData;
+
+    } catch (error) {
+        console.error("Error fetching historical weather data:", error);
+        throw new Error("Failed to fetch historical weather data.");
     }
 }

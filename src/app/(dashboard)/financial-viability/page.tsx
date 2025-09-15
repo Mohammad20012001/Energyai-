@@ -72,10 +72,19 @@ export default function FinancialViabilityPage() {
   async function onSubmit(values: FormValues) {
     setIsLoading(true);
     setResult(null);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    const calculationResult = calculateFinancialViability(values);
-    setResult(calculationResult);
-    setIsLoading(false);
+    try {
+      const calculationResult = await calculateFinancialViability(values);
+      setResult(calculationResult);
+    } catch (error) {
+       console.error("Error in financial viability calculation:", error);
+       toast({
+        variant: "destructive",
+        title: "خطأ في جلب البيانات",
+        description: "فشل في جلب البيانات المناخية التاريخية. يرجى التحقق من اتصالك بالإنترنت أو مفتاح API الخاص بالطقس.",
+       });
+    } finally {
+        setIsLoading(false);
+    }
   }
 
   const handleAddToReport = () => {
@@ -273,22 +282,25 @@ export default function FinancialViabilityPage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>الشهر</TableHead>
+                        <TableHead className="text-center">الإشعاع الشمسي (kWh/m²/day)</TableHead>
                         <TableHead className="text-center">الإنتاج (kWh)</TableHead>
-                        <TableHead className="text-center">الإيرادات (دينار)</TableHead>
+                        <TableHead className="text-right">الإيرادات (دينار)</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {result.monthlyBreakdown.map((monthData) => (
                         <TableRow key={monthData.month}>
                           <TableCell className="font-medium">{monthData.month}</TableCell>
+                          <TableCell className="text-center">{monthData.sunHours.toFixed(2)}</TableCell>
                           <TableCell className="text-center">{monthData.production.toFixed(1)}</TableCell>
-                          <TableCell className="text-center">{monthData.revenue.toFixed(2)}</TableCell>
+                          <TableCell className="text-right">{monthData.revenue.toFixed(2)}</TableCell>
                         </TableRow>
                       ))}
                        <TableRow className="font-bold bg-muted/50">
                           <TableCell>الإجمالي السنوي</TableCell>
+                          <TableCell className="text-center">-</TableCell>
                           <TableCell className="text-center">{result.totalAnnualProduction.toFixed(1)}</TableCell>
-                          <TableCell className="text-center">{result.annualRevenue.toFixed(2)}</TableCell>
+                          <TableCell className="text-right">{result.annualRevenue.toFixed(2)}</TableCell>
                         </TableRow>
                     </TableBody>
                   </Table>
@@ -317,4 +329,3 @@ export default function FinancialViabilityPage() {
   );
 }
 
-    
