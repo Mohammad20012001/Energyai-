@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -39,6 +40,7 @@ const navItems = [
   { href: "/area-calculator", label: "حاسبة المساحة", icon: Maximize },
   { href: "/battery-storage", label: "حاسبة البطاريات", icon: BatteryCharging },
   { href: "/wire-sizing", label: "حجم الأسلاك", icon: Zap },
+  { href: "/financial-viability", label: "الجدوى المالية", icon: TrendingUp },
   { type: 'divider', label: 'Data & Reports'},
   { href: "/pricing", label: "بيانات التسعير", icon: DollarSign },
   { href: "/report", label: "التقرير", icon: FileText },
@@ -73,3 +75,5 @@ export function DashboardNav() {
     </SidebarMenu>
   );
 }
+
+    

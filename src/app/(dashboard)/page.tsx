@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -127,6 +128,25 @@ export default function DashboardOverviewPage() {
             </Button>
           </CardContent>
         </Card>
+        
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="text-primary" />
+              حاسبة الجدوى المالية
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">
+              محاكاة للإنتاج السنوي وتحليل مالي شامل للمنافسة مع PVWatts.
+            </p>
+            <Button asChild>
+              <Link href="/financial-viability">
+                اذهب للحاسبة <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
 
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader>
@@ -189,3 +209,5 @@ export default function DashboardOverviewPage() {
     </div>
   );
 }
+
+    

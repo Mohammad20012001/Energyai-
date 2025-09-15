@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview This file contains pure, physics-based calculation functions.
  * It follows standard electrical engineering formulas (IEC/NEC/IEEE) and does not involve AI.
@@ -166,8 +167,72 @@ export function calculateProductionFromArea(input: AreaCalculationInput): AreaCa
 }
 // #endregion
 
-// #region Financial Viability Calculator - DEPRECATED / MERGED
-// This logic has been merged into calculateOptimalDesign
+// #region Financial Viability Calculator
+export interface FinancialViabilityInput {
+    systemSize: number;
+    systemLoss: number;
+    tilt: number;
+    azimuth: number;
+    location: 'amman' | 'zarqa' | 'irbid' | 'aqaba';
+    costPerKw: number;
+    kwhPrice: number;
+}
+
+export interface MonthlyBreakdown {
+    month: string;
+    production: number;
+    revenue: number;
+}
+
+export interface FinancialViabilityResult {
+    totalInvestment: number;
+    totalAnnualProduction: number;
+    annualRevenue: number;
+    paybackPeriodMonths: number;
+    netProfit25Years: number;
+    monthlyBreakdown: MonthlyBreakdown[];
+}
+
+const climateData = {
+    amman: { pssh: [4.5, 5.5, 6.8, 8.2, 9.5, 10.5, 11, 10.2, 9, 7.5, 5.8, 4.8] },
+    zarqa: { pssh: [4.6, 5.6, 6.9, 8.3, 9.6, 10.6, 11.1, 10.3, 9.1, 7.6, 5.9, 4.9] },
+    irbid: { pssh: [4.2, 5.2, 6.5, 8.0, 9.3, 10.3, 10.8, 10.0, 8.8, 7.2, 5.5, 4.5] },
+    aqaba: { pssh: [5.5, 6.5, 7.5, 9.0, 10.0, 11.0, 11.5, 10.8, 9.8, 8.5, 6.8, 5.8] },
+};
+
+const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+export function calculateFinancialViability(input: FinancialViabilityInput): FinancialViabilityResult {
+    const totalInvestment = input.systemSize * input.costPerKw;
+    const systemLossFactor = 1 - input.systemLoss / 100;
+    const locationPSSH = climateData[input.location].pssh;
+
+    const monthlyBreakdown = monthNames.map((month, index) => {
+        const dailyProduction = input.systemSize * locationPSSH[index] * systemLossFactor;
+        const monthlyProduction = dailyProduction * daysInMonth[index];
+        const monthlyRevenue = monthlyProduction * input.kwhPrice;
+        return {
+            month: month,
+            production: monthlyProduction,
+            revenue: monthlyRevenue,
+        };
+    });
+
+    const totalAnnualProduction = monthlyBreakdown.reduce((sum, item) => sum + item.production, 0);
+    const annualRevenue = monthlyBreakdown.reduce((sum, item) => sum + item.revenue, 0);
+    const paybackPeriodMonths = annualRevenue > 0 ? Math.ceil((totalInvestment / annualRevenue) * 12) : Infinity;
+    const netProfit25Years = (annualRevenue * 25) - totalInvestment;
+
+    return {
+        totalInvestment,
+        totalAnnualProduction,
+        annualRevenue,
+        paybackPeriodMonths,
+        netProfit25Years,
+        monthlyBreakdown,
+    };
+}
 // #endregion
 
 
@@ -336,3 +401,5 @@ export function calculateOptimalDesign(input: OptimizeDesignInput): CalculationO
 }
 
 // #endregion
+
+    
