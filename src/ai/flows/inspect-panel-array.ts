@@ -36,8 +36,13 @@ export async function inspectPanelArray(input: InspectionInput): Promise<Inspect
   }
 }
 
-
-const INSPECTION_PROMPT = `You are a meticulous and critical expert solar panel installation inspector. Your primary task is to find and report problems. Do not be lenient. Your analysis of the provided image(s) of a solar panel array must be thorough.
+// 1. Define the prompt separately for clarity and reusability.
+const inspectionPrompt = ai.definePrompt(
+  {
+    name: 'panelInspectionPrompt',
+    input: { schema: InspectionInputSchema },
+    output: { schema: InspectionResultSchema },
+    prompt: `You are a meticulous and critical expert solar panel installation inspector. Your primary task is to find and report problems. Do not be lenient. Your analysis of the provided image(s) of a solar panel array must be thorough.
 
 Your analysis must cover the following categories across all images. Your focus is to identify defects:
 1.  **Soiling (اتساخ):** Your highest priority. Scrutinize panel surfaces for any dust, dirt, bird droppings, grime, or other debris. Even light layers of dust count. Estimate the severity and its direct impact on energy production. If you see any dirt, you MUST report it.
@@ -55,9 +60,12 @@ Analyze the following images critically:
 {{#each photoDataUris}}
 {{media url=this}}
 {{/each}}
-`;
+`,
+  }
+);
 
-// 2. Define the Genkit Flow that returns data or throws an error
+
+// 2. Define the Genkit Flow that returns data or throws a user-friendly error.
 const panelInspectionFlow = ai.defineFlow(
   {
     name: 'panelInspectionFlow',
@@ -65,39 +73,52 @@ const panelInspectionFlow = ai.defineFlow(
     outputSchema: InspectionResultSchema,
   },
   async (input) => {
-    // Define primary and fallback models explicitly
-    const primaryModel = 'googleai/gemini-2.5-flash';
-    const fallbackModel = 'googleai/gemini-1.5-flash-latest';
-
+    
     try {
-      // Main attempt with the primary model
-      console.log(`Attempting analysis with primary model: ${primaryModel}`);
-      const { output } = await ai.generate({
-        model: primaryModel,
-        prompt: INSPECTION_PROMPT,
-        input: input,
-        output: { schema: InspectionResultSchema },
-      });
+      // Main attempt with the default model (which is now gemini-1.5-flash-latest)
+      console.log(`Attempting analysis with default model.`);
+      const { output } = await inspectionPrompt(input);
 
       if (!output) {
         throw new Error("The primary AI model failed to return a structured analysis.");
       }
       return output;
+
     } catch (error) {
-      console.error(`Primary model (${primaryModel}) failed:`, error);
+      console.error(`Default model failed:`, error);
       
-      // Check if it's a service availability issue
+      // Check if it's a service availability issue to attempt a failover.
       if (error instanceof Error && (error.message.includes('503') || error.message.toLowerCase().includes('overloaded'))) {
-        console.log("Primary model overloaded. Attempting failover to secondary model...");
+        console.log("Default model overloaded. Attempting failover to secondary model...");
         
         try {
-          // Failover attempt with the secondary model
+          // Failover attempt with the secondary model.
+          const fallbackModel = 'googleai/gemini-pro-vision';
           console.log(`Attempting analysis with fallback model: ${fallbackModel}`);
+
           const { output: fallbackOutput } = await ai.generate({
-            model: fallbackModel,
-            prompt: INSPECTION_PROMPT,
-            input: input,
-            output: { schema: InspectionResultSchema },
+              model: fallbackModel,
+              prompt: `You are a meticulous and critical expert solar panel installation inspector. Your primary task is to find and report problems. Do not be lenient. Your analysis of the provided image(s) of a solar panel array must be thorough.
+
+Your analysis must cover the following categories across all images. Your focus is to identify defects:
+1.  **Soiling (اتساخ):** Your highest priority. Scrutinize panel surfaces for any dust, dirt, bird droppings, grime, or other debris. Even light layers of dust count. Estimate the severity and its direct impact on energy production. If you see any dirt, you MUST report it.
+2.  **Shading (تظليل):** Identify any shadows cast on the panels from ANY object. This includes nearby trees, buildings, antennas, other rows of panels, mounting hardware, or even poorly routed wires. Note the potential time of day if possible from the shadows.
+3.  **Physical Damage (ضرر مادي):** Look for any visible cracks, chipping, discoloration, delamination, snail trails, or any signs of physical harm to the panels or frames. Be very critical.
+4.  **Installation Issues (مشاكل تركيب):** Check for obvious problems with the mounting structure, such as visible rust, poor alignment, or insecure fittings. Look for loose, sagging, or improperly managed wiring (e.g., not tied down, messy).
+
+Based on your critical analysis of ALL images provided, provide a single, consolidated structured JSON response. All text in the response must be in Arabic.
+
+-   **overallHealthScore:** Give a score from 0-100. A score of 100 is reserved ONLY for a brand new, perfectly clean, perfectly installed system with zero issues. Any detected issue, no matter how small, MUST lower the score. Severe soiling or damage should result in a significantly lower score.
+-   **overallAssessment:** Write a single, concise sentence summarizing the state of the array, focusing on the most significant issue found.
+-   **issues:** Create a list of all identified problems. For each problem, specify its category, a clear description of what you see, its severity (Low, Medium, High, Critical), and a practical recommendation. If you find no issues after a highly critical review, and only then, return an empty array for "issues".
+
+Analyze the following images critically:
+{{#each photoDataUris}}
+{{media url=this}}
+{{/each}}
+`,
+              input: input,
+              output: { schema: InspectionResultSchema },
           });
 
           if (!fallbackOutput) {
@@ -108,14 +129,16 @@ const panelInspectionFlow = ai.defineFlow(
           return fallbackOutput;
 
         } catch (failoverError) {
-          console.error(`Fallback model (${fallbackModel}) also failed:`, failoverError);
+          console.error(`Fallback model also failed:`, failoverError);
           // If the failover also fails, then we throw the user-friendly error.
           throw new Error("نموذج الذكاء الاصطناعي مشغول حاليًا أو غير متاح. يرجى المحاولة مرة أخرى بعد لحظات.");
         }
       }
       
-      // For any other kind of non-availability error, throw a generic message.
+      // For any other kind of non-availability error from the primary model, throw a generic message.
       throw new Error("حدث خطأ غير متوقع أثناء تحليل الصورة.");
     }
   }
 );
+
+    
