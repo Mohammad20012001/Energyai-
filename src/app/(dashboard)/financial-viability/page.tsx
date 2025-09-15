@@ -5,14 +5,13 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { TrendingUp, ArrowRight, Loader2, PlusCircle, BarChart3, FileText, CalendarDays, AreaChart } from "lucide-react";
+import { TrendingUp, ArrowRight, Loader2, PlusCircle, BarChart3, FileText, CalendarDays, AreaChart, Activity, ChevronsRight, ChevronsLeft, ChevronsUpDown } from "lucide-react";
 import { useReport } from "@/context/ReportContext";
 import {
   BarChart,
   Bar,
   LineChart,
   Line,
-  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -64,6 +63,16 @@ const formSchema = z.object({
 });
 
 type FormValues = z.infer<typeof formSchema>;
+
+const PaybackPeriod = ({ months } : { months: number}) => {
+    if (!isFinite(months) || months > 300) {
+        return <span className="text-xl font-bold">أكثر من 25 سنة</span>;
+    }
+    const years = Math.floor(months / 12);
+    const remainingMonths = months % 12;
+    return <span className="text-xl font-bold">{years} سنة و {remainingMonths} أشهر</span>;
+};
+
 
 export default function FinancialViabilityPage() {
   const [result, setResult] = useState<FinancialViabilityResult | null>(null);
@@ -301,7 +310,7 @@ export default function FinancialViabilityPage() {
                   </div>
                   <div className="border rounded-lg p-3">
                     <div className="text-sm text-muted-foreground">فترة الاسترداد</div>
-                    <div className="text-xl font-bold">{isFinite(result.paybackPeriodMonths) ? `${Math.floor(result.paybackPeriodMonths / 12)} سنة و ${result.paybackPeriodMonths % 12} أشهر` : "أكثر من 25 سنة"}</div>
+                    <PaybackPeriod months={result.paybackPeriodMonths} />
                   </div>
                    <div className="border rounded-lg p-3 col-span-2 md:col-span-3">
                     <div className="text-sm text-muted-foreground">صافي الربح (25 سنة, مع التهالك)</div>
@@ -352,6 +361,62 @@ export default function FinancialViabilityPage() {
                   </CardContent>
                 </Card>
               )}
+
+             {result.sensitivityAnalysis && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Activity className="text-primary" />
+                            تحليل الحساسية: تأثير تغير العوامل الرئيسية
+                        </CardTitle>
+                        <CardDescription>
+                            كيف تتغير الجدوى المالية لمشروعك مع تغير ظروف السوق.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="border rounded-lg p-4">
+                            <h4 className="font-semibold text-center mb-3">تأثير تكلفة النظام (±10%) على فترة الاسترداد</h4>
+                            <div className="flex justify-between items-center text-center">
+                                <div className="text-green-600">
+                                    <div className="text-xs">تكلفة أقل</div>
+                                    <div className="font-bold text-lg"><PaybackPeriod months={result.sensitivityAnalysis.cost.lower.paybackPeriodMonths} /></div>
+                                    <ChevronsLeft className="mx-auto h-5 w-5"/>
+                                </div>
+                                <div className="text-muted-foreground">
+                                    <div className="text-xs">التكلفة الحالية</div>
+                                    <div className="font-bold text-lg"><PaybackPeriod months={result.paybackPeriodMonths} /></div>
+                                    <ChevronsUpDown className="mx-auto h-5 w-5"/>
+                                </div>
+                                <div className="text-red-600">
+                                     <div className="text-xs">تكلفة أعلى</div>
+                                    <div className="font-bold text-lg"><PaybackPeriod months={result.sensitivityAnalysis.cost.higher.paybackPeriodMonths} /></div>
+                                    <ChevronsRight className="mx-auto h-5 w-5"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="border rounded-lg p-4">
+                             <h4 className="font-semibold text-center mb-3">تأثير سعر الكهرباء (±10%) على صافي الربح</h4>
+                             <div className="flex justify-between items-center text-center">
+                                <div className="text-red-600">
+                                    <div className="text-xs">سعر أقل</div>
+                                    <div className="font-bold text-lg">{result.sensitivityAnalysis.price.lower.netProfit25Years.toFixed(0)}</div>
+                                    <div className="text-xs text-muted-foreground">دينار</div>
+                                </div>
+                                <div className="text-muted-foreground">
+                                    <div className="text-xs">السعر الحالي</div>
+                                    <div className="font-bold text-lg">{result.netProfit25Years.toFixed(0)}</div>
+                                    <div className="text-xs text-muted-foreground">دينار</div>
+                                </div>
+                                <div className="text-green-600">
+                                     <div className="text-xs">سعر أعلى</div>
+                                    <div className="font-bold text-lg">{result.sensitivityAnalysis.price.higher.netProfit25Years.toFixed(0)}</div>
+                                    <div className="text-xs text-muted-foreground">دينار</div>
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+             )}
 
 
               <Card>

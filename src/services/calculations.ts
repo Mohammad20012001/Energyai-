@@ -1,4 +1,5 @@
 
+
 /**
  * @fileoverview This file contains pure, physics-based calculation functions.
  * It follows standard electrical engineering formulas (IEC/NEC/IEEE) and does not involve AI.
@@ -239,6 +240,17 @@ export interface CashFlowPoint {
     cashFlow: number;
 }
 
+export interface SensitivityAnalysis {
+    cost: {
+        lower: { paybackPeriodMonths: number; netProfit25Years: number };
+        higher: { paybackPeriodMonths: number; netProfit25Years: number };
+    },
+    price: {
+        lower: { paybackPeriodMonths: number; netProfit25Years: number };
+        higher: { paybackPeriodMonths: number; netProfit25Years: number };
+    }
+}
+
 export interface FinancialViabilityResult {
     totalInvestment: number;
     totalAnnualProduction: number;
@@ -247,6 +259,7 @@ export interface FinancialViabilityResult {
     netProfit25Years: number;
     monthlyBreakdown: MonthlyBreakdown[];
     cashFlowAnalysis: CashFlowPoint[];
+    sensitivityAnalysis: SensitivityAnalysis;
 }
 // #endregion
 

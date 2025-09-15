@@ -7,7 +7,7 @@ import {
 } from '@/ai/flows/suggest-string-config';
 import {SuggestStringConfigurationInputSchema} from '@/ai/tool-schemas';
 import type {SuggestStringConfigurationInput} from '@/ai/tool-schemas';
-import { FinancialViabilityInput, type FinancialViabilityResult, type MonthlyBreakdown, type CashFlowPoint } from '@/services/calculations';
+import { FinancialViabilityInput, type FinancialViabilityResult, type MonthlyBreakdown, type CashFlowPoint, type SensitivityAnalysis } from '@/services/calculations';
 
 
 const FinancialViabilityInputSchema = z.object({
@@ -34,21 +34,72 @@ const monthlyPSSH = {
 const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
 const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
+// This helper function performs the core financial calculation logic.
+// It's used for the main calculation and for the sensitivity analysis scenarios.
+function performFinancialCalculation(
+    systemSize: number, 
+    costPerKw: number, 
+    kwhPrice: number, 
+    systemLoss: number, 
+    degradationRate: number, 
+    locationPSSH: number[]
+): Pick<FinancialViabilityResult, 'totalInvestment' | 'annualRevenue' | 'paybackPeriodMonths' | 'netProfit25Years'> {
+    const totalInvestment = systemSize * costPerKw;
+    const systemLossFactor = 1 - systemLoss / 100;
+    const degradationFactor = 1 - (degradationRate / 100);
+
+    const firstYearAnnualProduction = locationPSSH.reduce((sum, dailyIrradiation, index) => {
+        const dailyProduction = systemSize * dailyIrradiation * systemLossFactor;
+        const monthlyProduction = dailyProduction * daysInMonth[index];
+        return sum + monthlyProduction;
+    }, 0);
+
+    const firstYearAnnualRevenue = firstYearAnnualProduction * kwhPrice;
+
+    let paybackPeriodMonths = Infinity;
+    let total25YearRevenue = 0;
+
+    for (let year = 1; year <= 25; year++) {
+        const currentYearProduction = firstYearAnnualProduction * Math.pow(degradationFactor, year - 1);
+        const currentYearRevenue = currentYearProduction * kwhPrice;
+        const cumulativeRevenue = total25YearRevenue + currentYearRevenue;
+
+        if (paybackPeriodMonths === Infinity && cumulativeRevenue >= totalInvestment) {
+            const revenueUpToPreviousYear = total25YearRevenue;
+            const remainingInvestment = totalInvestment - revenueUpToPreviousYear;
+            const monthlyRevenueThisYear = currentYearRevenue / 12;
+            const monthsIntoYear = monthlyRevenueThisYear > 0 ? Math.ceil(remainingInvestment / monthlyRevenueThisYear) : 0;
+            paybackPeriodMonths = ((year - 1) * 12) + monthsIntoYear;
+        }
+        total25YearRevenue = cumulativeRevenue;
+    }
+    
+    const netProfit25Years = total25YearRevenue - totalInvestment;
+    if (paybackPeriodMonths > 25 * 12) paybackPeriodMonths = Infinity;
+
+    return {
+        totalInvestment,
+        annualRevenue: firstYearAnnualRevenue,
+        paybackPeriodMonths,
+        netProfit25Years,
+    };
+}
+
 
 async function calculateFinancialViability(input: z.infer<typeof FinancialViabilityInputSchema>): Promise<FinancialViabilityResult> {
-    const totalInvestment = input.systemSize * input.costPerKw;
-    const systemLossFactor = 1 - input.systemLoss / 100;
-    const degradationFactor = 1 - (input.degradationRate / 100);
+    const { systemSize, costPerKw, kwhPrice, systemLoss, degradationRate, location } = input;
+    const locationPSSH = monthlyPSSH[location];
 
-    const locationPSSH = monthlyPSSH[input.location];
-
-    // --- First year calculations ---
+    // --- Main Calculation ---
+    const mainResult = performFinancialCalculation(systemSize, costPerKw, kwhPrice, systemLoss, degradationRate, locationPSSH);
+    
+    // --- First year monthly breakdown (only for main scenario) ---
+    const systemLossFactor = 1 - systemLoss / 100;
     const monthlyBreakdown: MonthlyBreakdown[] = monthNames.map((month, index) => {
         const dailyIrradiation = locationPSSH[index];
-        const dailyProduction = input.systemSize * dailyIrradiation * systemLossFactor;
+        const dailyProduction = systemSize * dailyIrradiation * systemLossFactor;
         const monthlyProduction = dailyProduction * daysInMonth[index];
-        const monthlyRevenue = monthlyProduction * input.kwhPrice;
-        
+        const monthlyRevenue = monthlyProduction * kwhPrice;
         return {
             month: month,
             sunHours: parseFloat(dailyIrradiation.toFixed(2)),
@@ -56,53 +107,48 @@ async function calculateFinancialViability(input: z.infer<typeof FinancialViabil
             revenue: monthlyRevenue,
         };
     });
-
     const totalAnnualProduction = monthlyBreakdown.reduce((sum, item) => sum + item.production, 0);
-    const annualRevenue = monthlyBreakdown.reduce((sum, item) => sum + item.revenue, 0);
 
-    // --- Long-term calculations with degradation ---
-    let cumulativeRevenue = 0;
-    let paybackPeriodMonths = Infinity;
-    let total25YearRevenue = 0;
-    
-    const cashFlowAnalysis: CashFlowPoint[] = [{ year: 0, cashFlow: -totalInvestment }];
-
-
+    // --- Cash Flow Analysis (only for main scenario) ---
+    const cashFlowAnalysis: CashFlowPoint[] = [{ year: 0, cashFlow: -mainResult.totalInvestment }];
+    const degradationFactor = 1 - (degradationRate / 100);
     for (let year = 1; year <= 25; year++) {
-        // Apply degradation starting from the second year
         const currentYearProduction = totalAnnualProduction * Math.pow(degradationFactor, year - 1);
-        const currentYearRevenue = currentYearProduction * input.kwhPrice;
-        total25YearRevenue += currentYearRevenue;
-        
-        // Update cash flow analysis
-        const previousCashFlow = cashFlowAnalysis[year-1].cashFlow;
+        const currentYearRevenue = currentYearProduction * kwhPrice;
+        const previousCashFlow = cashFlowAnalysis[year - 1].cashFlow;
         cashFlowAnalysis.push({ year: year, cashFlow: previousCashFlow + currentYearRevenue });
-
-        // Check for payback period
-        if (paybackPeriodMonths === Infinity && (previousCashFlow + currentYearRevenue) >= 0) {
-            const revenueUpToPreviousYear = total25YearRevenue - currentYearRevenue;
-            const remainingInvestment = totalInvestment - revenueUpToPreviousYear;
-            const monthlyRevenueThisYear = currentYearRevenue / 12;
-            const monthsIntoYear = Math.ceil(remainingInvestment / monthlyRevenueThisYear);
-            paybackPeriodMonths = ((year - 1) * 12) + monthsIntoYear;
-        }
     }
+
+    // --- Sensitivity Analysis ---
+    const costVariation = 0.10; // 10%
+    const priceVariation = 0.10; // 10%
+
+    // Cost Sensitivity
+    const costLowerResult = performFinancialCalculation(systemSize, costPerKw * (1 - costVariation), kwhPrice, systemLoss, degradationRate, locationPSSH);
+    const costHigherResult = performFinancialCalculation(systemSize, costPerKw * (1 + costVariation), kwhPrice, systemLoss, degradationRate, locationPSSH);
+
+    // KWH Price Sensitivity
+    const priceLowerResult = performFinancialCalculation(systemSize, costPerKw, kwhPrice * (1 - priceVariation), systemLoss, degradationRate, locationPSSH);
+    const priceHigherResult = performFinancialCalculation(systemSize, costPerKw, kwhPrice * (1 + priceVariation), systemLoss, degradationRate, locationPSSH);
     
-    const netProfit25Years = total25YearRevenue - totalInvestment;
-
-    if (paybackPeriodMonths > 25 * 12) {
-        paybackPeriodMonths = Infinity;
-    }
+    const sensitivityAnalysis: SensitivityAnalysis = {
+        cost: {
+            lower: { paybackPeriodMonths: costLowerResult.paybackPeriodMonths, netProfit25Years: costLowerResult.netProfit25Years },
+            higher: { paybackPeriodMonths: costHigherResult.paybackPeriodMonths, netProfit25Years: costHigherResult.netProfit25Years },
+        },
+        price: {
+            lower: { paybackPeriodMonths: priceLowerResult.paybackPeriodMonths, netProfit25Years: priceLowerResult.netProfit25Years },
+            higher: { paybackPeriodMonths: priceHigherResult.paybackPeriodMonths, netProfit25Years: priceHigherResult.netProfit25Years },
+        }
+    };
 
 
     return {
-        totalInvestment,
+        ...mainResult,
         totalAnnualProduction,
-        annualRevenue,
-        paybackPeriodMonths,
-        netProfit25Years,
         monthlyBreakdown,
         cashFlowAnalysis,
+        sensitivityAnalysis,
     };
 }
 
