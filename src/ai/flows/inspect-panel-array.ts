@@ -30,22 +30,24 @@ const inspectionPrompt = ai.definePrompt({
   name: 'panelInspectionPrompt',
   input: { schema: InspectionInputSchema },
   output: { schema: InspectionResultSchema }, // We tell the model to respond in this JSON format.
-  prompt: `You are an expert solar panel installation inspector. Your task is to analyze the provided image of a solar panel array and identify any potential issues that could affect its performance, safety, or longevity.
+  prompt: `You are an expert solar panel installation inspector. Your task is to analyze the provided images of a solar panel array and identify any potential issues that could affect its performance, safety, or longevity. The images may show different angles or parts of the same system.
 
-Your analysis should cover the following categories:
+Your analysis should cover the following categories across all images:
 1.  **Soiling:** Look for dust, dirt, bird droppings, or other debris on the panel surfaces. Estimate the severity and its potential impact on energy production.
 2.  **Shading:** Identify any shadows cast on the panels from nearby objects like trees, buildings, antennas, or other parts of the installation. Note the time of day if possible from the shadows.
 3.  **Physical Damage:** Look for visible cracks, chipping, discoloration, or any signs of physical harm to the panels or frames.
 4.  **Installation Issues:** Check for obvious problems with the mounting structure, such as rust or poor alignment. Look for loose or improperly managed wiring if visible.
 
-Based on your analysis, provide a structured JSON response. All text in the response must be in Arabic.
+Based on your analysis of ALL images provided, provide a single, consolidated structured JSON response. All text in the response must be in Arabic.
 
 -   **overallHealthScore:** Give a score from 0-100 reflecting the overall condition. A brand new, perfect installation is 100. A system with critical damage or severe soiling would be much lower.
 -   **overallAssessment:** Write a single, concise sentence summarizing the state of the array.
 -   **issues:** Create a list of all identified problems. For each problem, specify its category, a clear description, its severity, and a practical recommendation. If you find no issues, return an empty array for "issues".
 
-Analyze the following image:
-{{media url=photoDataUri}}
+Analyze the following images:
+{{#each photoDataUris}}
+{{media url=this}}
+{{/each}}
 `,
 });
 
@@ -81,3 +83,5 @@ const panelInspectionFlow = ai.defineFlow(
     }
   }
 );
+
+    

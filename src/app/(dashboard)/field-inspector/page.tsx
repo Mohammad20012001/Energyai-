@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import Image from 'next/image';
-import { Camera, FileImage, ArrowRight, Loader2, AlertTriangle, Wind, Droplets, Hammer, Sparkles, CheckCircle, HelpCircle } from 'lucide-react';
+import { Camera, FileImage, ArrowRight, Loader2, AlertTriangle, Wind, Droplets, Hammer, Sparkles, CheckCircle, HelpCircle, X, PlusCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ import { Badge } from '@/components/ui/badge';
 
 
 const formSchema = z.object({
-  panelImage: z.string().min(1, "الرجاء رفع صورة."),
+  panelImages: z.array(z.string()).min(1, "الرجاء رفع صورة واحدة على الأقل."),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -55,36 +55,59 @@ const getIssueSeverityVariant = (severity: 'Low' | 'Medium' | 'High' | 'Critical
 export default function FieldInspectorPage() {
     const [result, setResult] = useState<InspectionResult | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [preview, setPreview] = useState<string | null>(null);
+    const [previews, setPreviews] = useState<string[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            panelImage: "",
+            panelImages: [],
         },
     });
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            if (file.size > 4 * 1024 * 1024) { // 4MB limit
-                toast({
-                    variant: "destructive",
-                    title: "حجم الصورة كبير جدًا",
-                    description: "الرجاء رفع صورة بحجم أقل من 4 ميجابايت.",
+        const files = event.target.files;
+        if (files) {
+            const newPreviews: string[] = [];
+            const filePromises = Array.from(files).map(file => {
+                return new Promise<string>((resolve, reject) => {
+                    if (file.size > 4 * 1024 * 1024) { // 4MB limit
+                        toast({
+                            variant: "destructive",
+                            title: `حجم الصورة كبير جدًا (${file.name})`,
+                            description: "الرجاء رفع صور بحجم أقل من 4 ميجابايت.",
+                        });
+                        reject(new Error('File too large'));
+                        return;
+                    }
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        resolve(reader.result as string);
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
                 });
-                return;
-            }
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const dataUrl = reader.result as string;
-                setPreview(dataUrl);
-                form.setValue('panelImage', dataUrl, { shouldValidate: true });
-            };
-            reader.readAsDataURL(file);
+            });
+
+            Promise.all(filePromises).then(dataUrls => {
+                const updatedPreviews = [...previews, ...dataUrls];
+                setPreviews(updatedPreviews);
+                form.setValue('panelImages', updatedPreviews, { shouldValidate: true });
+            }).catch(error => {
+                console.error("Error reading files:", error);
+            });
         }
+         // Reset file input to allow re-selection of the same file
+        if(fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+    };
+    
+    const removePreview = (index: number) => {
+        const updatedPreviews = previews.filter((_, i) => i !== index);
+        setPreviews(updatedPreviews);
+        form.setValue('panelImages', updatedPreviews, { shouldValidate: true });
     };
 
     const handleTriggerUpload = () => {
@@ -95,7 +118,7 @@ export default function FieldInspectorPage() {
         setIsLoading(true);
         setResult(null);
         try {
-            const response = await inspectPanelArray({ photoDataUri: values.panelImage });
+            const response = await inspectPanelArray({ photoDataUris: values.panelImages });
             setResult(response);
             toast({
                 title: "اكتمل التحليل",
@@ -103,10 +126,11 @@ export default function FieldInspectorPage() {
             });
         } catch (error) {
             console.error("Error fetching panel inspection:", error);
+            const errorMessage = error instanceof Error ? error.message : "فشل في تحليل الصورة. يرجى المحاولة بصورة مختلفة أو التحقق من اتصالك."
             toast({
                 variant: "destructive",
                 title: "خطأ في التحليل",
-                description: "فشل في تحليل الصورة. يرجى المحاولة بصورة مختلفة أو التحقق من اتصالك.",
+                description: errorMessage,
             });
         } finally {
             setIsLoading(false);
@@ -122,60 +146,88 @@ export default function FieldInspectorPage() {
             <div>
                 <h1 className="text-3xl font-bold tracking-tight font-headline">المفتش الميداني الذكي</h1>
                 <p className="text-muted-foreground mt-2">
-                    ارفع صورة لمصفوفة الألواح الشمسية واحصل على تحليل فوري للمشاكل المحتملة في الموقع.
+                    ارفع صورة أو أكثر لمصفوفة الألواح الشمسية واحصل على تحليل فوري للمشاكل المحتملة في الموقع.
                 </p>
             </div>
 
             <div className="grid gap-8 lg:grid-cols-5">
                 <Card className="lg:col-span-2 h-fit">
                     <CardHeader>
-                        <CardTitle>رفع صورة الألواح</CardTitle>
-                        <CardDescription>اختر صورة واضحة من الموقع للتحليل.</CardDescription>
+                        <CardTitle>رفع صور الألواح</CardTitle>
+                        <CardDescription>اختر صورًا واضحة من زوايا مختلفة للموقع.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Form {...form}>
                             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 text-right">
                                 <FormField
                                     control={form.control}
-                                    name="panelImage"
-                                    render={({ field }) => (
+                                    name="panelImages"
+                                    render={() => (
                                         <FormItem>
-                                            <input
-                                                type="file"
-                                                accept="image/png, image/jpeg, image/webp"
-                                                ref={fileInputRef}
-                                                onChange={handleFileChange}
-                                                className="hidden"
-                                                disabled={isLoading}
-                                            />
                                             <FormControl>
-                                                <div 
-                                                    className="w-full aspect-video rounded-md border-2 border-dashed border-input flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors"
-                                                    onClick={handleTriggerUpload}
-                                                    onKeyDown={(e) => { if (e.key === 'Enter') handleTriggerUpload() }}
-                                                    role="button"
-                                                    tabIndex={0}
-                                                >
-                                                    {preview ? (
-                                                        <Image src={preview} alt="Preview" width={400} height={225} className="object-contain w-full h-full rounded-md" />
-                                                    ) : (
-                                                        <div className="text-center text-muted-foreground p-4">
-                                                            <FileImage className="h-12 w-12 mx-auto mb-2" />
-                                                            <p className="font-semibold">انقر هنا لرفع صورة</p>
-                                                            <p className="text-xs mt-1">PNG, JPG, WEBP (بحد أقصى 4 ميجابايت)</p>
+                                                <>
+                                                    <input
+                                                        type="file"
+                                                        accept="image/png, image/jpeg, image/webp"
+                                                        multiple
+                                                        ref={fileInputRef}
+                                                        onChange={handleFileChange}
+                                                        className="hidden"
+                                                        disabled={isLoading}
+                                                    />
+                                                     {previews.length > 0 ? (
+                                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                                            {previews.map((src, index) => (
+                                                                <div key={index} className="relative group">
+                                                                    <Image src={src} alt={`Preview ${index + 1}`} width={150} height={84} className="object-cover w-full h-full rounded-md border" />
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="destructive"
+                                                                        size="icon"
+                                                                        className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                        onClick={() => removePreview(index)}
+                                                                    >
+                                                                        <X className="h-4 w-4" />
+                                                                    </Button>
+                                                                </div>
+                                                            ))}
+                                                            <div 
+                                                                className="w-full aspect-video rounded-md border-2 border-dashed border-input flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors"
+                                                                onClick={handleTriggerUpload}
+                                                                onKeyDown={(e) => { if (e.key === 'Enter') handleTriggerUpload() }}
+                                                                role="button"
+                                                                tabIndex={0}
+                                                            >
+                                                                <PlusCircle className="h-8 w-8 text-muted-foreground" />
+                                                                <span className="text-xs mt-1 text-muted-foreground">إضافة المزيد</span>
+                                                            </div>
                                                         </div>
-                                                    )}
-                                                </div>
+                                                     ) : (
+                                                        <div 
+                                                            className="w-full aspect-video rounded-md border-2 border-dashed border-input flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors"
+                                                            onClick={handleTriggerUpload}
+                                                            onKeyDown={(e) => { if (e.key === 'Enter') handleTriggerUpload() }}
+                                                            role="button"
+                                                            tabIndex={0}
+                                                        >
+                                                            <div className="text-center text-muted-foreground p-4">
+                                                                <FileImage className="h-12 w-12 mx-auto mb-2" />
+                                                                <p className="font-semibold">انقر هنا لرفع صورة أو أكثر</p>
+                                                                <p className="text-xs mt-1">PNG, JPG, WEBP (بحد أقصى 4 ميجابايت لكل صورة)</p>
+                                                            </div>
+                                                        </div>
+                                                     )}
+                                                </>
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}
                                 />
-                                <Button type="submit" disabled={isLoading || !preview} className="w-full">
+                                <Button type="submit" disabled={isLoading || previews.length === 0} className="w-full">
                                     {isLoading ? (
                                         <>
                                             <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                                            ...جاري تحليل الصورة
+                                            ...جاري تحليل الصور
                                         </>
                                     ) : (
                                         <>
@@ -193,7 +245,7 @@ export default function FieldInspectorPage() {
                         <Card className="flex items-center justify-center p-8 lg:min-h-[400px]">
                             <div className="flex flex-col items-center gap-4 text-muted-foreground">
                                 <Camera className="h-12 w-12 animate-pulse" />
-                                <p>...يقوم الذكاء الاصطناعي بفحص كل بكسل في الصورة</p>
+                                <p>...يقوم الذكاء الاصطناعي بفحص كل بكسل في الصور</p>
                             </div>
                         </Card>
                     )}
@@ -259,7 +311,7 @@ export default function FieldInspectorPage() {
                                             <CheckCircle className="h-4 w-4 text-green-500" />
                                             <AlertTitle>لا توجد مشاكل واضحة</AlertTitle>
                                             <AlertDescription>
-                                                بناءً على تحليل الصورة، يبدو النظام في حالة ممتازة.
+                                                بناءً على تحليل الصور، يبدو النظام في حالة ممتازة.
                                             </AlertDescription>
                                         </Alert>
                                     )}
@@ -282,3 +334,5 @@ export default function FieldInspectorPage() {
         </div>
     );
 }
+
+    

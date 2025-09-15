@@ -144,10 +144,9 @@ export type SimulatePerformanceOutput = z.infer<typeof SimulatePerformanceOutput
 
 // #region Panel Inspection Schemas
 export const InspectionInputSchema = z.object({
-  photoDataUri: z
-    .string()
+  photoDataUris: z.array(z.string())
     .describe(
-      "A photo of a solar panel array, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+      "An array of photos of a solar panel array, as data URIs. Each must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
 });
 export type InspectionInput = z.infer<typeof InspectionInputSchema>;
@@ -176,4 +175,5 @@ export const InspectionResultSchema = z.object({
 });
 export type InspectionResult = z.infer<typeof InspectionResultSchema>;
 // #endregion
+
     
