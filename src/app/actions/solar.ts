@@ -7,7 +7,9 @@ import {
 } from '@/ai/flows/suggest-string-config';
 import {SuggestStringConfigurationInputSchema} from '@/ai/tool-schemas';
 import type {SuggestStringConfigurationInput} from '@/ai/tool-schemas';
-import { FinancialViabilityInput, calculateFinancialViability } from '@/services/calculations';
+import { FinancialViabilityInput, type FinancialViabilityResult, type MonthlyBreakdown } from '@/services/calculations';
+import { getHistoricalWeatherForYear } from '@/services/weather-service';
+
 
 const FinancialViabilityInputSchema = z.object({
   systemSize: z.coerce.number().positive("يجب أن يكون حجم النظام إيجابياً"),
@@ -18,6 +20,57 @@ const FinancialViabilityInputSchema = z.object({
   costPerKw: z.coerce.number().positive("التكلفة يجب أن تكون إيجابية"),
   kwhPrice: z.coerce.number().positive("السعر يجب أن يكون إيجابياً"),
 });
+
+// Moved from calculations.ts to ensure it only runs on the server
+const locationCoordinates = {
+    amman: { lat: 31.95, lon: 35.91 },
+    zarqa: { lat: 32.05, lon: 36.09 },
+    irbid: { lat: 32.55, lon: 35.85 },
+    aqaba: { lat: 29.53, lon: 35.00 },
+};
+const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+
+async function calculateFinancialViability(input: FinancialViabilityInput): Promise<FinancialViabilityResult> {
+    const totalInvestment = input.systemSize * input.costPerKw;
+    const systemLossFactor = 1 - input.systemLoss / 100;
+    
+    const { lat, lon } = locationCoordinates[input.location];
+    
+    const historicalData = await getHistoricalWeatherForYear(lat, lon);
+
+    const monthlyBreakdown = monthNames.map((month, index) => {
+        const monthData = historicalData[index];
+        const sunHours = (monthData.total_irrad_Wh_m2 / 1000); 
+
+        const dailyProduction = input.systemSize * sunHours * systemLossFactor;
+        const monthlyProduction = dailyProduction * daysInMonth[index];
+        const monthlyRevenue = monthlyProduction * input.kwhPrice;
+        
+        return {
+            month: month,
+            sunHours: sunHours,
+            production: monthlyProduction,
+            revenue: monthlyRevenue,
+        };
+    });
+
+    const totalAnnualProduction = monthlyBreakdown.reduce((sum, item) => sum + item.production, 0);
+    const annualRevenue = monthlyBreakdown.reduce((sum, item) => sum + item.revenue, 0);
+    const paybackPeriodMonths = annualRevenue > 0 ? Math.ceil((totalInvestment / annualRevenue) * 12) : Infinity;
+    const netProfit25Years = (annualRevenue * 25) - totalInvestment;
+
+    return {
+        totalInvestment,
+        totalAnnualProduction,
+        annualRevenue,
+        paybackPeriodMonths,
+        netProfit25Years,
+        monthlyBreakdown,
+    };
+}
+
 
 export async function suggestStringConfigurationAction(
   input: SuggestStringConfigurationInput

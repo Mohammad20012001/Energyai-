@@ -6,7 +6,6 @@
  */
 
 import type { OptimizeDesignInput, OptimizeDesignOutput, SuggestWireSizeInput, SuggestWireSizeOutput } from "@/ai/tool-schemas";
-import { getHistoricalWeatherForYear } from "./weather-service";
 
 
 /**
@@ -194,61 +193,6 @@ export interface FinancialViabilityResult {
     netProfit25Years: number;
     monthlyBreakdown: MonthlyBreakdown[];
 }
-
-const locationCoordinates = {
-    amman: { lat: 31.95, lon: 35.91 },
-    zarqa: { lat: 32.05, lon: 36.09 },
-    irbid: { lat: 32.55, lon: 35.85 },
-    aqaba: { lat: 29.53, lon: 35.00 },
-};
-
-const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
-const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-
-export async function calculateFinancialViability(input: FinancialViabilityInput): Promise<FinancialViabilityResult> {
-    const totalInvestment = input.systemSize * input.costPerKw;
-    const systemLossFactor = 1 - input.systemLoss / 100;
-    
-    const { lat, lon } = locationCoordinates[input.location];
-    
-    // Fetch historical weather data for the last 12 months for the location
-    const historicalData = await getHistoricalWeatherForYear(lat, lon);
-
-    const monthlyBreakdown = monthNames.map((month, index) => {
-        const monthData = historicalData[index];
-        // Convert total daily irradiation from W/m^2 to kWh/m^2/day (Peak Sun Hours)
-        // WeatherAPI provides `total_irrad_Wh_m2`. Dividing by 1000 gives kWh/m^2.
-        const sunHours = (monthData.total_irrad_Wh_m2 / 1000); 
-
-        // This is a simplified PV formula: E = A * r * H * PR
-        // Here we use a simpler version based on System Size (kWp) and PSSH (H)
-        // E (kWh) = SystemSize (kWp) * PSSH (h) * SystemLossFactor
-        const dailyProduction = input.systemSize * sunHours * systemLossFactor;
-        const monthlyProduction = dailyProduction * daysInMonth[index];
-        const monthlyRevenue = monthlyProduction * input.kwhPrice;
-        
-        return {
-            month: month,
-            sunHours: sunHours,
-            production: monthlyProduction,
-            revenue: monthlyRevenue,
-        };
-    });
-
-    const totalAnnualProduction = monthlyBreakdown.reduce((sum, item) => sum + item.production, 0);
-    const annualRevenue = monthlyBreakdown.reduce((sum, item) => sum + item.revenue, 0);
-    const paybackPeriodMonths = annualRevenue > 0 ? Math.ceil((totalInvestment / annualRevenue) * 12) : Infinity;
-    const netProfit25Years = (annualRevenue * 25) - totalInvestment;
-
-    return {
-        totalInvestment,
-        totalAnnualProduction,
-        annualRevenue,
-        paybackPeriodMonths,
-        netProfit25Years,
-        monthlyBreakdown,
-    };
-}
 // #endregion
 
 
@@ -304,12 +248,19 @@ export interface BatteryCalculationResult {
 }
 
 export function calculateBatteryBank(input: BatteryCalculationInput): BatteryCalculationResult {
-    // Recalculate daily load from appliances if provided, otherwise use the direct input
+    // Recalculate daily load from appliances if provided and non-empty, otherwise use the direct input
     let dailyLoadKwh = input.dailyLoadKwh;
     if (input.appliances && input.appliances.length > 0) {
-        dailyLoadKwh = input.appliances.reduce((total, appliance) => {
-            return total + (appliance.power * appliance.quantity * appliance.hours) / 1000;
+        const applianceLoad = input.appliances.reduce((total, appliance) => {
+             if (appliance && typeof appliance.power === 'number' && typeof appliance.quantity === 'number' && typeof appliance.hours === 'number') {
+                return total + (appliance.power * appliance.quantity * appliance.hours) / 1000;
+            }
+            return total;
         }, 0);
+        // Only use the calculated appliance load if it's a positive number
+        if (applianceLoad > 0) {
+            dailyLoadKwh = applianceLoad;
+        }
     }
     
     // 1. Calculate the total energy needed, accounting for DoD and autonomy
@@ -426,5 +377,3 @@ export function calculateOptimalDesign(input: OptimizeDesignInput): CalculationO
 }
 
 // #endregion
-
-    
