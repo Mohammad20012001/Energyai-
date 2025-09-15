@@ -140,5 +140,3 @@ Analyze the following images critically:
     }
   }
 );
-
-    
