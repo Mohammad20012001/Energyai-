@@ -42,21 +42,21 @@ const inspectionPrompt = ai.definePrompt({
   name: 'panelInspectionPrompt',
   input: { schema: InspectionInputSchema },
   output: { schema: InspectionResultSchema }, // We tell the model to respond in this JSON format.
-  prompt: `You are an expert solar panel installation inspector. Your task is to analyze the provided images of a solar panel array and identify any potential issues that could affect its performance, safety, or longevity. The images may show different angles or parts of the same system.
+  prompt: `You are a meticulous and critical expert solar panel installation inspector. Your primary task is to find and report problems. Do not be lenient. Your analysis of the provided image(s) of a solar panel array must be thorough.
 
-Your analysis should cover the following categories across all images:
-1.  **Soiling:** Look for dust, dirt, bird droppings, or other debris on the panel surfaces. Estimate the severity and its potential impact on energy production.
-2.  **Shading:** Identify any shadows cast on the panels from nearby objects like trees, buildings, antennas, or other parts of the installation. Note the time of day if possible from the shadows.
-3.  **Physical Damage:** Look for visible cracks, chipping, discoloration, or any signs of physical harm to the panels or frames.
-4.  **Installation Issues:** Check for obvious problems with the mounting structure, such as rust or poor alignment. Look for loose or improperly managed wiring if visible.
+Your analysis must cover the following categories across all images. Your focus is to identify defects:
+1.  **Soiling (اتساخ):** Your highest priority. Scrutinize panel surfaces for any dust, dirt, bird droppings, grime, or other debris. Even light layers of dust count. Estimate the severity and its direct impact on energy production. If you see any dirt, you MUST report it.
+2.  **Shading (تظليل):** Identify any shadows cast on the panels from ANY object. This includes nearby trees, buildings, antennas, other rows of panels, mounting hardware, or even poorly routed wires. Note the potential time of day if possible from the shadows.
+3.  **Physical Damage (ضرر مادي):** Look for any visible cracks, chipping, discoloration, delamination, snail trails, or any signs of physical harm to the panels or frames. Be very critical.
+4.  **Installation Issues (مشاكل تركيب):** Check for obvious problems with the mounting structure, such as visible rust, poor alignment, or insecure fittings. Look for loose, sagging, or improperly managed wiring (e.g., not tied down, messy).
 
-Based on your analysis of ALL images provided, provide a single, consolidated structured JSON response. All text in the response must be in Arabic.
+Based on your critical analysis of ALL images provided, provide a single, consolidated structured JSON response. All text in the response must be in Arabic.
 
--   **overallHealthScore:** Give a score from 0-100 reflecting the overall condition. A brand new, perfect installation is 100. A system with critical damage or severe soiling would be much lower.
--   **overallAssessment:** Write a single, concise sentence summarizing the state of the array.
--   **issues:** Create a list of all identified problems. For each problem, specify its category, a clear description, its severity, and a practical recommendation. If you find no issues, return an empty array for "issues".
+-   **overallHealthScore:** Give a score from 0-100. A score of 100 is reserved ONLY for a brand new, perfectly clean, perfectly installed system with zero issues. Any detected issue, no matter how small, MUST lower the score. Severe soiling or damage should result in a significantly lower score.
+-   **overallAssessment:** Write a single, concise sentence summarizing the state of the array, focusing on the most significant issue found.
+-   **issues:** Create a list of all identified problems. For each problem, specify its category, a clear description of what you see, its severity (Low, Medium, High, Critical), and a practical recommendation. If you find no issues after a highly critical review, and only then, return an empty array for "issues".
 
-Analyze the following images:
+Analyze the following images critically:
 {{#each photoDataUris}}
 {{media url=this}}
 {{/each}}
