@@ -5,7 +5,7 @@ import {z} from 'zod';
 import {
   suggestStringConfiguration,
 } from '@/ai/flows/suggest-string-config';
-import {SuggestStringConfigurationInputSchema} from '@/ai/tool-schemas';
+import {SuggestStringConfigurationInputSchema, type SuggestStringConfigurationOutput} from '@/ai/tool-schemas';
 import type {SuggestStringConfigurationInput} from '@/ai/tool-schemas';
 import { FinancialViabilityInput, type FinancialViabilityResult, type MonthlyBreakdown, type CashFlowPoint, type SensitivityAnalysis } from '@/services/calculations';
 
@@ -155,7 +155,7 @@ async function calculateFinancialViability(input: z.infer<typeof FinancialViabil
 
 export async function suggestStringConfigurationAction(
   input: SuggestStringConfigurationInput
-) {
+): Promise<{ success: boolean, data?: SuggestStringConfigurationOutput, error?: string }> {
   try {
     const validatedInput = SuggestStringConfigurationInputSchema.parse(input);
     const result = await suggestStringConfiguration(validatedInput);
@@ -165,9 +165,13 @@ export async function suggestStringConfigurationAction(
     if (error instanceof z.ZodError) {
       return {success: false, error: 'المدخلات المقدمة غير صالحة.'};
     }
+     const errorMessage =
+      error instanceof Error
+        ? error.message
+        : 'فشل في الحصول على اقتراح من الذكاء الاصطناعي.';
     return {
       success: false,
-      error: 'فشل في الحصول على اقتراح من الذكاء الاصطناعي.',
+      error: errorMessage,
     };
   }
 }

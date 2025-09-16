@@ -6,7 +6,7 @@
  * This ensures that the numerical outputs of the application are reliable and accurate.
  */
 
-import type { OptimizeDesignInput, OptimizeDesignOutput, SuggestWireSizeInput, SuggestWireSizeOutput } from "@/ai/tool-schemas";
+import type { OptimizeDesignInput, OptimizeDesignOutput, SuggestWireSizeInput, SuggestWireSizeOutput, SuggestStringConfigurationInput, SuggestStringConfigurationOutput } from "@/ai/tool-schemas";
 
 
 /**
@@ -511,4 +511,41 @@ export function calculateOptimalDesign(input: OptimizeDesignInput): CalculationO
     };
 }
 
+// #endregion
+
+
+// #region String Configuration Calculator
+type StringConfigCalculationResult = Omit<SuggestStringConfigurationOutput, 'commonWiringErrors' | 'reasoning'>;
+
+/**
+ * Calculates the optimal string configuration for a solar panel array.
+ * 
+ * Logic:
+ * 1.  **Panels per String (Series):** Connecting panels in series adds up their voltages. To find out how many panels
+ *     are needed to reach the desired system voltage, we divide the desired voltage by the voltage of a single panel.
+ *     We use `Math.floor` because we cannot exceed the inverter's maximum input voltage.
+ *     `Panels per String = floor(Desired Voltage / Panel Voltage)`
+ * 
+ * 2.  **Parallel Strings:** Connecting strings in parallel adds up their currents. To find out how many parallel
+ *     strings are needed to reach the desired total current, we divide the desired current by the current of a single string.
+ *     We use `Math.ceil` because we need to provide at least the desired current.
+ *     `Parallel Strings = ceil(Desired Current / Panel Current)`
+ * 
+ * @param input The panel's electrical characteristics and the system's desired voltage and current.
+ * @returns The calculated number of panels per string and the number of parallel strings.
+ */
+export function calculateStringConfiguration(input: SuggestStringConfigurationInput): StringConfigCalculationResult {
+    const { panelVoltage, panelCurrent, desiredVoltage, desiredCurrent } = input;
+
+    // We use Math.floor for voltage to ensure we don't exceed the inverter's max voltage limit.
+    const panelsPerString = Math.floor(desiredVoltage / panelVoltage);
+
+    // We use Math.ceil for current to ensure we meet the required power output.
+    const parallelStrings = Math.ceil(desiredCurrent / panelCurrent);
+
+    return {
+        panelsPerString: panelsPerString > 0 ? panelsPerString : 1,
+        parallelStrings: parallelStrings > 0 ? parallelStrings : 1,
+    };
+}
 // #endregion

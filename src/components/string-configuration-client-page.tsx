@@ -10,6 +10,7 @@ import {
   ArrowRight,
   Sun,
   PlusCircle,
+  Lightbulb,
 } from 'lucide-react';
 
 import {Button} from '@/components/ui/button';
@@ -31,6 +32,13 @@ import {SystemVisualization} from '@/components/system-visualization';
 import {Separator} from './ui/separator';
 import {useReport} from '@/context/ReportContext';
 import type {SuggestStringConfigurationOutput} from '@/ai/tool-schemas';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
+
 
 const formSchema = z.object({
   panelVoltage: z.coerce
@@ -93,7 +101,7 @@ export function StringConfigurationClientPage() {
     if (!result) return;
     addReportCard({
       id: `string-config-${Date.now()}`,
-      type: 'تهيئة السلاسل بالذكاء الاصطناعي',
+      type: 'تهيئة السلاسل',
       summary: `${result.panelsPerString} ألواح/سلسلة، ${result.parallelStrings} سلاسل متوازية.`,
       values: {
         'الألواح لكل سلسلة': `${result.panelsPerString} لوح`,
@@ -194,8 +202,7 @@ export function StringConfigurationClientPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-muted-foreground">
-                <Sun className="h-6 w-6 animate-spin" /> ...الذكاء الاصطناعي
-                يولد الاقتراحات
+                <Sun className="h-6 w-6 animate-spin" /> ...النموذج الهجين يعمل
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -209,7 +216,7 @@ export function StringConfigurationClientPage() {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>التهيئة الموصى بها من الذكاء الاصطناعي</CardTitle>
+                <CardTitle>التهيئة المحسوبة (فيزيائياً)</CardTitle>
               </CardHeader>
               <CardContent className="grid gap-6 sm:grid-cols-2">
                 <div className="flex flex-col items-center justify-center rounded-lg border bg-card p-6">
@@ -231,13 +238,27 @@ export function StringConfigurationClientPage() {
               </CardContent>
             </Card>
 
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>أخطاء توصيل شائعة يجب تجنبها</AlertTitle>
-              <AlertDescription className="font-code text-sm">
-                {result.commonWiringErrors}
-              </AlertDescription>
-            </Alert>
+            <Accordion type="single" collapsible defaultValue="item-1">
+              <AccordionItem value="item-1">
+                <AccordionTrigger className='font-semibold text-base flex items-center gap-2'>
+                    <Lightbulb className="text-primary"/>
+                    شرح الخبير (AI)
+                </AccordionTrigger>
+                <AccordionContent className="prose prose-sm max-w-none text-muted-foreground pt-2">
+                  <p>{result.reasoning}</p>
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="item-2">
+                <AccordionTrigger className='font-semibold text-base flex items-center gap-2'>
+                    <AlertTriangle className="text-destructive"/>
+                     أخطاء شائعة يجب تجنبها
+                </AccordionTrigger>
+                <AccordionContent className="text-sm pt-2">
+                   <p className="whitespace-pre-wrap font-code">{result.commonWiringErrors}</p>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+
 
             <Button onClick={handleAddToReport} className="w-full">
               <PlusCircle className="ml-2 h-4 w-4" />

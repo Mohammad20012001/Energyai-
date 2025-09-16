@@ -16,10 +16,15 @@ export type SuggestStringConfigurationInput = z.infer<
 export const SuggestStringConfigurationOutputSchema = z.object({
   panelsPerString: z
     .number()
-    .describe('العدد الموصى به من الألواح لتوصيلها على التوالي لكل سلسلة.'),
+    .describe('العدد المحسوب من الألواح لتوصيلها على التوالي لكل سلسلة.'),
   parallelStrings: z
     .number()
-    .describe('العدد الموصى به من السلاسل المتوازية للتوصيل.'),
+    .describe('العدد المحسوب من السلاسل المتوازية للتوصيل.'),
+  reasoning: z
+    .string()
+    .describe(
+      'شرح باللغة العربية يوضح سبب اختيار هذا التكوين وكيفية عمل التوصيل على التوالي والتوازي.'
+    ),
   commonWiringErrors: z
     .string()
     .describe(
