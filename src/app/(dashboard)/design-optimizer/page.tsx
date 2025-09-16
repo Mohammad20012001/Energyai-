@@ -56,12 +56,13 @@ import { OptimizeDesignInputSchema, type OptimizeDesignOutput } from '@/ai/tool-
 import type { z } from 'zod';
 import { useReport } from "@/context/ReportContext";
 import { cn } from "@/lib/utils";
+import { useSearchParams } from 'next/navigation';
 
 
 type FormValues = z.infer<typeof OptimizeDesignInputSchema>;
 
 const PaybackPeriod = ({ months } : { months: number}) => {
-    if (!isFinite(months) || months > 300) {
+    if (!isFinite(months) || months >= 300) {
         return <span className="text-xl font-bold">أكثر من 25 سنة</span>;
     }
     const years = Math.floor(months / 12);
@@ -75,6 +76,7 @@ export default function DesignOptimizerPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { addReportCard } = useReport();
+  const searchParams = useSearchParams();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(OptimizeDesignInputSchema),
@@ -92,6 +94,24 @@ export default function DesignOptimizerPage() {
       degradationRate: 0.5,
     },
   });
+
+  // Effect to read query parameters and populate the form
+  useEffect(() => {
+    const surfaceArea = searchParams.get('surfaceArea');
+    const panelWattage = searchParams.get('panelWattage');
+
+    if (surfaceArea) {
+      form.setValue('surfaceArea', parseFloat(surfaceArea), { shouldValidate: true });
+    }
+    if (panelWattage) {
+      form.setValue('panelWattage', parseFloat(panelWattage), { shouldValidate: true });
+    }
+    // If params exist, automatically trigger calculation
+    if (surfaceArea || panelWattage) {
+        form.handleSubmit(onSubmit)();
+    }
+  }, [searchParams, form]);
+
 
   const calculationMode = useWatch({ control: form.control, name: 'calculationMode' });
 
@@ -624,3 +644,5 @@ export default function DesignOptimizerPage() {
     </div>
   );
 }
+
+  

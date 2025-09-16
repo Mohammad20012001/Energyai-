@@ -5,9 +5,10 @@ import { useState, useCallback } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
-import { Calculator, Maximize, Zap, ArrowRight, Loader2, Sun, PlusCircle, Square, Rows, Columns, Map, Pencil, Redo2, Scissors } from "lucide-react";
+import { Calculator, Maximize, Zap, ArrowRight, Loader2, Sun, PlusCircle, Square, Rows, Columns, Map, Pencil, Redo2, Scissors, BrainCircuit } from "lucide-react";
 import { useReport } from "@/context/ReportContext";
 import dynamic from 'next/dynamic';
+import Link from "next/link";
 
 
 import { Button } from "@/components/ui/button";
@@ -44,7 +45,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 interface ResultState {
   calculation: AreaCalculationResult;
-  totalArea: number;
+  formValues: FormValues;
 }
 
 const LeafletMap = dynamic(() => import('@/components/leaflet-map'), { 
@@ -76,6 +77,8 @@ export default function AreaCalculatorPage() {
   const landArea = (useWatch({ control: form.control, name: "landWidth" }) || 0) * (useWatch({ control: form.control, name: "landLength" }) || 0);
 
   const onAreaCalculated = useCallback((area: number) => {
+    // Avoid updating for tiny areas which are likely mistakes
+    if (area < 1) return;
     const sideLength = Math.sqrt(area);
     form.setValue('landWidth', parseFloat(sideLength.toFixed(2)), { shouldValidate: true });
     form.setValue('landLength', parseFloat(sideLength.toFixed(2)), { shouldValidate: true });
@@ -96,7 +99,7 @@ export default function AreaCalculatorPage() {
     const calculationResult = calculateProductionFromArea(values);
     setResult({
         calculation: calculationResult,
-        totalArea: values.landWidth * values.landLength,
+        formValues: values,
     });
 
     setIsLoading(false);
@@ -111,7 +114,7 @@ export default function AreaCalculatorPage() {
       auto: 'تلقائي'
     };
     const reportValues: Record<string, string> = {
-        "إجمالي المساحة": `${result.totalArea.toFixed(1)} م²`,
+        "إجمالي المساحة": `${result.formValues.landWidth * result.formValues.landLength} م²`,
         "العدد الأقصى للألواح": `${result.calculation.maxPanels} لوح`,
         "اتجاه التركيب": orientationText[result.calculation.finalOrientation],
         "إجمالي قوة النظام": `${result.calculation.totalPowerKw.toFixed(2)} كيلوواط`,
@@ -352,7 +355,7 @@ export default function AreaCalculatorPage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-6xl font-bold text-primary">{result.totalArea.toFixed(1)}</div>
+                        <div className="text-6xl font-bold text-primary">{(result.formValues.landWidth * result.formValues.landLength).toFixed(1)}</div>
                         <p className="text-muted-foreground mt-2 text-lg">متر مربع</p>
                     </CardContent>
                 </Card>
@@ -418,10 +421,18 @@ export default function AreaCalculatorPage() {
                   </p>
                 </CardContent>
               </Card>
-              <Button onClick={handleAddToReport} className="w-full">
-                <PlusCircle className="ml-2 h-4 w-4" />
-                أضف إلى التقرير
-              </Button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                 <Button onClick={handleAddToReport} variant="secondary">
+                    <PlusCircle className="ml-2 h-4 w-4" />
+                    أضف إلى التقرير
+                 </Button>
+                <Button asChild>
+                    <Link href={`/design-optimizer?surfaceArea=${(result.formValues.landWidth * result.formValues.landLength).toFixed(1)}&panelWattage=${result.formValues.panelWattage}`}>
+                        <BrainCircuit className="ml-2 h-4 w-4"/>
+                        تحليل الجدوى المالية لهذا التصميم
+                    </Link>
+                </Button>
+              </div>
             </div>
           )}
 
@@ -440,4 +451,4 @@ export default function AreaCalculatorPage() {
   );
 }
 
-    
+  
