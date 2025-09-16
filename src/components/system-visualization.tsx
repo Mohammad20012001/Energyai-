@@ -10,13 +10,8 @@ export function SystemVisualization({
   const strings = Array.from({ length: parallelStrings });
   const panels = Array.from({ length: panelsPerString });
 
-  if (panelsPerString > 20 || parallelStrings > 20) {
-    return (
-      <div className="text-center text-muted-foreground p-4 border rounded-md">
-        العرض المرئي غير متاح للتكوينات الكبيرة جدًا.
-      </div>
-    );
-  }
+  // The check for large configurations has been removed to always render the visualization.
+  // The overflow-x-auto on the parent container will handle large widths.
 
   return (
     <div className="bg-muted/30 p-4 rounded-lg border overflow-x-auto">
