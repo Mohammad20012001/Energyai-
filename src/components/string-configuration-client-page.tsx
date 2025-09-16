@@ -2,10 +2,11 @@
 
 'use client';
 
-import {useState} from 'react';
+import {useState, useEffect} from 'react';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {useForm} from 'react-hook-form';
 import {z} from 'zod';
+import { useSearchParams } from 'next/navigation';
 import {
   Loader2,
   AlertTriangle,
@@ -68,6 +69,7 @@ export function StringConfigurationClientPage() {
   const [isLoading, setIsLoading] = useState(false);
   const {toast} = useToast();
   const {addReportCard} = useReport();
+  const searchParams = useSearchParams();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -90,6 +92,19 @@ export function StringConfigurationClientPage() {
       targetSystemSize: 10,
     },
   });
+
+  useEffect(() => {
+    const targetSystemSize = searchParams.get('targetSystemSize');
+    const panelWattage = searchParams.get('panelWattage');
+    
+    if (targetSystemSize) {
+      form.setValue('targetSystemSize', parseFloat(targetSystemSize), { shouldValidate: true });
+    }
+    if (panelWattage) {
+      form.setValue('panelWattage', parseFloat(panelWattage), { shouldValidate: true });
+    }
+  }, [searchParams, form]);
+
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);

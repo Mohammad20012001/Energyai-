@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
-import { BrainCircuit, ArrowRight, Loader2, Ruler, PlusCircle, Settings, Sun, Maximize, Scale, TrendingUp, BarChart3, CalendarDays, AreaChart, Activity, ChevronsRight, ChevronsLeft, ChevronsUpDown } from "lucide-react";
+import { BrainCircuit, ArrowRight, Loader2, Ruler, PlusCircle, Settings, Sun, Maximize, Scale, TrendingUp, BarChart3, CalendarDays, AreaChart, Activity, ChevronsRight, ChevronsLeft, ChevronsUpDown, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -57,6 +57,7 @@ import type { z } from 'zod';
 import { useReport } from "@/context/ReportContext";
 import { cn } from "@/lib/utils";
 import { useSearchParams } from 'next/navigation';
+import Link from "next/link";
 
 
 type FormValues = z.infer<typeof OptimizeDesignInputSchema>;
@@ -625,6 +626,14 @@ export default function DesignOptimizerPage() {
                             </div>
                         </div>
                     </CardContent>
+                    <CardContent>
+                       <Button asChild className="w-full">
+                           <Link href={`/string-configuration?targetSystemSize=${result.panelConfig.totalDcPower}&panelWattage=${result.panelConfig.panelWattage}`}>
+                               <SlidersHorizontal className="ml-2 h-4 w-4"/>
+                               التحقق المتقدم من تصميم السلاسل والجهد
+                           </Link>
+                       </Button>
+                    </CardContent>
                 </Card>
                 
                 <Button onClick={handleAddToReport} className="w-full">
@@ -654,5 +663,3 @@ export default function DesignOptimizerPage() {
     </div>
   );
 }
-
-  
