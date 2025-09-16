@@ -133,32 +133,38 @@ const simulatePerformanceFlow = ai.defineFlow(
     // For ideal power, assume 0% loss and ideal temp/irradiance
     const clearSkyOutputPower = calculatePower(input.systemSize, 1000, 25, 0);
 
-    // 3. Call the AI model ONLY to generate the analysis, using the accurate data.
-    const { output: analysisOutput } = await generateAnalysisPrompt({
-      liveOutputPower,
-      forecastOutputPower,
-      clearSkyOutputPower,
-      liveCloudCover: weatherData.current.cloudCover,
-    });
-
-    if (!analysisOutput) {
-      throw new Error("AI model did not return an analysis.");
-    }
-    
     // 4. Calculate full-day forecast metrics
     const dailyForecast = calculateFullDayForecast(weatherData.forecast, input.systemSize, input.kwhPrice, systemLoss);
 
+    let performanceAnalysis: string;
+
+    try {
+        // 3. Try to call the AI model ONLY to generate the analysis, using the accurate data.
+        const { output: analysisOutput } = await generateAnalysisPrompt({
+            liveOutputPower,
+            forecastOutputPower,
+            clearSkyOutputPower,
+            liveCloudCover: weatherData.current.cloudCover,
+        });
+
+        if (!analysisOutput) {
+            throw new Error("AI model did not return an analysis.");
+        }
+        performanceAnalysis = analysisOutput.performanceAnalysis;
+
+    } catch (error) {
+        console.error("AI part of performance simulation failed, using fallback text.", error);
+        performanceAnalysis = "تعذر الحصول على تحليل الذكاء الاصطناعي. يرجى مراجعة الأرقام ومقارنة الأداء الفعلي بالمتوقع والمثالي.";
+    }
 
     // 5. Combine calculated data with AI analysis for the final response
     return {
       liveOutputPower,
       forecastOutputPower,
       clearSkyOutputPower,
-      performanceAnalysis: analysisOutput.performanceAnalysis,
+      performanceAnalysis: performanceAnalysis,
       weather: weatherData,
       dailyForecast: dailyForecast,
     };
   }
 );
-
-    

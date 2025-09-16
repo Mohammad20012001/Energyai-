@@ -113,7 +113,7 @@ const suggestStringConfigurationFlow = ai.defineFlow(
             ...calculatedData.arrayConfig,
             isCurrentSafe,
         },
-        reasoning: `تم تحديد المدى الآمن لعدد الألواح بين ${calculatedData.minPanels} و ${calculatedData.maxPanels} لوحًا. يضمن هذا النطاق أن جهد السلسلة لن يتجاوز الحد الأقصى للعاكس في الطقس البارد، وسيبقى ضمن نطاق تشغيل MPPT في الطقس الحار. العدد الموصى به هو ${calculatedData.optimalPanels} لتحقيق أفضل أداء.`,
+        reasoning: `ملاحظة: تعذر الحصول على تحليل الذكاء الاصطناعي. هذا شرح مبسط للنتائج. تم تحديد المدى الآمن لعدد الألواح بين ${calculatedData.minPanels} و ${calculatedData.maxPanels} لوحًا. يضمن هذا النطاق أن جهد السلسلة لن يتجاوز الحد الأقصى للعاكس في الطقس البارد، وسيبقى ضمن نطاق تشغيل MPPT في الطقس الحار. العدد الموصى به هو ${calculatedData.optimalPanels} لتحقيق أفضل أداء.`,
       };
     }
   }

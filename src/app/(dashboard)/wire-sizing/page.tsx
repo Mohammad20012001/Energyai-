@@ -52,15 +52,15 @@ export default function WireSizingPage() {
     setIsLoading(true);
     setResult(null);
     try {
-      // The suggestWireSize flow now uses the hybrid model (Physics + AI)
       const response = await suggestWireSize(values);
       setResult(response);
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "فشل في الحصول على اقتراح من الذكاء الاصطناعي.";
       console.error("Error fetching wire size suggestion:", error);
       toast({
         variant: "destructive",
-        title: "خطأ في الاتصال",
-        description: "فشل في الحصول على اقتراح من الذكاء الاصطناعي. يرجى المحاولة مرة أخرى.",
+        title: "خطأ",
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
