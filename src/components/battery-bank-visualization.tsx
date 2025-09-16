@@ -41,10 +41,8 @@ export function BatteryBankVisualization({
         ))}
       </div>
       <div className="text-center mt-4 text-xs text-muted-foreground font-code">
-        يعرض {parallelStrings} سلاسل على التوازي، كل منها تحتوي على {batteriesInSeries} بطاريات موصولة على التوالي.
+        يعرض {parallelStrings} {parallelStrings > 2 ? 'سلاسل' : 'سلسلتين'} على التوازي، كل منها تحتوي على {batteriesInSeries} {batteriesInSeries > 2 ? 'بطاريات' : 'بطاريتين'} موصولة على التوالي.
       </div>
     </div>
   );
 }
-
-    
