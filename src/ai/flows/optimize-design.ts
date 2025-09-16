@@ -41,14 +41,12 @@ Based on the final, calculated data below, write a clear, step-by-step reasoning
 - User's Available Area: {{{surfaceArea}}} m²
 
 **Your Task:**
-Write the 'reasoning' text. Explain **why** this specific system size was chosen.
-You MUST explicitly mention which constraint was the limiting factor (consumption/law or area).
+Write ONLY the 'reasoning' text. Explain **why** this specific system size was chosen using the exact corresponding template below. Do not add any extra words or introductions.
 
 - **If 'limitingFactor' is 'consumption':** "تم تحديد حجم النظام بـ {{{finalSystemSize}}} كيلوواط لتغطية استهلاكك الشهري بالكامل ({{{monthlyConsumption}}} كيلوواط/ساعة)، وهو الحد الأقصى الذي يسمح به قانون صافي القياس في الأردن. هذا النظام يتناسب مع مساحتك المتاحة، ويقدم جدوى مالية ممتازة على المدى الطويل."
 - **If 'limitingFactor' is 'area':** "بناءً على مساحتك المتاحة البالغة {{{surfaceArea}}} متر مربع، تم تحديد حجم النظام الأقصى بـ {{{finalSystemSize}}} كيلوواط. هذا النظام يغطي جزءًا كبيرًا من استهلاكك وهو أكبر ما يمكن تركيبه، مما يحقق أفضل عائد ممكن من المساحة المتوفرة."
 
-Briefly justify the component choices (inverter, panels, etc.).
-The response must be ONLY the reasoning text in Arabic.
+The response must be ONLY the reasoning text in Arabic, exactly as templated.
 `,
 });
 
@@ -99,14 +97,14 @@ const optimizeDesignFlow = ai.defineFlow(
     } catch (error) {
         console.error("AI part of design optimization failed, returning calculation-only result.", error);
 
-        // Step 3 (Fallback Case): If AI fails, return calculations with default, but specific, text.
+        // Step 3 (Fallback Case): If AI fails, return calculations with a direct, specific text.
         const fallbackReasoning = calculatedData.limitingFactor === 'consumption'
-            ? `تم تحديد حجم النظام بـ ${calculatedData.panelConfig.totalDcPower.toFixed(1)} كيلوواط لتغطية استهلاكك الشهري بالكامل (${processedInput.monthlyConsumption.toFixed(0)} كيلوواط/ساعة)، وهو الحد الأقصى الذي يسمح به قانون صافي القياس. هذا النظام يتناسب مع مساحتك المتاحة.`
+            ? `تم تحديد حجم النظام بـ ${calculatedData.panelConfig.totalDcPower.toFixed(1)} كيلوواط لتغطية استهلاكك الشهري بالكامل (${processedInput.monthlyConsumption.toFixed(0)} كيلوواط/ساعة)، وهو الحد الأقصى الذي يسمح به قانون صافي القياس في الأردن. هذا النظام يتناسب مع مساحتك المتاحة.`
             : `بناءً على مساحتك المتاحة البالغة ${processedInput.surfaceArea} متر مربع، تم تحديد حجم النظام الأقصى بـ ${calculatedData.panelConfig.totalDcPower.toFixed(1)} كيلوواط. هذا النظام هو أكبر ما يمكن تركيبه، مما يحقق أفضل عائد ممكن من المساحة المتوفرة.`;
 
         return {
             ...calculatedData,
-            reasoning: `ملاحظة: تعذر الحصول على تحليل الذكاء الاصطناعي. هذا شرح مبسط للنتائج. ${fallbackReasoning}`,
+            reasoning: fallbackReasoning,
         };
     }
   }
