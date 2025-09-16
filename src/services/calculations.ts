@@ -1,4 +1,5 @@
 
+
 /**
  * @fileoverview This file contains pure, physics-based calculation functions.
  * It follows standard electrical engineering formulas (IEC/NEC/IEEE) and does not involve AI.
@@ -241,7 +242,7 @@ export function calculateFinancialViability(input: FinancialViabilityInput): Fin
         degradation: number,
         loc: keyof typeof monthlyPSSH
     ): FinancialViabilityResult => {
-        const totalInvestment = size * 1000 * cost;
+        const totalInvestment = size * cost;
         const systemLossFactor = 1 - loss / 100;
         const degradationFactor = 1 - degradation / 100;
         const locationPSSH = monthlyPSSH[loc];
@@ -262,9 +263,10 @@ export function calculateFinancialViability(input: FinancialViabilityInput): Fin
         const totalAnnualProduction = monthlyBreakdown.reduce((sum, item) => sum + item.production, 0);
         const firstYearAnnualRevenue = totalAnnualProduction * price;
         
-        let paybackPeriodMonths = Infinity;
+        let paybackPeriodMonths: number = 301; // Default to > 25 years
         let cumulativeRevenue = 0;
         const cashFlowAnalysis: CashFlowPoint[] = [{ year: 0, cashFlow: -totalInvestment }];
+        let paybackFound = false;
 
         for (let year = 1; year <= 25; year++) {
             const currentYearProduction = totalAnnualProduction * Math.pow(degradationFactor, year - 1);
@@ -273,34 +275,35 @@ export function calculateFinancialViability(input: FinancialViabilityInput): Fin
             cumulativeRevenue += currentYearRevenue;
             cashFlowAnalysis.push({ year: year, cashFlow: cumulativeRevenue - totalInvestment });
 
-            if (paybackPeriodMonths === Infinity && cumulativeRevenue >= totalInvestment) {
+            if (!paybackFound && cumulativeRevenue >= totalInvestment) {
                 const remainingInvestment = totalInvestment - revenueUpToPreviousYear;
                 const monthlyRevenueThisYear = currentYearRevenue / 12;
                 const monthsIntoYear = monthlyRevenueThisYear > 0 ? Math.ceil(remainingInvestment / monthlyRevenueThisYear) : 0;
                 paybackPeriodMonths = ((year - 1) * 12) + monthsIntoYear;
+                paybackFound = true;
             }
         }
         
         const netProfit25Years = cumulativeRevenue - totalInvestment;
-        if (paybackPeriodMonths > 25 * 12) paybackPeriodMonths = Infinity;
         
         // The sensitivity calculation part is now self-contained for reuse.
         const calculateSensitivityPoint = (sensitivityCost: number, sensitivityPrice: number) => {
-             const investment = size * 1000 * sensitivityCost;
+             const investment = size * sensitivityCost;
              let cumeRevenue = 0;
-             let paybackMonths = Infinity;
+             let paybackMonths: number = 301;
+             let pFound = false;
              for (let y = 1; y <= 25; y++) {
                  const annualProd = totalAnnualProduction * Math.pow(degradationFactor, y - 1);
                  const annualRevenue = annualProd * sensitivityPrice;
                  const prevCumeRevenue = cumeRevenue;
                  cumeRevenue += annualRevenue;
-                 if (paybackMonths === Infinity && cumeRevenue >= investment) {
+                 if (!pFound && cumeRevenue >= investment) {
                      const remainingInv = investment - prevCumeRevenue;
                      const monthlyRev = annualRevenue / 12;
                      paybackMonths = ((y - 1) * 12) + (monthlyRev > 0 ? Math.ceil(remainingInv / monthlyRev) : 0);
+                     pFound = true;
                  }
              }
-             if (paybackMonths > 300) paybackMonths = Infinity;
              const netProfit = cumeRevenue - investment;
              return { paybackPeriodMonths: paybackMonths, netProfit25Years: netProfit };
         };
@@ -331,7 +334,7 @@ export function calculateFinancialViability(input: FinancialViabilityInput): Fin
     };
 
     // Perform the main calculation with the user's input
-    return performCalculation(systemSize, costPerKw * 1000 / 1000, kwhPrice, systemLoss, degradationRate, location);
+    return performCalculation(systemSize, costPerKw, kwhPrice, systemLoss, degradationRate, location);
 }
 
 // #endregion
@@ -590,3 +593,4 @@ export function calculateAdvancedStringConfiguration(input: SuggestStringConfigu
 
 
 // #endregion
+
