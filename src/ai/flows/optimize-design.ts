@@ -99,14 +99,14 @@ const optimizeDesignFlow = ai.defineFlow(
     } catch (error) {
         console.error("AI part of design optimization failed, returning calculation-only result.", error);
 
-        // Step 3 (Fallback Case): If AI fails, return calculations with default text.
-        const defaultReasoning = calculatedData.limitingFactor === 'consumption'
-            ? `تم تحديد حجم النظام بـ ${calculatedData.panelConfig.totalDcPower} كيلوواط لتغطية استهلاكك الشهري، وهو ما يعتبر الحد الأقصى المسموح به قانونيًا أو المطلوب. هذا النظام هو الأمثل لاحتياجاتك.`
-            : `تم تحديد حجم النظام بـ ${calculatedData.panelConfig.totalDcPower} كيلوواط بناءً على المساحة المتاحة لديك. هذا هو أكبر نظام يمكن تركيبه، مما يزيد من العائد الاستثماري للمساحة.`;
+        // Step 3 (Fallback Case): If AI fails, return calculations with default, but specific, text.
+        const fallbackReasoning = calculatedData.limitingFactor === 'consumption'
+            ? `تم تحديد حجم النظام بـ ${calculatedData.panelConfig.totalDcPower.toFixed(1)} كيلوواط لتغطية استهلاكك الشهري بالكامل (${processedInput.monthlyConsumption.toFixed(0)} كيلوواط/ساعة)، وهو الحد الأقصى الذي يسمح به قانون صافي القياس. هذا النظام يتناسب مع مساحتك المتاحة.`
+            : `بناءً على مساحتك المتاحة البالغة ${processedInput.surfaceArea} متر مربع، تم تحديد حجم النظام الأقصى بـ ${calculatedData.panelConfig.totalDcPower.toFixed(1)} كيلوواط. هذا النظام هو أكبر ما يمكن تركيبه، مما يحقق أفضل عائد ممكن من المساحة المتوفرة.`;
 
         return {
             ...calculatedData,
-            reasoning: `ملاحظة: تعذر الحصول على تحليل الذكاء الاصطناعي بسبب ضغط على الشبكة. هذا شرح مبسط للنتائج. ${defaultReasoning}`,
+            reasoning: `ملاحظة: تعذر الحصول على تحليل الذكاء الاصطناعي. هذا شرح مبسط للنتائج. ${fallbackReasoning}`,
         };
     }
   }
