@@ -1,3 +1,4 @@
+
 'use client';
 
 import {useState} from 'react';
@@ -77,7 +78,7 @@ export function StringConfigurationClientPage() {
     setResult(null);
     try {
       const response = await suggestStringConfigurationAction(values);
-      if (response.success) {
+      if (response.success && response.data) {
         setResult(response.data);
       } else {
         toast({
@@ -275,6 +276,8 @@ export function StringConfigurationClientPage() {
                 <SystemVisualization
                   panelsPerString={result.panelsPerString}
                   parallelStrings={result.parallelStrings}
+                  panelVoltage={form.getValues('panelVoltage')}
+                  panelCurrent={form.getValues('panelCurrent')}
                 />
               </CardContent>
             </Card>

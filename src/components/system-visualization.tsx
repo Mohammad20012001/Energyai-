@@ -1,25 +1,33 @@
 interface SystemVisualizationProps {
   panelsPerString: number;
   parallelStrings: number;
+  panelVoltage: number;
+  panelCurrent: number;
 }
 
 export function SystemVisualization({
   panelsPerString,
   parallelStrings,
+  panelVoltage,
+  panelCurrent,
 }: SystemVisualizationProps) {
   const strings = Array.from({ length: parallelStrings });
   const panels = Array.from({ length: panelsPerString });
 
-  // The check for large configurations has been removed to always render the visualization.
-  // The overflow-x-auto on the parent container will handle large widths.
+  const stringVoltage = (panelsPerString * panelVoltage).toFixed(1);
+  const stringCurrent = panelCurrent.toFixed(1);
+  const totalSystemVoltage = stringVoltage; // Voltage is the same in parallel
+  const totalSystemCurrent = (parallelStrings * panelCurrent).toFixed(1);
 
   return (
     <div className="bg-muted/30 p-4 rounded-lg border overflow-x-auto">
       <div className="flex justify-center gap-4 min-w-max">
         {strings.map((_, stringIndex) => (
-          <div key={stringIndex} className="flex flex-col items-center gap-1">
-            <div className="font-code text-xs text-muted-foreground">السلسلة {stringIndex + 1}</div>
-            <div className="flex flex-col gap-1 p-2 border-2 border-dashed border-accent/50 rounded-md">
+          <div key={stringIndex} className="flex flex-col items-center gap-2">
+            <div className="font-code text-xs text-muted-foreground">
+              السلسلة {stringIndex + 1}
+            </div>
+            <div className="flex flex-col gap-1 p-2 border-2 border-dashed border-accent/50 rounded-md bg-background/30">
               {panels.map((_, panelIndex) => (
                 <div
                   key={panelIndex}
@@ -43,11 +51,19 @@ export function SystemVisualization({
                 </div>
               ))}
             </div>
+            <div className="text-xs font-code text-center mt-1 text-muted-foreground">
+                <div>{stringVoltage}V</div>
+                <div>{stringCurrent}A</div>
+            </div>
           </div>
         ))}
       </div>
-      <div className="text-center mt-4 text-xs text-muted-foreground font-code">
-        يعرض {parallelStrings} سلاسل متوازية، كل منها يحتوي على {panelsPerString} ألواح موصولة على التوالي.
+      <div className="mt-4 pt-4 border-t border-dashed text-center">
+        <div className="text-sm font-semibold mb-2">الإجمالي الخارج من النظام</div>
+        <div className="flex justify-center gap-6 font-code text-lg">
+            <div className="font-bold text-primary">{totalSystemVoltage} V</div>
+            <div className="font-bold text-primary">{totalSystemCurrent} A</div>
+        </div>
       </div>
     </div>
   );
