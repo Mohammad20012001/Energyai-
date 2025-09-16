@@ -30,8 +30,12 @@ export async function suggestStringConfiguration(
 const reasoningPrompt = ai.definePrompt({
   name: 'generateStringConfigReasoningPrompt',
   input: { schema: z.object({
-    ...SuggestStringConfigurationInputSchema.shape,
-    ...SuggestStringConfigurationOutputSchema.omit({ commonWiringErrors: true, reasoning: true }).shape,
+    panelVoltage: z.number(),
+    panelCurrent: z.number(),
+    desiredVoltage: z.number(),
+    desiredCurrent: z.number(),
+    panelsPerString: z.number(),
+    parallelStrings: z.number(),
   })},
   output: { schema: z.object({
     commonWiringErrors: SuggestStringConfigurationOutputSchema.shape.commonWiringErrors,
