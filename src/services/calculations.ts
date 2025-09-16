@@ -1,4 +1,5 @@
 
+
 /**
  * @fileoverview This file contains pure, physics-based calculation functions.
  * It follows standard electrical engineering formulas (IEC/NEC/IEEE) and does not involve AI.
@@ -359,7 +360,7 @@ export function calculateBatteryBank(input: BatteryCalculationInput): BatteryCal
     if (input.appliances && input.appliances.length > 0) {
         const applianceLoad = input.appliances.reduce((total, appliance) => {
              if (appliance && typeof appliance.power === 'number' && typeof appliance.quantity === 'number' && typeof appliance.hours === 'number') {
-                return total + (appliance.power * appliance.quantity * hours) / 1000;
+                return total + (appliance.power * appliance.quantity * appliance.hours) / 1000;
             }
             return total;
         }, 0);
@@ -515,41 +516,20 @@ export function calculateOptimalDesign(input: OptimizeDesignInput): CalculationO
 
 // #region Advanced String Configuration Calculator
 
-type AdvancedStringConfigResult = Omit<SuggestStringConfigurationOutput, 'reasoning'>;
+type AdvancedStringConfigResult = Omit<SuggestStringConfigurationOutput, 'reasoning' | 'arrayConfig'> & {
+    arrayConfig: Omit<SuggestStringConfigurationOutput['arrayConfig'], 'isCurrentSafe'>;
+};
+
 
 /**
  * Calculates the safe and optimal range for the number of panels in a series string,
- * considering inverter specifications and temperature effects. This is a critical
- * calculation for professional solar design.
- *
- * Logic:
- * 1.  **Calculate Voltage Adjusted for Temperature:**
- *     - At minimum temperature, panel voltage (Voc) *increases*. This is critical for safety.
- *     - At maximum temperature, panel voltage (Vmp) *decreases*. This is critical for performance.
- *     The formula is: V_adj = V_base * (1 + (Temp - Temp_STC) * (Coef / 100))
- *     where STC (Standard Test Conditions) temperature is 25°C.
- *
- * 2.  **Determine Maximum Panels (Safety Limit):**
- *     - Calculate the adjusted Voc of a single panel at the coldest expected temperature.
- *     - Find the maximum number of panels whose combined adjusted Voc does not exceed the inverter's maximum input voltage.
- *     - `maxPanels = floor(Inverter Max Voltage / Adjusted Cold Voc)`
- *
- * 3.  **Determine Minimum Panels (Performance Limit):**
- *     - Calculate the adjusted Vmp of a single panel at the hottest expected temperature.
- *     - Find the minimum number of panels whose combined adjusted Vmp is *greater than* the inverter's minimum MPPT voltage.
- *     - `minPanels = ceil(Inverter MPPT Min / Adjusted Hot Vmp)`
- * 
- * 4.  **Determine Optimal Panels:**
- *     - A common rule of thumb is to target the midpoint of the MPPT range at standard temperature (25°C)
- *       to allow for fluctuations in either direction.
- *     - `optimalPanels = round((MPPT_Min + MPPT_Max) / 2 / Vmp_STC)`
- *     - This value is then clamped to be within the calculated min/max safe range.
+ * and then designs the full array configuration based on a target system size.
  *
  * @param input The panel, inverter, and environmental specifications.
- * @returns The min, max, and optimal number of panels per string, and the critical voltage values.
+ * @returns The min, max, and optimal number of panels per string, critical voltage values, and the full array configuration.
  */
 export function calculateAdvancedStringConfiguration(input: SuggestStringConfigurationInput): AdvancedStringConfigResult {
-    const { vmp, voc, tempCoefficient, mpptMin, mpptMax, inverterMaxVolt, minTemp, maxTemp } = input;
+    const { vmp, voc, tempCoefficient, mpptMin, mpptMax, inverterMaxVolt, minTemp, maxTemp, targetSystemSize, panelWattage, imp, isc, inverterMaxCurrent } = input;
     const STC_TEMP = 25; // Standard Test Condition temperature
 
     // 1. Calculate adjusted voltages for one panel at temp extremes
@@ -567,27 +547,27 @@ export function calculateAdvancedStringConfiguration(input: SuggestStringConfigu
     let optimalPanels = Math.round(targetOptimalVoltage / vmp);
 
     // 5. Clamp the optimal value to be within the safe range
-    if (optimalPanels < minPanels) {
-        optimalPanels = minPanels;
-    }
-    if (optimalPanels > maxPanels) {
-        optimalPanels = maxPanels;
-    }
+    if (optimalPanels < minPanels) optimalPanels = minPanels;
+    if (optimalPanels > maxPanels) optimalPanels = maxPanels;
     
     // Handle cases where no valid configuration is possible
-    if (minPanels > maxPanels) {
-        // This indicates an incompatibility between panel and inverter.
-        // Return 0s to signify failure, which can be handled by the UI.
+    if (minPanels > maxPanels || optimalPanels <= 0) {
         return {
-            minPanels: 0,
-            maxPanels: 0,
-            optimalPanels: 0,
-            maxStringVocAtMinTemp: 0,
-            minStringVmpAtMaxTemp: 0,
+            minPanels: minPanels > maxPanels ? minPanels : 0, maxPanels, optimalPanels: 0,
+            maxStringVocAtMinTemp: 0, minStringVmpAtMaxTemp: 0,
+            arrayConfig: { totalPanels: 0, parallelStrings: 0, totalCurrent: 0 }
         };
     }
 
-    // 6. Calculate the critical voltages for the report
+    // 6. Calculate full array configuration based on target size and OPTIMAL string length
+    const totalPanels = Math.ceil((targetSystemSize * 1000) / panelWattage);
+    const parallelStrings = Math.ceil(totalPanels / optimalPanels);
+    
+    // 7. Calculate final array current for safety check (using Isc for worst-case)
+    // A 1.25 safety factor is standard (NEC 690.8(A)(1))
+    const totalCurrent = parallelStrings * isc * 1.25;
+
+    // 8. Calculate the critical voltages for the report
     const maxStringVocAtMinTemp = maxPanels * vocAtMinTemp;
     const minStringVmpAtMaxTemp = minPanels * vmpAtMaxTemp;
 
@@ -597,6 +577,11 @@ export function calculateAdvancedStringConfiguration(input: SuggestStringConfigu
         optimalPanels,
         maxStringVocAtMinTemp,
         minStringVmpAtMaxTemp,
+        arrayConfig: {
+            totalPanels: totalPanels,
+            parallelStrings: parallelStrings,
+            totalCurrent: parseFloat(totalCurrent.toFixed(2)),
+        }
     };
 }
 

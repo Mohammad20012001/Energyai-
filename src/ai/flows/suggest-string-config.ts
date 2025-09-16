@@ -1,4 +1,5 @@
 
+
 'use server';
 
 /**
@@ -32,7 +33,8 @@ const reasoningPrompt = ai.definePrompt({
   name: 'generateAdvancedStringConfigReasoningPrompt',
   input: { schema: z.object({
     ...SuggestStringConfigurationInputSchema.shape,
-    ...SuggestStringConfigurationOutputSchema.omit({ reasoning: true }).shape,
+    ...SuggestStringConfigurationOutputSchema.omit({ reasoning: true, arrayConfig: true }).shape,
+    arrayConfig: SuggestStringConfigurationOutputSchema.shape.arrayConfig.omit({ isCurrentSafe: true }),
   })},
   output: { schema: z.object({
     reasoning: SuggestStringConfigurationOutputSchema.shape.reasoning,
@@ -55,11 +57,11 @@ const reasoningPrompt = ai.definePrompt({
 - Voltage at Hottest Temp (with {{{minPanels}}} panels): {{{minStringVmpAtMaxTemp}}}V
 
 **Your Task:**
-Write the 'reasoning' text in Arabic. Explain step-by-step **why** this specific range ({{{minPanels}}}-{{{maxPanels}}} panels) was determined.
+Write the 'reasoning' text in Arabic. Explain step-by-step **why** this specific range ({{{minPanels}}}-{{{maxPanels}}} panels) was determined for the string length.
 
-1.  **Start with the safety limit:** Explain that at {{{minTemp}}}°C, the voltage of each panel increases. To avoid exceeding the inverter's absolute maximum voltage of {{{inverterMaxVolt}}}V, the string cannot have more than {{{maxPanels}}} panels. Mention the calculated maximum voltage of {{{maxStringVocAtMinTemp}}}V.
-2.  **Explain the performance limit:** Explain that at {{{maxTemp}}}°C, the voltage of each panel decreases. To ensure the string voltage stays within the inverter's MPPT range (above {{{mpptMin}}}V), the string must have at least {{{minPanels}}} panels. Mention the calculated minimum voltage of {{{minStringVmpAtMaxTemp}}}V.
-3.  **Justify the recommendation:** Explain why {{{optimalPanels}}} panels is the recommended number (e.g., it balances safety margins and keeps the operating voltage (Vmp) well within the MPPT range for most of the year, maximizing energy harvest).
+1.  **Start with the safety limit (Max Panels):** Explain that at {{{minTemp}}}°C, the voltage of each panel increases. To avoid exceeding the inverter's absolute maximum voltage of {{{inverterMaxVolt}}}V, the string cannot have more than {{{maxPanels}}} panels. Mention the calculated maximum voltage of {{{maxStringVocAtMinTemp}}}V.
+2.  **Explain the performance limit (Min Panels):** Explain that at {{{maxTemp}}}°C, the voltage of each panel decreases. To ensure the string voltage stays within the inverter's MPPT range (above {{{mpptMin}}}V), the string must have at least {{{minPanels}}} panels. Mention the calculated minimum voltage of {{{minStringVmpAtMaxTemp}}}V.
+3.  **Justify the recommendation (Optimal Panels):** Explain why {{{optimalPanels}}} panels is the recommended number (e.g., it balances safety margins and keeps the operating voltage (Vmp) well within the MPPT range for most of the year, maximizing energy harvest).
 
 The response must be ONLY the reasoning text in Arabic.
 `,
@@ -77,6 +79,9 @@ const suggestStringConfigurationFlow = ai.defineFlow(
     // Step 1: Get the definitive calculation from the physics-based service.
     const calculatedData = calculateAdvancedStringConfiguration(input);
 
+    // Step 1.5: Perform the current safety check.
+    const isCurrentSafe = calculatedData.arrayConfig.totalCurrent <= input.inverterMaxCurrent;
+
     try {
       // Step 2: Try to call the AI model with the input AND the calculated data to generate the reasoning.
       const { output: reasoningOutput } = await reasoningPrompt({
@@ -91,6 +96,10 @@ const suggestStringConfigurationFlow = ai.defineFlow(
       // Step 3 (Success Case): Combine the physics-based calculation with the AI-generated text.
       return {
         ...calculatedData,
+        arrayConfig: {
+            ...calculatedData.arrayConfig,
+            isCurrentSafe,
+        },
         reasoning: reasoningOutput.reasoning,
       };
 
@@ -100,6 +109,10 @@ const suggestStringConfigurationFlow = ai.defineFlow(
       // Step 3 (Fallback Case): If the AI call fails, return the accurate calculations with default text.
       return {
         ...calculatedData,
+        arrayConfig: {
+            ...calculatedData.arrayConfig,
+            isCurrentSafe,
+        },
         reasoning: `تم تحديد المدى الآمن لعدد الألواح بين ${calculatedData.minPanels} و ${calculatedData.maxPanels} لوحًا. يضمن هذا النطاق أن جهد السلسلة لن يتجاوز الحد الأقصى للعاكس في الطقس البارد، وسيبقى ضمن نطاق تشغيل MPPT في الطقس الحار. العدد الموصى به هو ${calculatedData.optimalPanels} لتحقيق أفضل أداء.`,
       };
     }

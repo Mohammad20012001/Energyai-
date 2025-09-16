@@ -1,4 +1,5 @@
 
+
       
 import {z} from 'zod';
 
@@ -6,17 +7,22 @@ import {z} from 'zod';
 export const SuggestStringConfigurationInputSchema = z.object({
   // Panel Specs
   vmp: z.number().describe("الجهد عند أقصى قدرة (Vmp) للوح الواحد."),
+  imp: z.number().describe("التيار عند أقصى قدرة (Imp) للوح الواحد."),
   voc: z.number().describe("جهد الدائرة المفتوحة (Voc) للوح الواحد."),
+  isc: z.number().describe("تيار الدائرة القصيرة (Isc) للوح الواحد."),
   tempCoefficient: z.number().describe("معامل الحرارة للجهد، كنسبة مئوية لكل درجة مئوية (e.g., -0.32)."),
-  
+  panelWattage: z.number().describe("قدرة اللوح الواحد بالواط."),
+
   // Inverter Specs
   mpptMin: z.number().describe("الحد الأدنى لجهد تشغيل MPPT للعاكس."),
   mpptMax: z.number().describe("الحد الأقصى لجهد تشغيل MPPT للعاكس."),
   inverterMaxVolt: z.number().describe("الحد الأقصى لجهد الدخل الذي يتحمله العاكس."),
+  inverterMaxCurrent: z.number().describe("الحد الأقصى لتيار الدخل الذي يتحمله العاكس."),
   
-  // Environmental Specs
+  // Environmental & System Specs
   minTemp: z.number().describe("أدنى درجة حرارة متوقعة في الموقع (شتاءً)."),
   maxTemp: z.number().describe("أقصى درجة حرارة متوقعة على سطح الألواح (صيفًا)."),
+  targetSystemSize: z.number().describe("حجم النظام الإجمالي المستهدف بالكيلوواط (kWp)."),
 });
 export type SuggestStringConfigurationInput = z.infer<
   typeof SuggestStringConfigurationInputSchema
@@ -29,6 +35,12 @@ export const SuggestStringConfigurationOutputSchema = z.object({
   reasoning: z.string().describe("شرح باللغة العربية يوضح سبب هذا النطاق، مع الأخذ بعين الاعتبار تأثيرات درجة الحرارة على الجهد."),
   maxStringVocAtMinTemp: z.number().describe("الجهد المحسوب للسلسلة ذات العدد الأقصى من الألواح عند أدنى درجة حرارة."),
   minStringVmpAtMaxTemp: z.number().describe("الجهد المحسوب للسلسلة ذات العدد الأدنى من الألواح عند أقصى درجة حرارة."),
+  arrayConfig: z.object({
+    totalPanels: z.number().describe("العدد الإجمالي للألواح المطلوبة لتحقيق حجم النظام المستهدف."),
+    parallelStrings: z.number().describe("عدد السلاسل المتوازية اللازمة."),
+    totalCurrent: z.number().describe("التيار الإجمالي للمصفوفة (معامل أمان 1.25 مطبق)."),
+    isCurrentSafe: z.boolean().describe("ما إذا كان التيار الإجمالي للمصفوفة ضمن الحد الآمن للعاكس."),
+  }).describe("تكوين المصفوفة الكاملة بناءً على حجم النظام المستهدف."),
 });
 export type SuggestStringConfigurationOutput = z.infer<
   typeof SuggestStringConfigurationOutputSchema
@@ -188,4 +200,5 @@ export type InspectionResponse =
     
 
     
+
 
