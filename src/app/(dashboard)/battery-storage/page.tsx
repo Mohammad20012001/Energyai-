@@ -4,6 +4,7 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { z } from "zod";
+import Link from "next/link";
 import { BatteryCharging, Rows, Columns, ArrowRight, Loader2, PlusCircle, AlertTriangle, Calculator, BrainCircuit } from "lucide-react";
 import { useReport } from "@/context/ReportContext";
 
@@ -129,6 +130,8 @@ export default function BatteryStoragePage() {
       description: "تمت إضافة بطاقة نظام البطاريات إلى تقريرك.",
     });
   };
+
+  const finalDailyLoad = result?.finalDailyLoadKwh ?? form.getValues('dailyLoadKwh');
 
   return (
     <div className="flex flex-col gap-8">
@@ -341,10 +344,18 @@ export default function BatteryStoragePage() {
                 </AlertDescription>
               </Alert>
 
-              <Button onClick={handleAddToReport} className="w-full">
-                <PlusCircle className="ml-2 h-4 w-4" />
-                أضف إلى التقرير
-              </Button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Button onClick={handleAddToReport} variant="secondary">
+                    <PlusCircle className="ml-2 h-4 w-4" />
+                    أضف إلى التقرير
+                </Button>
+                 <Button asChild>
+                    <Link href={`/design-optimizer?monthlyConsumption=${(finalDailyLoad * 30).toFixed(0)}`}>
+                        <BrainCircuit className="ml-2 h-4 w-4"/>
+                        صمم نظام الألواح لهذه الأحمال
+                    </Link>
+                </Button>
+              </div>
             </div>
           )}
 

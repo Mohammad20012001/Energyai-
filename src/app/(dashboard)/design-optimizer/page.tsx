@@ -99,15 +99,25 @@ export default function DesignOptimizerPage() {
   useEffect(() => {
     const surfaceArea = searchParams.get('surfaceArea');
     const panelWattage = searchParams.get('panelWattage');
+    const monthlyConsumption = searchParams.get('monthlyConsumption');
+    
+    let shouldSubmit = false;
 
     if (surfaceArea) {
       form.setValue('surfaceArea', parseFloat(surfaceArea), { shouldValidate: true });
+      shouldSubmit = true;
     }
     if (panelWattage) {
       form.setValue('panelWattage', parseFloat(panelWattage), { shouldValidate: true });
+      shouldSubmit = true;
+    }
+     if (monthlyConsumption) {
+      form.setValue('calculationMode', 'consumption');
+      form.setValue('monthlyConsumption', parseFloat(monthlyConsumption), { shouldValidate: true });
+      shouldSubmit = true;
     }
     // If params exist, automatically trigger calculation
-    if (surfaceArea || panelWattage) {
+    if (shouldSubmit) {
         form.handleSubmit(onSubmit)();
     }
   }, [searchParams, form]);

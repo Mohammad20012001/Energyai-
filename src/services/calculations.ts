@@ -357,6 +357,7 @@ export interface BatteryCalculationResult {
     batteriesInSeries: number;
     parallelStrings: number;
     totalBatteries: number;
+    finalDailyLoadKwh: number;
 }
 
 /**
@@ -384,7 +385,7 @@ export interface BatteryCalculationResult {
  */
 export function calculateBatteryBank(input: BatteryCalculationInput): BatteryCalculationResult {
     // Recalculate daily load from appliances if provided and non-empty, otherwise use the direct input
-    let dailyLoadKwh = input.dailyLoadKwh;
+    let finalDailyLoadKwh = input.dailyLoadKwh;
     if (input.appliances && input.appliances.length > 0) {
         const applianceLoad = input.appliances.reduce((total, appliance) => {
              if (appliance && typeof appliance.power === 'number' && typeof appliance.quantity === 'number' && typeof appliance.hours === 'number') {
@@ -394,13 +395,13 @@ export function calculateBatteryBank(input: BatteryCalculationInput): BatteryCal
         }, 0);
         // Only use the calculated appliance load if it's a positive number
         if (applianceLoad > 0) {
-            dailyLoadKwh = applianceLoad;
+            finalDailyLoadKwh = applianceLoad;
         }
     }
     
     // 1. Calculate the total energy needed, accounting for DoD and autonomy
     const dodFactor = input.depthOfDischarge / 100;
-    const requiredBankEnergyKwh = (dailyLoadKwh * input.autonomyDays) / dodFactor;
+    const requiredBankEnergyKwh = (finalDailyLoadKwh * input.autonomyDays) / dodFactor;
 
     // 2. Convert the required energy (kWh) to Amp-hours at the desired system voltage
     const requiredBankCapacityAh = (requiredBankEnergyKwh * 1000) / input.systemVoltage;
@@ -420,6 +421,7 @@ export function calculateBatteryBank(input: BatteryCalculationInput): BatteryCal
         batteriesInSeries,
         parallelStrings,
         totalBatteries,
+        finalDailyLoadKwh,
     };
 }
 // #endregion
@@ -511,7 +513,7 @@ export function calculateOptimalDesign(input: OptimizeDesignInput): CalculationO
         },
         financialAnalysis: {
             ...financialAnalysisResult,
-            paybackPeriodYears: financialAnalysisResult.paybackPeriodMonths / 12,
+            paybackPeriodYears: financialAnalysisResult.paybackPeriodMonths > 0 ? financialAnalysisResult.paybackPeriodMonths / 12 : 0,
         },
         limitingFactor: limitingFactor,
     };
