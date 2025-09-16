@@ -1,8 +1,9 @@
+
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { BrainCircuit, ArrowRight, Loader2, Ruler, PlusCircle, Settings, Sun, Maximize, Scale, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +29,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { optimizeDesign } from "@/ai/flows/optimize-design";
 import { OptimizeDesignInputSchema, type OptimizeDesignOutput } from '@/ai/tool-schemas';
@@ -47,8 +49,10 @@ export default function DesignOptimizerPage() {
   const form = useForm<FormValues>({
     resolver: zodResolver(OptimizeDesignInputSchema),
     defaultValues: {
+      calculationMode: 'consumption',
       surfaceArea: 80,
       monthlyConsumption: 700,
+      monthlyBill: 85,
       location: "amman",
       // Advanced defaults
       systemLoss: 15,
@@ -57,6 +61,14 @@ export default function DesignOptimizerPage() {
       kwhPrice: 0.12
     },
   });
+
+  const calculationMode = useWatch({ control: form.control, name: 'calculationMode' });
+
+  useEffect(() => {
+    // When switching tabs, clear the validation error of the other tab
+    form.clearErrors('monthlyConsumption');
+    form.clearErrors('monthlyBill');
+  }, [calculationMode, form]);
 
   async function onSubmit(values: FormValues) {
     setIsLoading(true);
@@ -115,21 +127,58 @@ export default function DesignOptimizerPage() {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 text-right">
+                
+                <Tabs defaultValue="consumption" className="w-full" onValueChange={(value) => form.setValue('calculationMode', value as 'consumption' | 'bill')}>
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="consumption">حسب الاستهلاك</TabsTrigger>
+                        <TabsTrigger value="bill">حسب الفاتورة</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="consumption" className="pt-4">
+                        <FormField
+                            control={form.control}
+                            name="monthlyConsumption"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>متوسط الاستهلاك الشهري (kWh)</FormLabel>
+                                <FormControl>
+                                <Input type="number" placeholder="e.g., 700" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                    </TabsContent>
+                    <TabsContent value="bill" className="pt-4 space-y-4">
+                         <FormField
+                            control={form.control}
+                            name="monthlyBill"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>قيمة الفاتورة الشهرية (دينار)</FormLabel>
+                                <FormControl>
+                                <Input type="number" placeholder="e.g., 85" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                         <FormField
+                          control={form.control}
+                          name="kwhPrice"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>سعر الكيلوواط/ساعة في فاتورتك (دينار)</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                    </TabsContent>
+                </Tabs>
+                
                 <fieldset disabled={isLoading} className="space-y-4">
-                  
-                  <FormField
-                    control={form.control}
-                    name="monthlyConsumption"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>متوسط الاستهلاك الشهري (kWh)</FormLabel>
-                        <FormControl>
-                          <Input type="number" placeholder="e.g., 700" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
                   <FormField
                     control={form.control}
                     name="surfaceArea"
@@ -209,20 +258,7 @@ export default function DesignOptimizerPage() {
                             <FormItem>
                               <FormLabel>تكلفة الواط الشمسي (دينار)</FormLabel>
                               <FormControl>
-                                <Input type="number" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                         <FormField
-                          control={form.control}
-                          name="kwhPrice"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>سعر بيع الكيلوواط/ساعة (دينار)</FormLabel>
-                              <FormControl>
-                                <Input type="number" {...field} />
+                                <Input type="number" step="0.01" {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>

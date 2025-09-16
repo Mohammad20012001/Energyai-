@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -60,15 +61,28 @@ const optimizeDesignFlow = ai.defineFlow(
     outputSchema: OptimizeDesignOutputSchema,
   },
   async (input) => {
+    
+    // Pre-process input: if bill is provided, calculate consumption
+    let monthlyConsumption = input.monthlyConsumption;
+    if (input.calculationMode === 'bill' && input.monthlyBill && input.kwhPrice > 0) {
+        monthlyConsumption = input.monthlyBill / input.kwhPrice;
+    }
+
+    if (!monthlyConsumption || monthlyConsumption <= 0) {
+        throw new Error("Invalid monthly consumption value. Could not calculate from bill or was not provided.");
+    }
+    
+    const processedInput = { ...input, monthlyConsumption };
+
     // Step 1: Get the definitive calculations from the physics-based service.
-    const calculatedData: CalculationOutput = calculateOptimalDesign(input);
+    const calculatedData: CalculationOutput = calculateOptimalDesign(processedInput);
 
     // Step 2: Call the AI model ONLY to generate the reasoning, using the accurate data.
     const { output: reasoningOutput } = await generateReasoningPrompt({
         finalSystemSize: calculatedData.panelConfig.totalDcPower,
         limitingFactor: calculatedData.limitingFactor,
-        monthlyConsumption: input.monthlyConsumption,
-        surfaceArea: input.surfaceArea,
+        monthlyConsumption: processedInput.monthlyConsumption,
+        surfaceArea: processedInput.surfaceArea,
     });
     
     if (!reasoningOutput) {

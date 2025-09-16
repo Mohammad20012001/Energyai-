@@ -75,14 +75,28 @@ export type SuggestWireSizeOutput = z.infer<typeof SuggestWireSizeOutputSchema>;
 
 // #region Design Optimizer Schemas
 export const OptimizeDesignInputSchema = z.object({
-  monthlyConsumption: z.coerce.number().positive('يجب أن يكون الاستهلاك رقماً موجباً'),
+  calculationMode: z.enum(['consumption', 'bill']),
+  monthlyConsumption: z.coerce.number().optional(),
+  monthlyBill: z.coerce.number().optional(),
   surfaceArea: z.coerce.number().positive('يجب أن تكون المساحة رقماً موجباً'),
   location: z.enum(['amman', 'zarqa', 'irbid', 'aqaba'], {required_error: 'الرجاء اختيار الموقع'}),
   systemLoss: z.coerce.number().min(0).max(99, 'نسبة الفقد يجب أن تكون بين 0 و 99'),
   panelWattage: z.coerce.number().positive('قدرة اللوح يجب أن تكون رقماً موجباً'),
   costPerWatt: z.coerce.number().positive("التكلفة يجب أن تكون رقماً موجباً"),
   kwhPrice: z.coerce.number().positive("السعر يجب أن يكون رقماً موجباً"),
+}).refine(data => {
+    if (data.calculationMode === 'consumption') {
+        return data.monthlyConsumption !== undefined && data.monthlyConsumption > 0;
+    }
+    if (data.calculationMode === 'bill') {
+        return data.monthlyBill !== undefined && data.monthlyBill > 0;
+    }
+    return false;
+}, {
+    message: "الرجاء إدخال قيمة صالحة للاستهلاك أو الفاتورة.",
+    path: ['monthlyConsumption'], // Attach error to a field for UI display
 });
+
 export type OptimizeDesignInput = z.infer<typeof OptimizeDesignInputSchema>;
 
 export const OptimizeDesignOutputSchema = z.object({
@@ -200,5 +214,6 @@ export type InspectionResponse =
     
 
     
+
 
 
