@@ -11,60 +11,90 @@ export function SystemVisualization({
   panelVoltage,
   panelCurrent,
 }: SystemVisualizationProps) {
-  const strings = Array.from({ length: parallelStrings });
+
   const panels = Array.from({ length: panelsPerString });
+  const strings = Array.from({ length: parallelStrings });
 
-  const stringVoltage = (panelsPerString * panelVoltage).toFixed(1);
-  const stringCurrent = panelCurrent.toFixed(1);
-  const totalSystemVoltage = stringVoltage; // Voltage is the same in parallel
-  const totalSystemCurrent = (parallelStrings * panelCurrent).toFixed(1);
-
-  return (
-    <div className="bg-muted/30 p-4 rounded-lg border overflow-x-auto">
-      <div className="flex justify-center gap-4 min-w-max">
-        {strings.map((_, stringIndex) => (
-          <div key={stringIndex} className="flex flex-col items-center gap-2">
-            <div className="font-code text-xs text-muted-foreground">
-              السلسلة {stringIndex + 1}
-            </div>
-            <div className="flex flex-col gap-1 p-2 border-2 border-dashed border-accent/50 rounded-md bg-background/30">
-              {panels.map((_, panelIndex) => (
-                <div
-                  key={panelIndex}
-                  className="w-16 h-10 bg-accent/80 rounded flex items-center justify-center text-accent-foreground shadow-sm"
-                  title={`اللوح ${panelIndex + 1}`}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-6 w-6"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M4 4h16v16H4z" />
-                    <path d="M4 10h16" />
-                    <path d="M10 4v16" />
-                  </svg>
-                </div>
-              ))}
-            </div>
-            <div className="text-xs font-code text-center mt-1 text-muted-foreground">
-                <div>{stringVoltage}V</div>
-                <div>{stringCurrent}A</div>
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="mt-4 pt-4 border-t border-dashed text-center">
-        <div className="text-sm font-semibold mb-2">الإجمالي الخارج من النظام</div>
-        <div className="flex justify-center gap-6 font-code text-lg">
-            <div className="font-bold text-primary">{totalSystemVoltage} V</div>
-            <div className="font-bold text-primary">{totalSystemCurrent} A</div>
+  if (panelsPerString > 12 || parallelStrings > 12) {
+    return (
+      <div className="text-center text-muted-foreground p-4 border rounded-md">
+        العرض المرئي غير متاح للتكوينات الكبيرة جدًا.
+        <div className="text-sm mt-2">
+            ({parallelStrings} سلاسل x {panelsPerString} لوح)
         </div>
       </div>
+    );
+  }
+
+  const stringVoltage = (panelsPerString * panelVoltage);
+  const totalSystemCurrent = (parallelStrings * panelCurrent);
+
+  return (
+    <div className="space-y-8">
+        {/* Step 1: Building the Series String */}
+        <div>
+            <h3 className="text-lg font-semibold text-center mb-4">الخطوة 1: بناء السلسلة (توصيل التوالي لرفع الجهد)</h3>
+            <div className="bg-muted/30 p-4 rounded-lg border relative">
+                <div className="flex justify-center items-center gap-2">
+                    {/* Connection line */}
+                    <div className="absolute top-1/2 left-0 w-full h-0.5 bg-accent/80 z-0"></div>
+
+                    {panels.map((_, panelIndex) => (
+                        <div key={panelIndex} className="z-10 bg-background p-1 rounded-sm">
+                             <div
+                                className="w-16 h-10 bg-accent/80 rounded flex items-center justify-center text-accent-foreground shadow-sm relative"
+                                title={`لوح ${panelVoltage}V / ${panelCurrent}A`}
+                            >
+                               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16v16H4z" /><path d="M4 10h16" /><path d="M10 4v16" /></svg>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                 <p className="text-xs text-muted-foreground mt-4 text-center max-w-sm mx-auto">
+                    للوصول إلى الجهد المطلوب، نقوم بتوصيل <span className="font-bold text-primary">{panelsPerString}</span> ألواح على <span className="font-bold">التوالي</span>. هذا يجمع الجهد (V) ويبقي التيار (A) ثابتًا.
+                 </p>
+                 <div className="text-center mt-2 text-sm font-code bg-background/50 border rounded-md p-2 w-fit mx-auto">
+                    نتيجة السلسلة الواحدة: <span className="font-bold text-accent-foreground">{stringVoltage.toFixed(1)}V / {panelCurrent.toFixed(1)}A</span>
+                 </div>
+            </div>
+        </div>
+
+        {/* Step 2: Paralleling the Strings */}
+        <div>
+            <h3 className="text-lg font-semibold text-center mb-4">الخطوة 2: بناء المصفوفة (توصيل التوازي لرفع التيار)</h3>
+             <div className="bg-muted/30 p-4 rounded-lg border overflow-x-auto">
+                 <div className="flex justify-center gap-4 min-w-max relative">
+                    <div className="absolute top-2 left-0 w-full h-0.5 bg-red-500 z-0"></div>
+                     <div className="absolute bottom-2 left-0 w-full h-0.5 bg-blue-500 z-0"></div>
+
+                    {strings.map((_, stringIndex) => (
+                    <div key={stringIndex} className="flex flex-col items-center gap-2 z-10">
+                        <div className="font-code text-xs text-muted-foreground bg-background px-1">السلسلة {stringIndex + 1}</div>
+                        <div className="relative">
+                            <div className="absolute top-[-8px] left-1/2 -translate-x-1/2 w-0.5 h-2 bg-red-500"></div>
+                            <div className="flex flex-col gap-1 p-2 border-2 border-dashed border-accent/50 rounded-md bg-background/50">
+                            {panels.map((_, panelIndex) => (
+                                <div
+                                key={panelIndex}
+                                className="w-16 h-10 bg-accent/80 rounded flex items-center justify-center text-accent-foreground shadow-sm"
+                                >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16v16H4z" /><path d="M4 10h16" /><path d="M10 4v16" /></svg>
+                                </div>
+                            ))}
+                            </div>
+                            <div className="absolute bottom-[-8px] left-1/2 -translate-x-1/2 w-0.5 h-2 bg-blue-500"></div>
+                        </div>
+                    </div>
+                    ))}
+                </div>
+                 <p className="text-xs text-muted-foreground mt-4 text-center max-w-md mx-auto">
+                    للوصول إلى التيار المطلوب، نقوم بتوصيل <span className="font-bold text-primary">{parallelStrings}</span> سلاسل على <span className="font-bold">التوازي</span>. هذا يجمع التيار (A) ويبقي الجهد (V) ثابتًا.
+                 </p>
+                 <div className="text-center mt-2 text-sm font-code bg-background/50 border rounded-md p-2 w-fit mx-auto">
+                    النتيجة النهائية للمصفوفة: <span className="font-bold text-accent-foreground">{stringVoltage.toFixed(1)}V / {totalSystemCurrent.toFixed(1)}A</span>
+                 </div>
+            </div>
+        </div>
     </div>
   );
 }
