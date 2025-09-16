@@ -1,5 +1,4 @@
 
-
 /**
  * @fileoverview This file contains pure, physics-based calculation functions.
  * It follows standard electrical engineering formulas (IEC/NEC/IEEE) and does not involve AI.
@@ -360,7 +359,7 @@ export function calculateBatteryBank(input: BatteryCalculationInput): BatteryCal
     if (input.appliances && input.appliances.length > 0) {
         const applianceLoad = input.appliances.reduce((total, appliance) => {
              if (appliance && typeof appliance.power === 'number' && typeof appliance.quantity === 'number' && typeof appliance.hours === 'number') {
-                return total + (appliance.power * appliance.quantity * appliance.hours) / 1000;
+                return total + (appliance.power * appliance.quantity * hours) / 1000;
             }
             return total;
         }, 0);
@@ -514,38 +513,92 @@ export function calculateOptimalDesign(input: OptimizeDesignInput): CalculationO
 // #endregion
 
 
-// #region String Configuration Calculator
-type StringConfigCalculationResult = Omit<SuggestStringConfigurationOutput, 'commonWiringErrors' | 'reasoning'>;
+// #region Advanced String Configuration Calculator
+
+type AdvancedStringConfigResult = Omit<SuggestStringConfigurationOutput, 'reasoning'>;
 
 /**
- * Calculates the optimal string configuration for a solar panel array.
- * 
+ * Calculates the safe and optimal range for the number of panels in a series string,
+ * considering inverter specifications and temperature effects. This is a critical
+ * calculation for professional solar design.
+ *
  * Logic:
- * 1.  **Panels per String (Series):** Connecting panels in series adds up their voltages. To find out how many panels
- *     are needed to reach the desired system voltage, we divide the desired voltage by the voltage of a single panel.
- *     We use `Math.floor` because we cannot exceed the inverter's maximum input voltage.
- *     `Panels per String = floor(Desired Voltage / Panel Voltage)`
+ * 1.  **Calculate Voltage Adjusted for Temperature:**
+ *     - At minimum temperature, panel voltage (Voc) *increases*. This is critical for safety.
+ *     - At maximum temperature, panel voltage (Vmp) *decreases*. This is critical for performance.
+ *     The formula is: V_adj = V_base * (1 + (Temp - Temp_STC) * (Coef / 100))
+ *     where STC (Standard Test Conditions) temperature is 25°C.
+ *
+ * 2.  **Determine Maximum Panels (Safety Limit):**
+ *     - Calculate the adjusted Voc of a single panel at the coldest expected temperature.
+ *     - Find the maximum number of panels whose combined adjusted Voc does not exceed the inverter's maximum input voltage.
+ *     - `maxPanels = floor(Inverter Max Voltage / Adjusted Cold Voc)`
+ *
+ * 3.  **Determine Minimum Panels (Performance Limit):**
+ *     - Calculate the adjusted Vmp of a single panel at the hottest expected temperature.
+ *     - Find the minimum number of panels whose combined adjusted Vmp is *greater than* the inverter's minimum MPPT voltage.
+ *     - `minPanels = ceil(Inverter MPPT Min / Adjusted Hot Vmp)`
  * 
- * 2.  **Parallel Strings:** Connecting strings in parallel adds up their currents. To find out how many parallel
- *     strings are needed to reach the desired total current, we divide the desired current by the current of a single string.
- *     We use `Math.ceil` because we need to provide at least the desired current.
- *     `Parallel Strings = ceil(Desired Current / Panel Current)`
- * 
- * @param input The panel's electrical characteristics and the system's desired voltage and current.
- * @returns The calculated number of panels per string and the number of parallel strings.
+ * 4.  **Determine Optimal Panels:**
+ *     - A common rule of thumb is to target the midpoint of the MPPT range at standard temperature (25°C)
+ *       to allow for fluctuations in either direction.
+ *     - `optimalPanels = round((MPPT_Min + MPPT_Max) / 2 / Vmp_STC)`
+ *     - This value is then clamped to be within the calculated min/max safe range.
+ *
+ * @param input The panel, inverter, and environmental specifications.
+ * @returns The min, max, and optimal number of panels per string, and the critical voltage values.
  */
-export function calculateStringConfiguration(input: SuggestStringConfigurationInput): StringConfigCalculationResult {
-    const { panelVoltage, panelCurrent, desiredVoltage, desiredCurrent } = input;
+export function calculateAdvancedStringConfiguration(input: SuggestStringConfigurationInput): AdvancedStringConfigResult {
+    const { vmp, voc, tempCoefficient, mpptMin, mpptMax, inverterMaxVolt, minTemp, maxTemp } = input;
+    const STC_TEMP = 25; // Standard Test Condition temperature
 
-    // We use Math.floor for voltage to ensure we don't exceed the inverter's max voltage limit.
-    const panelsPerString = Math.floor(desiredVoltage / panelVoltage);
+    // 1. Calculate adjusted voltages for one panel at temp extremes
+    const vocAtMinTemp = voc * (1 + (minTemp - STC_TEMP) * (tempCoefficient / 100));
+    const vmpAtMaxTemp = vmp * (1 + (maxTemp - STC_TEMP) * (tempCoefficient / 100));
+    
+    // 2. Calculate max number of panels (Safety)
+    const maxPanels = Math.floor(inverterMaxVolt / vocAtMinTemp);
 
-    // We use Math.ceil for current to ensure we meet the required power output.
-    const parallelStrings = Math.ceil(desiredCurrent / panelCurrent);
+    // 3. Calculate min number of panels (Performance)
+    const minPanels = Math.ceil(mpptMin / vmpAtMaxTemp);
+
+    // 4. Calculate optimal number of panels
+    const targetOptimalVoltage = (mpptMin + mpptMax) / 2;
+    let optimalPanels = Math.round(targetOptimalVoltage / vmp);
+
+    // 5. Clamp the optimal value to be within the safe range
+    if (optimalPanels < minPanels) {
+        optimalPanels = minPanels;
+    }
+    if (optimalPanels > maxPanels) {
+        optimalPanels = maxPanels;
+    }
+    
+    // Handle cases where no valid configuration is possible
+    if (minPanels > maxPanels) {
+        // This indicates an incompatibility between panel and inverter.
+        // Return 0s to signify failure, which can be handled by the UI.
+        return {
+            minPanels: 0,
+            maxPanels: 0,
+            optimalPanels: 0,
+            maxStringVocAtMinTemp: 0,
+            minStringVmpAtMaxTemp: 0,
+        };
+    }
+
+    // 6. Calculate the critical voltages for the report
+    const maxStringVocAtMinTemp = maxPanels * vocAtMinTemp;
+    const minStringVmpAtMaxTemp = minPanels * vmpAtMaxTemp;
 
     return {
-        panelsPerString: panelsPerString > 0 ? panelsPerString : 1,
-        parallelStrings: parallelStrings > 0 ? parallelStrings : 1,
+        minPanels,
+        maxPanels,
+        optimalPanels,
+        maxStringVocAtMinTemp,
+        minStringVmpAtMaxTemp,
     };
 }
+
+
 // #endregion

@@ -4,32 +4,31 @@ import {z} from 'zod';
 
 // #region String Configuration Schemas
 export const SuggestStringConfigurationInputSchema = z.object({
-  panelVoltage: z.number().describe('جهد اللوح الشمسي الواحد (فولت).'),
-  panelCurrent: z.number().describe('تيار اللوح الشمسي الواحد (أمبير).'),
-  desiredVoltage: z.number().describe('الجهد الإجمالي المطلوب للنظام (فولت).'),
-  desiredCurrent: z.number().describe('التيار الإجمالي المطلوب للنظام (أمبير).'),
+  // Panel Specs
+  vmp: z.number().describe("الجهد عند أقصى قدرة (Vmp) للوح الواحد."),
+  voc: z.number().describe("جهد الدائرة المفتوحة (Voc) للوح الواحد."),
+  tempCoefficient: z.number().describe("معامل الحرارة للجهد، كنسبة مئوية لكل درجة مئوية (e.g., -0.32)."),
+  
+  // Inverter Specs
+  mpptMin: z.number().describe("الحد الأدنى لجهد تشغيل MPPT للعاكس."),
+  mpptMax: z.number().describe("الحد الأقصى لجهد تشغيل MPPT للعاكس."),
+  inverterMaxVolt: z.number().describe("الحد الأقصى لجهد الدخل الذي يتحمله العاكس."),
+  
+  // Environmental Specs
+  minTemp: z.number().describe("أدنى درجة حرارة متوقعة في الموقع (شتاءً)."),
+  maxTemp: z.number().describe("أقصى درجة حرارة متوقعة على سطح الألواح (صيفًا)."),
 });
 export type SuggestStringConfigurationInput = z.infer<
   typeof SuggestStringConfigurationInputSchema
 >;
 
 export const SuggestStringConfigurationOutputSchema = z.object({
-  panelsPerString: z
-    .number()
-    .describe('العدد المحسوب من الألواح لتوصيلها على التوالي لكل سلسلة.'),
-  parallelStrings: z
-    .number()
-    .describe('العدد المحسوب من السلاسل المتوازية للتوصيل.'),
-  reasoning: z
-    .string()
-    .describe(
-      'شرح باللغة العربية يوضح سبب اختيار هذا التكوين وكيفية عمل التوصيل على التوالي والتوازي.'
-    ),
-  commonWiringErrors: z
-    .string()
-    .describe(
-      'أخطاء التوصيل الشائعة التي يجب تجنبها، بناءً على التهيئة المقترحة.'
-    ),
+  minPanels: z.number().describe("الحد الأدنى لعدد الألواح في السلسلة لضمان بقاء الجهد ضمن نطاق MPPT في أقصى درجات الحرارة."),
+  maxPanels: z.number().describe("الحد الأقصى لعدد الألواح في السلسلة لضمان عدم تجاوز أقصى جهد يتحمله العاكس في أدنى درجات الحرارة."),
+  optimalPanels: z.number().describe("العدد الموصى به من الألواح في السلسلة لتحقيق أفضل أداء."),
+  reasoning: z.string().describe("شرح باللغة العربية يوضح سبب هذا النطاق، مع الأخذ بعين الاعتبار تأثيرات درجة الحرارة على الجهد."),
+  maxStringVocAtMinTemp: z.number().describe("الجهد المحسوب للسلسلة ذات العدد الأقصى من الألواح عند أدنى درجة حرارة."),
+  minStringVmpAtMaxTemp: z.number().describe("الجهد المحسوب للسلسلة ذات العدد الأدنى من الألواح عند أقصى درجة حرارة."),
 });
 export type SuggestStringConfigurationOutput = z.infer<
   typeof SuggestStringConfigurationOutputSchema
@@ -189,3 +188,4 @@ export type InspectionResponse =
     
 
     
+

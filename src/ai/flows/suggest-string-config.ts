@@ -1,11 +1,12 @@
+
 'use server';
 
 /**
- * @fileOverview AI-powered string configuration suggestion for solar panel systems.
+ * @fileOverview Inverter-centric string configuration suggestion for solar panel systems.
  * This is a hybrid model. It uses physics-based calculations for numerical accuracy
- * and an AI model for generating the human-readable analysis and common errors.
+ * and an AI model for generating the human-readable analysis.
  *
- * - suggestStringConfiguration - A function to determine the optimal configuration of solar panels.
+ * - suggestStringConfiguration - A function to determine the optimal configuration of solar panels based on inverter specs.
  */
 
 import {ai} from '@/ai/genkit';
@@ -16,7 +17,7 @@ import {
   type SuggestStringConfigurationInput,
   type SuggestStringConfigurationOutput,
 } from '@/ai/tool-schemas';
-import { calculateStringConfiguration } from '@/services/calculations';
+import { calculateAdvancedStringConfiguration } from '@/services/calculations';
 
 // This is the main exported function that will be called by the server action or other tools.
 export async function suggestStringConfiguration(
@@ -28,36 +29,40 @@ export async function suggestStringConfiguration(
 
 // 1. Define a new AI prompt that takes the calculated data and generates the reasoning.
 const reasoningPrompt = ai.definePrompt({
-  name: 'generateStringConfigReasoningPrompt',
+  name: 'generateAdvancedStringConfigReasoningPrompt',
   input: { schema: z.object({
-    panelVoltage: z.number(),
-    panelCurrent: z.number(),
-    desiredVoltage: z.number(),
-    desiredCurrent: z.number(),
-    panelsPerString: z.number(),
-    parallelStrings: z.number(),
+    ...SuggestStringConfigurationInputSchema.shape,
+    ...SuggestStringConfigurationOutputSchema.omit({ reasoning: true }).shape,
   })},
   output: { schema: z.object({
-    commonWiringErrors: SuggestStringConfigurationOutputSchema.shape.commonWiringErrors,
     reasoning: SuggestStringConfigurationOutputSchema.shape.reasoning,
   })},
-  prompt: `أنت مهندس كهربائي خبير يقدم نصائح لمركب أنظمة شمسية. بناءً على الحسابات التالية، قدم شرحاً وأبرز الأخطاء الشائعة.
+  prompt: `You are an expert solar engineer explaining a string configuration analysis to a client in Arabic.
 
-**المعطيات:**
-- جهد اللوح: {{{panelVoltage}}} فولت
-- تيار اللوح: {{{panelCurrent}}} أمبير
-- الجهد المطلوب: {{{desiredVoltage}}} فولت
-- التيار المطلوب: {{{desiredCurrent}}} أمبير
+**System Parameters:**
+- Inverter MPPT Voltage Range: {{{mpptMin}}}V - {{{mpptMax}}}V
+- Inverter Max Input Voltage: {{{inverterMaxVolt}}}V
+- Panel Voc: {{{voc}}}V
+- Panel Vmp: {{{vmp}}}V
+- Temperature Coefficient: {{{tempCoefficient}}}%/°C
+- Site Temperature Range: {{{minTemp}}}°C to {{{maxTemp}}}°C
 
-**النتائج المحسوبة:**
-- عدد الألواح لكل سلسلة (توالي): {{{panelsPerString}}}
-- عدد السلاسل المتوازية (توازي): {{{parallelStrings}}}
+**Calculation Results:**
+- Maximum Panels for Safety: {{{maxPanels}}}
+- Minimum Panels for Performance: {{{minPanels}}}
+- Recommended Optimal Panels: {{{optimalPanels}}}
+- Voltage at Coldest Temp (with {{{maxPanels}}} panels): {{{maxStringVocAtMinTemp}}}V
+- Voltage at Hottest Temp (with {{{minPanels}}} panels): {{{minStringVmpAtMaxTemp}}}V
 
-**مهمتك:**
-1.  **اكتب الشرح (reasoning):** اشرح بوضوح لماذا تم اختيار هذا التكوين. وضح أن التوصيل على التوالي يزيد الجهد بينما التوصيل على التوازي يزيد التيار.
-2.  **اكتب الأخطاء الشائعة (commonWiringErrors):** اذكر 2-3 أخطاء شائعة وحرجة تتعلق بتوصيل السلاسل، مثل عدم تطابق عدد الألواح في السلاسل المتوازية، أو استخدام أسلاك ذات مقاطع غير مناسبة، أو عكس القطبية.
+**Your Task:**
+Write the 'reasoning' text in Arabic. Explain step-by-step **why** this specific range ({{{minPanels}}}-{{{maxPanels}}} panels) was determined.
 
-الرد يجب أن يكون فقط كائن JSON يحتوي على 'reasoning' و 'commonWiringErrors' باللغة العربية.`,
+1.  **Start with the safety limit:** Explain that at {{{minTemp}}}°C, the voltage of each panel increases. To avoid exceeding the inverter's absolute maximum voltage of {{{inverterMaxVolt}}}V, the string cannot have more than {{{maxPanels}}} panels. Mention the calculated maximum voltage of {{{maxStringVocAtMinTemp}}}V.
+2.  **Explain the performance limit:** Explain that at {{{maxTemp}}}°C, the voltage of each panel decreases. To ensure the string voltage stays within the inverter's MPPT range (above {{{mpptMin}}}V), the string must have at least {{{minPanels}}} panels. Mention the calculated minimum voltage of {{{minStringVmpAtMaxTemp}}}V.
+3.  **Justify the recommendation:** Explain why {{{optimalPanels}}} panels is the recommended number (e.g., it balances safety margins and keeps the operating voltage (Vmp) well within the MPPT range for most of the year, maximizing energy harvest).
+
+The response must be ONLY the reasoning text in Arabic.
+`,
 });
 
 
@@ -69,8 +74,8 @@ const suggestStringConfigurationFlow = ai.defineFlow(
     outputSchema: SuggestStringConfigurationOutputSchema,
   },
   async (input) => {
-    // Step 1: Get the definitive calculation from the physics-based service. This part is always reliable.
-    const calculatedData = calculateStringConfiguration(input);
+    // Step 1: Get the definitive calculation from the physics-based service.
+    const calculatedData = calculateAdvancedStringConfiguration(input);
 
     try {
       // Step 2: Try to call the AI model with the input AND the calculated data to generate the reasoning.
@@ -80,27 +85,22 @@ const suggestStringConfigurationFlow = ai.defineFlow(
       });
       
       if (!reasoningOutput) {
-          throw new Error("AI failed to generate reasoning and common errors.");
+          throw new Error("AI failed to generate reasoning.");
       }
 
       // Step 3 (Success Case): Combine the physics-based calculation with the AI-generated text.
       return {
         ...calculatedData,
         reasoning: reasoningOutput.reasoning,
-        commonWiringErrors: reasoningOutput.commonWiringErrors,
       };
 
     } catch (error) {
       console.error("AI part of string configuration failed, returning calculation-only result.", error);
 
       // Step 3 (Fallback Case): If the AI call fails, return the accurate calculations with default text.
-      // This makes the tool resilient and always useful.
       return {
         ...calculatedData,
-        reasoning: `لتحقيق الجهد المطلوب (${input.desiredVoltage} فولت)، تحتاج إلى توصيل ${calculatedData.panelsPerString} لوحًا على التوالي. ولتحقيق التيار المطلوب (${input.desiredCurrent} أمبير)، تحتاج إلى ${calculatedData.parallelStrings} من هذه السلاسل على التوازي.`,
-        commonWiringErrors: `- تأكد من أن جميع السلاسل المتوازية لها نفس عدد الألواح بالضبط.
-- استخدم أسلاكًا ذات حجم مناسب للتعامل مع إجمالي التيار.
-- تحقق دائمًا من القطبية (+/-) قبل التوصيل النهائي.`,
+        reasoning: `تم تحديد المدى الآمن لعدد الألواح بين ${calculatedData.minPanels} و ${calculatedData.maxPanels} لوحًا. يضمن هذا النطاق أن جهد السلسلة لن يتجاوز الحد الأقصى للعاكس في الطقس البارد، وسيبقى ضمن نطاق تشغيل MPPT في الطقس الحار. العدد الموصى به هو ${calculatedData.optimalPanels} لتحقيق أفضل أداء.`,
       };
     }
   }

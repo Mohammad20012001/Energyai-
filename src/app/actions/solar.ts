@@ -58,23 +58,23 @@ function performFinancialCalculation(
 
     let paybackPeriodMonths = Infinity;
     let total25YearRevenue = 0;
+    let cumulativeRevenue = 0; // Renamed for clarity
 
     for (let year = 1; year <= 25; year++) {
         const currentYearProduction = firstYearAnnualProduction * Math.pow(degradationFactor, year - 1);
         const currentYearRevenue = currentYearProduction * kwhPrice;
-        const cumulativeRevenue = total25YearRevenue + currentYearRevenue;
+        const revenueUpToPreviousYear = cumulativeRevenue;
+        cumulativeRevenue += currentYearRevenue;
 
         if (paybackPeriodMonths === Infinity && cumulativeRevenue >= totalInvestment) {
-            const revenueUpToPreviousYear = total25YearRevenue;
             const remainingInvestment = totalInvestment - revenueUpToPreviousYear;
             const monthlyRevenueThisYear = currentYearRevenue / 12;
             const monthsIntoYear = monthlyRevenueThisYear > 0 ? Math.ceil(remainingInvestment / monthlyRevenueThisYear) : 0;
             paybackPeriodMonths = ((year - 1) * 12) + monthsIntoYear;
         }
-        total25YearRevenue = cumulativeRevenue;
     }
     
-    const netProfit25Years = total25YearRevenue - totalInvestment;
+    const netProfit25Years = cumulativeRevenue - totalInvestment;
     if (paybackPeriodMonths > 25 * 12) paybackPeriodMonths = Infinity;
 
     return {
@@ -112,11 +112,12 @@ async function calculateFinancialViability(input: z.infer<typeof FinancialViabil
     // --- Cash Flow Analysis (only for main scenario) ---
     const cashFlowAnalysis: CashFlowPoint[] = [{ year: 0, cashFlow: -mainResult.totalInvestment }];
     const degradationFactor = 1 - (degradationRate / 100);
+    let cumulativeRevenue = 0;
     for (let year = 1; year <= 25; year++) {
         const currentYearProduction = totalAnnualProduction * Math.pow(degradationFactor, year - 1);
         const currentYearRevenue = currentYearProduction * kwhPrice;
-        const previousCashFlow = cashFlowAnalysis[year - 1].cashFlow;
-        cashFlowAnalysis.push({ year: year, cashFlow: previousCashFlow + currentYearRevenue });
+        cumulativeRevenue += currentYearRevenue;
+        cashFlowAnalysis.push({ year: year, cashFlow: cumulativeRevenue - mainResult.totalInvestment });
     }
 
     // --- Sensitivity Analysis ---
