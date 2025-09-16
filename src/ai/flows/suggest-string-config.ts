@@ -65,24 +65,39 @@ const suggestStringConfigurationFlow = ai.defineFlow(
     outputSchema: SuggestStringConfigurationOutputSchema,
   },
   async (input) => {
-    // Step 1: Get the definitive calculation from the physics-based service.
+    // Step 1: Get the definitive calculation from the physics-based service. This part is always reliable.
     const calculatedData = calculateStringConfiguration(input);
 
-    // Step 2: Call the AI model with the input AND the calculated data to generate the reasoning.
-    const { output: reasoningOutput } = await reasoningPrompt({
-      ...input,
-      ...calculatedData,
-    });
-    
-    if (!reasoningOutput) {
-        throw new Error("AI failed to generate reasoning and common errors.");
-    }
+    try {
+      // Step 2: Try to call the AI model with the input AND the calculated data to generate the reasoning.
+      const { output: reasoningOutput } = await reasoningPrompt({
+        ...input,
+        ...calculatedData,
+      });
+      
+      if (!reasoningOutput) {
+          throw new Error("AI failed to generate reasoning and common errors.");
+      }
 
-    // Step 3: Combine the physics-based calculation with the AI-generated text.
-    return {
-      ...calculatedData,
-      reasoning: reasoningOutput.reasoning,
-      commonWiringErrors: reasoningOutput.commonWiringErrors,
-    };
+      // Step 3 (Success Case): Combine the physics-based calculation with the AI-generated text.
+      return {
+        ...calculatedData,
+        reasoning: reasoningOutput.reasoning,
+        commonWiringErrors: reasoningOutput.commonWiringErrors,
+      };
+
+    } catch (error) {
+      console.error("AI part of string configuration failed, returning calculation-only result.", error);
+
+      // Step 3 (Fallback Case): If the AI call fails, return the accurate calculations with default text.
+      // This makes the tool resilient and always useful.
+      return {
+        ...calculatedData,
+        reasoning: `لتحقيق الجهد المطلوب (${input.desiredVoltage} فولت)، تحتاج إلى توصيل ${calculatedData.panelsPerString} لوحًا على التوالي. ولتحقيق التيار المطلوب (${input.desiredCurrent} أمبير)، تحتاج إلى ${calculatedData.parallelStrings} من هذه السلاسل على التوازي.`,
+        commonWiringErrors: `- تأكد من أن جميع السلاسل المتوازية لها نفس عدد الألواح بالضبط.
+- استخدم أسلاكًا ذات حجم مناسب للتعامل مع إجمالي التيار.
+- تحقق دائمًا من القطبية (+/-) قبل التوصيل النهائي.`,
+      };
+    }
   }
 );
