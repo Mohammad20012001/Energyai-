@@ -90,6 +90,7 @@ const optimizeDesignFlow = ai.defineFlow(
     }
 
     // Step 3: Combine the accurate, calculated data with the AI-generated reasoning.
+    // The calculateOptimalDesign function now returns the full financial analysis.
     return {
       ...calculatedData,
       reasoning: reasoningOutput.reasoning,

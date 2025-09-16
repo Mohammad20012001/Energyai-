@@ -1,6 +1,4 @@
 
-
-      
 import {z} from 'zod';
 
 // #region String Configuration Schemas
@@ -74,6 +72,30 @@ export type SuggestWireSizeOutput = z.infer<typeof SuggestWireSizeOutputSchema>;
 // #endregion
 
 // #region Design Optimizer Schemas
+
+const MonthlyBreakdownSchema = z.object({
+    month: z.string(),
+    sunHours: z.number(),
+    production: z.number(),
+    revenue: z.number(),
+});
+
+const CashFlowPointSchema = z.object({
+    year: z.number(),
+    cashFlow: z.number(),
+});
+
+const SensitivityAnalysisSchema = z.object({
+    cost: z.object({
+        lower: z.object({ paybackPeriodMonths: z.number(), netProfit25Years: z.number() }),
+        higher: z.object({ paybackPeriodMonths: z.number(), netProfit25Years: z.number() }),
+    }),
+    price: z.object({
+        lower: z.object({ paybackPeriodMonths: z.number(), netProfit25Years: z.number() }),
+        higher: z.object({ paybackPeriodMonths: z.number(), netProfit25Years: z.number() }),
+    })
+});
+
 export const OptimizeDesignInputSchema = z.object({
   calculationMode: z.enum(['consumption', 'bill']),
   monthlyConsumption: z.coerce.number().optional(),
@@ -84,6 +106,7 @@ export const OptimizeDesignInputSchema = z.object({
   panelWattage: z.coerce.number().positive('قدرة اللوح يجب أن تكون رقماً موجباً'),
   costPerWatt: z.coerce.number().positive("التكلفة يجب أن تكون رقماً موجباً"),
   kwhPrice: z.coerce.number().positive("السعر يجب أن يكون رقماً موجباً"),
+  degradationRate: z.coerce.number().min(0, "لا يمكن أن يكون سالباً").max(5, "النسبة مرتفعة جداً"),
 }).refine(data => {
     if (data.calculationMode === 'consumption') {
         return data.monthlyConsumption !== undefined && data.monthlyConsumption > 0;
@@ -122,7 +145,12 @@ export const OptimizeDesignOutputSchema = z.object({
     totalInvestment: z.number().describe('The total estimated cost of the system in JOD.'),
     annualRevenue: z.number().describe('The estimated annual savings or revenue in JOD.'),
     paybackPeriodYears: z.number().describe('The estimated time to recoup the investment in years.'),
+    paybackPeriodMonths: z.number(),
     netProfit25Years: z.number().describe('The estimated net profit over a 25-year lifespan in JOD.'),
+    totalAnnualProduction: z.number(),
+    monthlyBreakdown: z.array(MonthlyBreakdownSchema),
+    cashFlowAnalysis: z.array(CashFlowPointSchema).optional(),
+    sensitivityAnalysis: SensitivityAnalysisSchema.optional(),
   }),
   reasoning: z.string().describe('A step-by-step explanation in Arabic of how the AI reached this design, explaining the trade-offs and why this design is optimal for the user\'s constraints.'),
   limitingFactor: z.enum(['consumption', 'area']).describe('The primary constraint that determined the final system size.'),
@@ -210,10 +238,3 @@ export type InspectionResponse =
     | { success: true; data: InspectionResult }
     | { success: false; error: string };
 // #endregion
-
-    
-
-    
-
-
-

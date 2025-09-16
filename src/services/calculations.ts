@@ -1,5 +1,4 @@
 
-
 /**
  * @fileoverview This file contains pure, physics-based calculation functions.
  * It follows standard electrical engineering formulas (IEC/NEC/IEEE) and does not involve AI.
@@ -8,6 +7,15 @@
 
 import type { OptimizeDesignInput, OptimizeDesignOutput, SuggestWireSizeInput, SuggestWireSizeOutput, SuggestStringConfigurationInput, SuggestStringConfigurationOutput } from "@/ai/tool-schemas";
 
+// Constants for PSSH data and month details
+const monthlyPSSH = {
+    amman: [3.51, 4.48, 5.82, 6.95, 7.84, 8.43, 8.29, 7.91, 7.10, 5.67, 4.28, 3.39],
+    zarqa: [3.55, 4.52, 5.89, 7.02, 7.91, 8.50, 8.36, 7.98, 7.17, 5.73, 4.33, 3.44],
+    irbid: [3.31, 4.22, 5.56, 6.78, 7.76, 8.41, 8.32, 7.90, 7.01, 5.51, 4.08, 3.19],
+    aqaba: [4.21, 5.07, 6.31, 7.34, 8.08, 8.60, 8.41, 8.09, 7.42, 6.17, 4.90, 4.09]
+};
+const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
 /**
  * Calculates the appropriate wire size for a DC solar power system based on the voltage drop method.
@@ -167,13 +175,14 @@ export function calculateProductionFromArea(input: AreaCalculationInput): AreaCa
 }
 // #endregion
 
-// #region Financial Viability Calculator Types
+// #region Financial Viability Types and Function
+
 export interface FinancialViabilityInput {
     systemSize: number;
     systemLoss: number;
     tilt: number;
     azimuth: number;
-    location: 'amman' | 'zarqa' | 'irbid' | 'aqaba';
+    location: keyof typeof monthlyPSSH;
     costPerKw: number;
     kwhPrice: number;
     degradationRate: number;
@@ -181,7 +190,7 @@ export interface FinancialViabilityInput {
 
 export interface MonthlyBreakdown {
     month: string;
-    sunHours: number; // Represents average daily irradiation in kWh/m²/day for the month
+    sunHours: number;
     production: number;
     revenue: number;
 }
@@ -204,14 +213,127 @@ export interface SensitivityAnalysis {
 
 export interface FinancialViabilityResult {
     totalInvestment: number;
-    totalAnnualProduction: number;
     annualRevenue: number;
     paybackPeriodMonths: number;
     netProfit25Years: number;
+    totalAnnualProduction: number;
     monthlyBreakdown: MonthlyBreakdown[];
     cashFlowAnalysis: CashFlowPoint[];
     sensitivityAnalysis: SensitivityAnalysis;
 }
+
+/**
+ * Performs a detailed financial viability analysis for a solar PV system.
+ * It simulates annual production based on historical weather data (PSSH) and calculates key financial metrics over 25 years.
+ *
+ * @param input The technical and financial parameters of the system.
+ * @returns A comprehensive financial analysis result.
+ */
+export function calculateFinancialViability(input: FinancialViabilityInput): FinancialViabilityResult {
+    const { systemSize, costPerKw, kwhPrice, systemLoss, degradationRate, location } = input;
+    
+    // This internal function is now the core logic from the old `performFinancialCalculation`
+    const performCalculation = (
+        size: number, 
+        cost: number, 
+        price: number, 
+        loss: number, 
+        degradation: number,
+        loc: keyof typeof monthlyPSSH
+    ): FinancialViabilityResult => {
+        const totalInvestment = size * 1000 * cost;
+        const systemLossFactor = 1 - loss / 100;
+        const degradationFactor = 1 - degradation / 100;
+        const locationPSSH = monthlyPSSH[loc];
+
+        const monthlyBreakdown: MonthlyBreakdown[] = monthNames.map((month, index) => {
+            const dailyIrradiation = locationPSSH[index];
+            const dailyProduction = size * dailyIrradiation * systemLossFactor;
+            const monthlyProduction = dailyProduction * daysInMonth[index];
+            const monthlyRevenue = monthlyProduction * price;
+            return {
+                month: month,
+                sunHours: parseFloat(dailyIrradiation.toFixed(2)),
+                production: monthlyProduction,
+                revenue: monthlyRevenue,
+            };
+        });
+        
+        const totalAnnualProduction = monthlyBreakdown.reduce((sum, item) => sum + item.production, 0);
+        const firstYearAnnualRevenue = totalAnnualProduction * price;
+        
+        let paybackPeriodMonths = Infinity;
+        let cumulativeRevenue = 0;
+        const cashFlowAnalysis: CashFlowPoint[] = [{ year: 0, cashFlow: -totalInvestment }];
+
+        for (let year = 1; year <= 25; year++) {
+            const currentYearProduction = totalAnnualProduction * Math.pow(degradationFactor, year - 1);
+            const currentYearRevenue = currentYearProduction * price;
+            const revenueUpToPreviousYear = cumulativeRevenue;
+            cumulativeRevenue += currentYearRevenue;
+            cashFlowAnalysis.push({ year: year, cashFlow: cumulativeRevenue - totalInvestment });
+
+            if (paybackPeriodMonths === Infinity && cumulativeRevenue >= totalInvestment) {
+                const remainingInvestment = totalInvestment - revenueUpToPreviousYear;
+                const monthlyRevenueThisYear = currentYearRevenue / 12;
+                const monthsIntoYear = monthlyRevenueThisYear > 0 ? Math.ceil(remainingInvestment / monthlyRevenueThisYear) : 0;
+                paybackPeriodMonths = ((year - 1) * 12) + monthsIntoYear;
+            }
+        }
+        
+        const netProfit25Years = cumulativeRevenue - totalInvestment;
+        if (paybackPeriodMonths > 25 * 12) paybackPeriodMonths = Infinity;
+        
+        // The sensitivity calculation part is now self-contained for reuse.
+        const calculateSensitivityPoint = (sensitivityCost: number, sensitivityPrice: number) => {
+             const investment = size * 1000 * sensitivityCost;
+             let cumeRevenue = 0;
+             let paybackMonths = Infinity;
+             for (let y = 1; y <= 25; y++) {
+                 const annualProd = totalAnnualProduction * Math.pow(degradationFactor, y - 1);
+                 const annualRevenue = annualProd * sensitivityPrice;
+                 const prevCumeRevenue = cumeRevenue;
+                 cumeRevenue += annualRevenue;
+                 if (paybackMonths === Infinity && cumeRevenue >= investment) {
+                     const remainingInv = investment - prevCumeRevenue;
+                     const monthlyRev = annualRevenue / 12;
+                     paybackMonths = ((y - 1) * 12) + (monthlyRev > 0 ? Math.ceil(remainingInv / monthlyRev) : 0);
+                 }
+             }
+             if (paybackMonths > 300) paybackMonths = Infinity;
+             const netProfit = cumeRevenue - investment;
+             return { paybackPeriodMonths: paybackMonths, netProfit25Years: netProfit };
+        };
+        
+        const costVariation = 0.10;
+        const priceVariation = 0.10;
+        const sensitivityAnalysis: SensitivityAnalysis = {
+             cost: {
+                 lower: calculateSensitivityPoint(cost * (1 - costVariation), price),
+                 higher: calculateSensitivityPoint(cost * (1 + costVariation), price),
+             },
+             price: {
+                 lower: calculateSensitivityPoint(cost, price * (1 - priceVariation)),
+                 higher: calculateSensitivityPoint(cost, price * (1 + priceVariation)),
+             }
+        };
+
+        return {
+            totalInvestment,
+            annualRevenue: firstYearAnnualRevenue,
+            paybackPeriodMonths,
+            netProfit25Years,
+            totalAnnualProduction,
+            monthlyBreakdown,
+            cashFlowAnalysis,
+            sensitivityAnalysis
+        };
+    };
+
+    // Perform the main calculation with the user's input
+    return performCalculation(systemSize, costPerKw * 1000 / 1000, kwhPrice, systemLoss, degradationRate, location);
+}
+
 // #endregion
 
 
@@ -301,56 +423,31 @@ export function calculateBatteryBank(input: BatteryCalculationInput): BatteryCal
 
 // #region Optimal Design Calculator (Hybrid)
 
-export type CalculationOutput = Omit<OptimizeDesignOutput, 'reasoning'> & {
-    limitingFactor: 'consumption' | 'area';
-};
+export type CalculationOutput = Omit<OptimizeDesignOutput, 'reasoning'>;
+
 
 /**
  * Performs a comprehensive technical and financial design for a solar PV system.
- * This function acts as the core "physics engine" for the AI Design Optimizer.
- * 
- * Logic:
- * 1.  It first determines the maximum system size (in kWp) that can be installed based on two primary constraints:
- *     a.  **Consumption Constraint:** Calculates the system size needed to cover the user's monthly energy consumption.
- *         This is often a legal or practical limit (e.g., net-metering laws).
- *     b.  **Area Constraint:** Calculates the maximum system size that can physically fit in the available surface area.
- * 2.  It selects the **smaller** of these two sizes as the final, optimized system size. This ensures the design
- *     is both physically possible and compliant with consumption limits. The constraint that determined this
- *     final size is identified as the `limitingFactor`.
- * 3.  Based on the final system size, it calculates all other system components:
- *     - Total number of panels.
- *     - Required area.
- *     - Recommended inverter size.
- *     - Basic wiring configuration.
- * 4.  Finally, it performs a complete financial analysis based on the designed system:
- *     - Total Investment = System Size (kW) * Cost per kW
- *     - Annual Revenue = Annual Energy Production (kWh) * Price per kWh
- *     - Payback Period (Years) = Total Investment / Annual Revenue
- *     - Net Profit over 25 years.
- * 
- * @param input The user's constraints (consumption, area) and financial parameters.
- * @returns A complete technical and financial design object.
  */
 export function calculateOptimalDesign(input: OptimizeDesignInput): CalculationOutput {
     
-    // 1. Sun Hours & Location Data
+    // 1. Sun Hours & Irradiance data
     const sunHoursMap = { amman: 5.5, zarqa: 5.6, irbid: 5.4, aqaba: 6.0 };
     const sunHours = sunHoursMap[input.location];
     
     // 2. Calculate constraint sizes (in kWp)
-    const dailyKwhConsumption = input.monthlyConsumption / 30;
+    const dailyKwhConsumption = input.monthlyConsumption! / 30;
     const systemLossFactor = (100 - input.systemLoss) / 100;
     
-    // This is the system size required to meet the consumption needs.
+    // System size required to meet consumption, accounting for losses and sun hours.
     const consumptionBasedSize = (dailyKwhConsumption / (sunHours * systemLossFactor));
     
-    // This is the maximum system size that can fit in the given area.
-    // Assuming 2.6 m^2 per panel and 1.5 spacing factor.
-    const panelArea = (1.13 * 2.28) * 1.5;
-    const maxPanelsFromArea = Math.floor(input.surfaceArea / panelArea);
+    // An average panel requires about 2.58 sqm. Add 50% for spacing.
+    const panelAreaWithSpacing = (1.13 * 2.28) * 1.5; 
+    const maxPanelsFromArea = Math.floor(input.surfaceArea / panelAreaWithSpacing);
     const areaBasedSize = (maxPanelsFromArea * input.panelWattage) / 1000;
 
-    // 3. Determine limiting factor and final system size. The optimal size is the MINIMUM of the two constraints.
+    // 3. Determine limiting factor and final system size
     let optimizedSystemSize: number;
     let limitingFactor: 'consumption' | 'area';
     
@@ -361,54 +458,57 @@ export function calculateOptimalDesign(input: OptimizeDesignInput): CalculationO
         limitingFactor = 'area';
         optimizedSystemSize = areaBasedSize;
     }
-    optimizedSystemSize = parseFloat(optimizedSystemSize.toFixed(2));
     
     // 4. Design the system based on the final, optimized size.
-    const panelCount = Math.floor((optimizedSystemSize * 1000) / input.panelWattage);
+    const panelCount = Math.ceil((optimizedSystemSize * 1000) / input.panelWattage);
     const totalDcPower = parseFloat(((panelCount * input.panelWattage) / 1000).toFixed(2));
-    const requiredArea = panelCount * panelArea;
+    const requiredArea = panelCount * panelAreaWithSpacing;
     
-    // Inverter
-    const inverterSize = totalDcPower * 0.95; // Aim for 95% of DC power, a common practice.
+    // Inverter is typically 80-95% of DC size. DC/AC ratio ~1.1 to 1.25
+    const inverterSize = totalDcPower * 0.9; 
     const phase = totalDcPower > 6 ? 'Three-Phase' : 'Single-Phase';
 
-    // Wiring (simplified for this high-level design)
-    const panelsPerString = panelCount <= 20 ? panelCount : Math.floor(panelCount / 2);
-    const parallelStrings = panelCount <= 20 ? 1 : 2;
+    // Simple stringing logic for the summary
+    const panelsPerString = panelCount <= 22 ? panelCount : Math.ceil(panelCount / Math.ceil(panelCount/22));
+    const parallelStrings = panelCount > 0 ? Math.ceil(panelCount / panelsPerString) : 0;
+    
 
-    // 5. Financial Analysis
-    const totalInvestment = totalDcPower * 1000 * input.costPerWatt;
-    const dailyProductionKwh = totalDcPower * sunHours * systemLossFactor;
-    const annualProductionKwh = dailyProductionKwh * 365;
-    const annualRevenue = annualProductionKwh * input.kwhPrice;
-    const paybackPeriodYears = annualRevenue > 0 ? totalInvestment / annualRevenue : Infinity;
-    const netProfit25Years = (annualRevenue * 25) - totalInvestment;
-
-
+    // 5. Perform full financial analysis using the final calculated system size.
+    const financialAnalysisResult = calculateFinancialViability({
+        systemSize: totalDcPower,
+        costPerKw: input.costPerWatt * 1000,
+        kwhPrice: input.kwhPrice,
+        systemLoss: input.systemLoss,
+        degradationRate: input.degradationRate,
+        location: input.location,
+        // Tilt and azimuth can be passed through if they become form fields
+        tilt: 30,
+        azimuth: 180,
+    });
+    
+    // Combine results
     return {
         panelConfig: {
             panelCount,
             panelWattage: input.panelWattage,
             totalDcPower: totalDcPower,
             requiredArea: requiredArea,
-            tilt: 30, // Assumed optimal tilt for Jordan
-            azimuth: 180, // South-facing
+            tilt: 30,
+            azimuth: 180,
         },
         inverterConfig: {
             recommendedSize: `${inverterSize.toFixed(1)} kW`,
             phase,
-            mpptVoltage: "200-800V", // Typical range
+            mpptVoltage: "200-800V", // Example value
         },
         wiringConfig: {
             panelsPerString,
             parallelStrings,
-            wireSize: 6, // Assumed standard size for DC mains
+            wireSize: 6, // Example value
         },
         financialAnalysis: {
-            totalInvestment,
-            annualRevenue,
-            paybackPeriodYears,
-            netProfit25Years,
+            ...financialAnalysisResult,
+            paybackPeriodYears: financialAnalysisResult.paybackPeriodMonths / 12,
         },
         limitingFactor: limitingFactor,
     };

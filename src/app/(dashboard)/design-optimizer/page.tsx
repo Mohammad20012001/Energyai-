@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
-import { BrainCircuit, ArrowRight, Loader2, Ruler, PlusCircle, Settings, Sun, Maximize, Scale, TrendingUp } from "lucide-react";
+import { BrainCircuit, ArrowRight, Loader2, Ruler, PlusCircle, Settings, Sun, Maximize, Scale, TrendingUp, BarChart3, CalendarDays, AreaChart, Activity, ChevronsRight, ChevronsLeft, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -29,6 +29,26 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { optimizeDesign } from "@/ai/flows/optimize-design";
@@ -39,6 +59,16 @@ import { cn } from "@/lib/utils";
 
 
 type FormValues = z.infer<typeof OptimizeDesignInputSchema>;
+
+const PaybackPeriod = ({ months } : { months: number}) => {
+    if (!isFinite(months) || months > 300) {
+        return <span className="text-xl font-bold">أكثر من 25 سنة</span>;
+    }
+    const years = Math.floor(months / 12);
+    const remainingMonths = months % 12;
+    return <span className="text-xl font-bold">{years} سنة و {remainingMonths} أشهر</span>;
+};
+
 
 export default function DesignOptimizerPage() {
   const [result, setResult] = useState<OptimizeDesignOutput | null>(null);
@@ -58,7 +88,8 @@ export default function DesignOptimizerPage() {
       systemLoss: 15,
       panelWattage: 550,
       costPerWatt: 0.6,
-      kwhPrice: 0.12
+      kwhPrice: 0.12,
+      degradationRate: 0.5,
     },
   });
 
@@ -89,7 +120,7 @@ export default function DesignOptimizerPage() {
   }
   
   const handleAddToReport = () => {
-    if (!result) return;
+    if (!result || !result.financialAnalysis) return;
     addReportCard({
       id: `design-optimizer-${Date.now()}`,
       type: "حاسبة حجم النظام الفني والمالي",
@@ -264,6 +295,19 @@ export default function DesignOptimizerPage() {
                             </FormItem>
                           )}
                         />
+                        <FormField
+                          control={form.control}
+                          name="degradationRate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>نسبة التهالك السنوي للألواح (%)</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.1" placeholder="e.g., 0.5" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                       </AccordionContent>
                     </AccordionItem>
                   </Accordion>
@@ -325,36 +369,189 @@ export default function DesignOptimizerPage() {
                     </CardContent>
                 </Card>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><TrendingUp className="text-primary"/> التحليل المالي للجدوى</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <li className="border rounded-lg p-4 text-center">
-                            <div className="text-sm text-muted-foreground mb-1">التكلفة الإجمالية التقديرية</div>
-                            <div className="text-2xl font-bold">{result.financialAnalysis.totalInvestment.toFixed(0)}</div>
-                            <div className="text-muted-foreground">دينار</div>
-                        </li>
-                        <li className="border rounded-lg p-4 text-center">
-                            <div className="text-sm text-muted-foreground mb-1">فترة الاسترداد</div>
-                            <div className="text-2xl font-bold">{isFinite(result.financialAnalysis.paybackPeriodYears) ? result.financialAnalysis.paybackPeriodYears.toFixed(1) : "∞"}</div>
-                            <div className="text-muted-foreground">سنوات</div>
-                        </li>
-                        <li className="border rounded-lg p-4 text-center">
-                            <div className="text-sm text-muted-foreground mb-1">الإيرادات السنوية</div>
-                            <div className="text-xl font-bold">{result.financialAnalysis.annualRevenue.toFixed(0)}</div>
-                            <div className="text-muted-foreground">دينار</div>
-                        </li>
-                        <li className="border rounded-lg p-4 text-center">
-                            <div className="text-sm text-muted-foreground mb-1">صافي الربح (25 سنة)</div>
-                            <div className="text-xl font-bold text-green-600">{result.financialAnalysis.netProfit25Years.toFixed(0)}</div>
-                            <div className="text-muted-foreground">دينار</div>
-                        </li>
-                    </ul>
-                  </CardContent>
-                </Card>
+              {result.financialAnalysis && (
+                <>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2"><TrendingUp className="text-primary"/> التحليل المالي للجدوى</CardTitle>
+                       <CardDescription>
+                        ملخص وتحليل مالي شامل للنظام المقترح
+                       </CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4 text-center">
+                      <div className="border rounded-lg p-3">
+                        <div className="text-sm text-muted-foreground">التكلفة الإجمالية</div>
+                        <div className="text-2xl font-bold text-primary">{result.financialAnalysis.totalInvestment.toFixed(0)}</div>
+                        <div className="text-xs text-muted-foreground">دينار</div>
+                      </div>
+                      <div className="border rounded-lg p-3">
+                        <div className="text-sm text-muted-foreground">الإيرادات (السنة الأولى)</div>
+                        <div className="text-2xl font-bold text-green-600">{result.financialAnalysis.annualRevenue.toFixed(0)}</div>
+                        <div className="text-xs text-muted-foreground">دينار</div>
+                      </div>
+                      <div className="border rounded-lg p-3">
+                        <div className="text-sm text-muted-foreground">فترة الاسترداد</div>
+                        <PaybackPeriod months={result.financialAnalysis.paybackPeriodMonths} />
+                      </div>
+                       <div className="border rounded-lg p-3 col-span-2 md:col-span-3">
+                        <div className="text-sm text-muted-foreground">صافي الربح (25 سنة, مع التهالك)</div>
+                        <div className="text-3xl font-bold text-green-700">{result.financialAnalysis.netProfit25Years.toFixed(0)}</div>
+                         <div className="text-xs text-muted-foreground">دينار</div>
+                      </div>
+                    </CardContent>
+                  </Card>
 
+                  {result.financialAnalysis.cashFlowAnalysis && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <AreaChart className="text-primary" />
+                          محاكاة التدفق النقدي التراكمي على مدار 25 عامًا
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="h-72">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart
+                            data={result.financialAnalysis.cashFlowAnalysis}
+                            margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="year" name="السنة" fontSize={12} tickLine={false} axisLine={false} />
+                            <YAxis
+                              fontSize={12}
+                              tickLine={false}
+                              axisLine={false}
+                              tickFormatter={(value) => `${value.toLocaleString()}`}
+                              label={{ value: 'دينار', angle: -90, position: 'insideLeft' }}
+                            />
+                            <Tooltip
+                              contentStyle={{ background: 'hsl(var(--background))', direction: 'rtl' }}
+                              formatter={(value, name, props) => [`${(value as number).toLocaleString()} دينار`, `في السنة ${props.payload.year}`]}
+                              labelFormatter={() => "التدفق النقدي التراكمي"}
+                            />
+                            <Legend verticalAlign="top" wrapperStyle={{top: -4, direction: 'rtl'}} formatter={() => 'التدفق النقدي التراكمي'} />
+                            <Line type="monotone" dataKey="cashFlow" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {result.financialAnalysis.sensitivityAnalysis && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Activity className="text-primary" />
+                                تحليل الحساسية
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="border rounded-lg p-4">
+                                <h4 className="font-semibold text-center mb-3">تأثير تكلفة النظام (±10%) على فترة الاسترداد</h4>
+                                <div className="flex justify-between items-center text-center">
+                                    <div className="text-green-600">
+                                        <div className="text-xs">تكلفة أقل</div>
+                                        <div className="font-bold text-lg"><PaybackPeriod months={result.financialAnalysis.sensitivityAnalysis.cost.lower.paybackPeriodMonths} /></div>
+                                        <ChevronsLeft className="mx-auto h-5 w-5"/>
+                                    </div>
+                                    <div className="text-muted-foreground">
+                                        <div className="text-xs">التكلفة الحالية</div>
+                                        <div className="font-bold text-lg"><PaybackPeriod months={result.financialAnalysis.paybackPeriodMonths} /></div>
+                                        <ChevronsUpDown className="mx-auto h-5 w-5"/>
+                                    </div>
+                                    <div className="text-red-600">
+                                         <div className="text-xs">تكلفة أعلى</div>
+                                        <div className="font-bold text-lg"><PaybackPeriod months={result.financialAnalysis.sensitivityAnalysis.cost.higher.paybackPeriodMonths} /></div>
+                                        <ChevronsRight className="mx-auto h-5 w-5"/>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="border rounded-lg p-4">
+                                 <h4 className="font-semibold text-center mb-3">تأثير سعر الكهرباء (±10%) على صافي الربح</h4>
+                                 <div className="flex justify-between items-center text-center">
+                                    <div className="text-red-600">
+                                        <div className="text-xs">سعر أقل</div>
+                                        <div className="font-bold text-lg">{result.financialAnalysis.sensitivityAnalysis.price.lower.netProfit25Years.toFixed(0)}</div>
+                                        <div className="text-xs text-muted-foreground">دينار</div>
+                                    </div>
+                                    <div className="text-muted-foreground">
+                                        <div className="text-xs">السعر الحالي</div>
+                                        <div className="font-bold text-lg">{result.financialAnalysis.netProfit25Years.toFixed(0)}</div>
+                                        <div className="text-xs text-muted-foreground">دينار</div>
+                                    </div>
+                                    <div className="text-green-600">
+                                         <div className="text-xs">سعر أعلى</div>
+                                        <div className="font-bold text-lg">{result.financialAnalysis.sensitivityAnalysis.price.higher.netProfit25Years.toFixed(0)}</div>
+                                        <div className="text-xs text-muted-foreground">دينار</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                 )}
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <BarChart3 className="text-primary"/>
+                         الإنتاج الشهري المتوقع (kWh) - السنة الأولى
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="h-72">
+                       <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={result.financialAnalysis.monthlyBreakdown} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="month" fontSize={12} tickLine={false} axisLine={false} />
+                            <YAxis fontSize={12} tickLine={false} axisLine={false} label={{ value: 'kWh', angle: -90, position: 'insideLeft' }}/>
+                            <Tooltip
+                              contentStyle={{ background: 'hsl(var(--background))', direction: 'rtl' }}
+                              formatter={(value) => [`${(value as number).toFixed(0)} kWh`, 'الإنتاج']}
+                            />
+                            <Legend verticalAlign="top" wrapperStyle={{top: -4, direction: 'rtl'}} formatter={() => 'الإنتاج الشهري'}/>
+                            <Bar dataKey="production" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <CalendarDays className="text-primary"/>
+                        جدول بيانات السنة الأولى
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>الشهر</TableHead>
+                            <TableHead className="text-center">متوسط الإشعاع (kWh/m²/day)</TableHead>
+                            <TableHead className="text-center">الإنتاج (kWh)</TableHead>
+                            <TableHead className="text-right">الإيرادات (دينار)</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {result.financialAnalysis.monthlyBreakdown.map((monthData) => (
+                            <TableRow key={monthData.month}>
+                              <TableCell className="font-medium">{monthData.month}</TableCell>
+                              <TableCell className="text-center">{monthData.sunHours.toFixed(2)}</TableCell>
+                              <TableCell className="text-center">{monthData.production.toFixed(1)}</TableCell>
+                              <TableCell className="text-right">{monthData.revenue.toFixed(2)}</TableCell>
+                            </TableRow>
+                          ))}
+                           <TableRow className="font-bold bg-muted/50">
+                              <TableCell>الإجمالي السنوي</TableCell>
+                              <TableCell className="text-center">-</TableCell>
+                              <TableCell className="text-center">{result.financialAnalysis.totalAnnualProduction.toFixed(1)}</TableCell>
+                              <TableCell className="text-right">{result.financialAnalysis.annualRevenue.toFixed(2)}</TableCell>
+                            </TableRow>
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+                </>
+              )}
                 <Card>
                   <CardHeader>
                     <CardTitle>منطق التصميم (لماذا هذا النظام؟)</CardTitle>
@@ -366,7 +563,7 @@ export default function DesignOptimizerPage() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>مواصفات المكونات</CardTitle>
+                        <CardTitle>مواصفات المكونات المقترحة</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
