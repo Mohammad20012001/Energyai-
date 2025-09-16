@@ -38,6 +38,7 @@ import {useToast} from '@/hooks/use-toast';
 import {suggestStringConfigurationAction} from '@/app/actions/solar';
 import {useReport} from '@/context/ReportContext';
 import type {SuggestStringConfigurationOutput} from '@/ai/tool-schemas';
+import { SystemVisualization } from '@/components/system-visualization';
 
 
 const formSchema = z.object({
@@ -200,7 +201,7 @@ export function StringConfigurationClientPage() {
                     </>
                   ) : (
                     <>
-                      احسب مدى السلاسل الآمن <ArrowRight className="mr-2 h-4 w-4" />
+                      احسب الآن <ArrowRight className="mr-2 h-4 w-4" />
                     </>
                   )}
                 </Button>
@@ -346,6 +347,24 @@ export function StringConfigurationClientPage() {
                         )}
                     </CardContent>
                 </Card>
+                
+                <Card>
+                    <CardHeader>
+                       <CardTitle className="flex items-center gap-2">
+                          <Sun className="text-primary"/>
+                          عرض مرئي للمصفوفة
+                       </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                       <SystemVisualization 
+                          panelsPerString={result.optimalPanels}
+                          parallelStrings={result.arrayConfig.parallelStrings}
+                          panelVoltage={form.getValues('vmp')}
+                          panelCurrent={form.getValues('imp')}
+                       />
+                    </CardContent>
+                </Card>
+
 
                 <Button onClick={handleAddToReport} className="w-full">
                     <PlusCircle className="ml-2 h-4 w-4" />
