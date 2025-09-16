@@ -37,7 +37,6 @@ const navItems = [
   { href: "/design-optimizer", label: "حاسبة حجم النظام", icon: BrainCircuit },
   { href: "/field-inspector", label: "المفتش الميداني", icon: Camera },
   { type: 'divider', label: 'Calculators'},
-  { href: "/system-sizer", label: "حاسبة النظام المتكامل", icon: Combine },
   { href: "/string-configuration", label: "تهيئة السلاسل", icon: Settings },
   { href: "/area-calculator", label: "حاسبة المساحة", icon: Maximize },
   { href: "/battery-storage", label: "حاسبة البطاريات", icon: BatteryCharging },
@@ -77,4 +76,3 @@ export function DashboardNav() {
     </SidebarMenu>
   );
 }
-

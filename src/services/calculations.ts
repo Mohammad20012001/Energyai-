@@ -60,55 +60,6 @@ export function calculateWireSize(input: SuggestWireSizeInput): Omit<SuggestWire
 }
 
 
-// #region Panel Calculator (Consumption)
-export interface PanelCalculationInput {
-  monthlyBill: number;
-  kwhPrice: number;
-  sunHours: number;
-  panelWattage: number;
-  systemLoss: number;
-}
-
-export interface PanelCalculationResult {
-  requiredPanels: number;
-  totalKwh: number;
-  dailyKwh: number;
-}
-
-/**
- * Calculates the number of solar panels required to cover a given electricity consumption.
- * 
- * Logic:
- * 1.  Convert the monthly electricity bill (JOD) to total monthly energy consumption (kWh).
- *     Total kWh = Monthly Bill / Price per kWh
- * 2.  Calculate the average daily energy consumption.
- *     Daily kWh = Total Monthly kWh / 30
- * 3.  Calculate the energy (kWh) that a single solar panel can produce per day.
- *     Panel Daily Production = (Panel Wattage * Peak Sun Hours) / 1000
- * 4.  Account for system losses (e.g., inverter efficiency, dirt, temperature).
- *     Effective Panel Production = Panel Daily Production * (1 - System Loss %)
- * 5.  Determine the number of panels needed.
- *     Required Panels = Daily kWh Consumption / Effective Panel Production (rounded up).
- * 
- * @param input The consumption and panel data.
- * @returns The number of panels required and daily/total consumption.
- */
-export function calculatePanelsFromConsumption(input: PanelCalculationInput): PanelCalculationResult {
-    const totalKwh = input.monthlyBill / input.kwhPrice;
-    const dailyKwh = totalKwh / 30;
-    const dailyProductionPerPanel = (input.panelWattage * input.sunHours) / 1000;
-    const effectiveProductionPerPanel = dailyProductionPerPanel * (1 - input.systemLoss / 100);
-    const requiredPanels = Math.ceil(dailyKwh / effectiveProductionPerPanel);
-
-    return {
-        requiredPanels,
-        totalKwh,
-        dailyKwh,
-    };
-}
-// #endregion
-
-
 // #region Area & Production Calculator
 export interface AreaCalculationInput {
     landWidth: number;
@@ -263,54 +214,6 @@ export interface FinancialViabilityResult {
 }
 // #endregion
 
-
-// #region Inverter Sizing Calculator
-export interface InverterSizingInput {
-    totalDcPower: number;
-    maxVoc: number;
-    maxIsc: number;
-    gridPhase: 'single' | 'three';
-}
-
-export interface InverterSizingResult {
-    minInverterSize: number;
-    maxInverterSize: number;
-    recommendedVoc: number;
-    recommendedIsc: number;
-    gridPhase: string;
-}
-
-/**
- * Calculates a suitable size range for a grid-tied inverter.
- * 
- * Logic (based on common industry practice):
- * 1.  The inverter's AC power rating is typically sized to be between 90% and 110% of the
- *     solar array's total DC power (kWp). This is known as the DC-to-AC ratio.
- *     - Min Size = DC Power * 0.9
- *     - Max Size = DC Power * 1.1
- * 2.  The inverter's maximum input voltage should be higher than the array's maximum
- *     open-circuit voltage (Voc), typically with a safety margin of 15%.
- * 3.  The inverter's maximum input current should be higher than the array's maximum
- *     short-circuit current (Isc), typically with a safety margin of 25%.
- * 
- * @param input The DC power and electrical characteristics of the solar array.
- * @returns A recommended size range and electrical ratings for the inverter.
- */
-export function calculateInverterSize(input: InverterSizingInput): InverterSizingResult {
-    const minInverterSize = input.totalDcPower * 0.9;
-    const maxInverterSize = input.totalDcPower * 1.1;
-    const recommendedVoc = input.maxVoc * 1.15;
-    const recommendedIsc = input.maxIsc * 1.25;
-
-    return {
-        minInverterSize,
-        maxInverterSize,
-        recommendedVoc,
-        recommendedIsc,
-        gridPhase: input.gridPhase === 'single' ? 'أحادي الطور' : 'ثلاثي الطور',
-    };
-}
-// #endregion
 
 // #region Battery Storage Calculator
 export interface BatteryCalculationInput {
