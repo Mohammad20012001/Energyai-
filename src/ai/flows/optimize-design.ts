@@ -77,23 +77,37 @@ const optimizeDesignFlow = ai.defineFlow(
     // Step 1: Get the definitive calculations from the physics-based service.
     const calculatedData: CalculationOutput = calculateOptimalDesign(processedInput);
 
-    // Step 2: Call the AI model ONLY to generate the reasoning, using the accurate data.
-    const { output: reasoningOutput } = await generateReasoningPrompt({
-        finalSystemSize: calculatedData.panelConfig.totalDcPower,
-        limitingFactor: calculatedData.limitingFactor,
-        monthlyConsumption: processedInput.monthlyConsumption,
-        surfaceArea: processedInput.surfaceArea,
-    });
-    
-    if (!reasoningOutput) {
-        throw new Error("AI failed to generate reasoning.");
-    }
+    try {
+        // Step 2: Try to call the AI model ONLY to generate the reasoning.
+        const { output: reasoningOutput } = await generateReasoningPrompt({
+            finalSystemSize: calculatedData.panelConfig.totalDcPower,
+            limitingFactor: calculatedData.limitingFactor,
+            monthlyConsumption: processedInput.monthlyConsumption,
+            surfaceArea: processedInput.surfaceArea,
+        });
+        
+        if (!reasoningOutput) {
+            throw new Error("AI failed to generate reasoning.");
+        }
 
-    // Step 3: Combine the accurate, calculated data with the AI-generated reasoning.
-    // The calculateOptimalDesign function now returns the full financial analysis.
-    return {
-      ...calculatedData,
-      reasoning: reasoningOutput.reasoning,
-    };
+        // Step 3 (Success Case): Combine accurate data with AI-generated reasoning.
+        return {
+          ...calculatedData,
+          reasoning: reasoningOutput.reasoning,
+        };
+
+    } catch (error) {
+        console.error("AI part of design optimization failed, returning calculation-only result.", error);
+
+        // Step 3 (Fallback Case): If AI fails, return calculations with default text.
+        const defaultReasoning = calculatedData.limitingFactor === 'consumption'
+            ? `تم تحديد حجم النظام بـ ${calculatedData.panelConfig.totalDcPower} كيلوواط لتغطية استهلاكك الشهري، وهو ما يعتبر الحد الأقصى المسموح به قانونيًا أو المطلوب. هذا النظام هو الأمثل لاحتياجاتك.`
+            : `تم تحديد حجم النظام بـ ${calculatedData.panelConfig.totalDcPower} كيلوواط بناءً على المساحة المتاحة لديك. هذا هو أكبر نظام يمكن تركيبه، مما يزيد من العائد الاستثماري للمساحة.`;
+
+        return {
+            ...calculatedData,
+            reasoning: `ملاحظة: تعذر الحصول على تحليل الذكاء الاصطناعي بسبب ضغط على الشبكة. هذا شرح مبسط للنتائج. ${defaultReasoning}`,
+        };
+    }
   }
 );
