@@ -4,7 +4,7 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { z } from "zod";
-import { BatteryCharging, Rows, Columns, ArrowRight, Loader2, PlusCircle, AlertTriangle, Calculator } from "lucide-react";
+import { BatteryCharging, Rows, Columns, ArrowRight, Loader2, PlusCircle, AlertTriangle, Calculator, BrainCircuit } from "lucide-react";
 import { useReport } from "@/context/ReportContext";
 
 import { Button } from "@/components/ui/button";
@@ -317,12 +317,18 @@ export default function BatteryStoragePage() {
               
               <Card>
                 <CardHeader>
-                    <CardTitle className="text-xl">مخطط التوصيل المرئي</CardTitle>
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                        <BrainCircuit className="text-primary"/>
+                        شرح مرئي مبتكر لعملية التوصيل
+                    </CardTitle>
                 </CardHeader>
                 <CardContent>
                     <BatteryBankVisualization 
                         batteriesInSeries={result.batteriesInSeries}
                         parallelStrings={result.parallelStrings}
+                        batteryVoltage={form.getValues("batteryVoltage")}
+                        batteryCapacity={form.getValues("batteryCapacityAh")}
+                        systemVoltage={form.getValues("systemVoltage")}
                     />
                 </CardContent>
               </Card>
