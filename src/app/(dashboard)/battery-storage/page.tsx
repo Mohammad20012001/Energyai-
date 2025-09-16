@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -80,6 +80,23 @@ export default function BatteryStoragePage() {
     name: 'appliances',
   });
 
+  const applianceLoad = (appliances ?? []).reduce((total, appliance) => {
+    const { power = 0, quantity = 0, hours = 0 } = appliance;
+    if (power > 0 && quantity > 0 && hours > 0) {
+        return total + (power * quantity * hours) / 1000;
+    }
+    return total;
+  }, 0);
+
+  const hasAppliances = (appliances?.length ?? 0) > 0 && applianceLoad > 0;
+
+  useEffect(() => {
+    if (hasAppliances) {
+      form.setValue('dailyLoadKwh', parseFloat(applianceLoad.toFixed(2)), { shouldValidate: true });
+    }
+  }, [applianceLoad, hasAppliances, form]);
+
+
   async function onSubmit(values: FormValues) {
     setIsLoading(true);
     setResult(null);
@@ -131,7 +148,8 @@ export default function BatteryStoragePage() {
     });
   };
 
-  const finalDailyLoad = result?.finalDailyLoadKwh ?? form.getValues('dailyLoadKwh');
+  const finalDailyLoad = result?.finalDailyLoadKwh ?? (hasAppliances ? applianceLoad : form.getValues('dailyLoadKwh'));
+
 
   return (
     <div className="flex flex-col gap-8">
@@ -151,7 +169,7 @@ export default function BatteryStoragePage() {
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 text-right">
                 
-                <Accordion type="single" collapsible className="w-full">
+                <Accordion type="single" collapsible className="w-full" defaultValue="item-1">
                     <AccordionItem value="item-1">
                       <AccordionTrigger>
                         <span className="flex items-center gap-2">
@@ -179,7 +197,7 @@ export default function BatteryStoragePage() {
                       <FormItem>
                         <FormLabel>إجمالي الأحمال اليومية (kWh)</FormLabel>
                         <FormControl>
-                          <Input type="number" step="0.1" placeholder="e.g., 10" {...field} />
+                          <Input type="number" step="0.1" placeholder="e.g., 10" {...field} disabled={hasAppliances} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
