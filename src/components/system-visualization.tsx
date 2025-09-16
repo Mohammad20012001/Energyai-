@@ -1,3 +1,4 @@
+
 interface SystemVisualizationProps {
   panelsPerString: number;
   parallelStrings: number;
@@ -15,17 +16,6 @@ export function SystemVisualization({
   const panels = Array.from({ length: panelsPerString });
   const strings = Array.from({ length: parallelStrings });
 
-  if (panelsPerString > 12 || parallelStrings > 12) {
-    return (
-      <div className="text-center text-muted-foreground p-4 border rounded-md">
-        العرض المرئي غير متاح للتكوينات الكبيرة جدًا.
-        <div className="text-sm mt-2">
-            ({parallelStrings} سلاسل x {panelsPerString} لوح)
-        </div>
-      </div>
-    );
-  }
-
   const stringVoltage = (panelsPerString * panelVoltage);
   const totalSystemCurrent = (parallelStrings * panelCurrent);
 
@@ -34,8 +24,8 @@ export function SystemVisualization({
         {/* Step 1: Building the Series String */}
         <div>
             <h3 className="text-lg font-semibold text-center mb-4">الخطوة 1: بناء السلسلة (توصيل التوالي لرفع الجهد)</h3>
-            <div className="bg-muted/30 p-4 rounded-lg border relative">
-                <div className="flex justify-center items-center gap-2">
+            <div className="bg-muted/30 p-4 rounded-lg border overflow-x-auto">
+                <div className="flex justify-center items-center gap-2 min-w-max relative">
                     {/* Connection line */}
                     <div className="absolute top-1/2 left-0 w-full h-0.5 bg-accent/80 z-0"></div>
 
@@ -50,7 +40,7 @@ export function SystemVisualization({
                         </div>
                     ))}
                 </div>
-                 <p className="text-xs text-muted-foreground mt-4 text-center max-w-sm mx-auto">
+                 <p className="text-xs text-muted-foreground mt-4 text-center">
                     للوصول إلى الجهد المطلوب، نقوم بتوصيل <span className="font-bold text-primary">{panelsPerString}</span> ألواح على <span className="font-bold">التوالي</span>. هذا يجمع الجهد (V) ويبقي التيار (A) ثابتًا.
                  </p>
                  <div className="text-center mt-2 text-sm font-code bg-background/50 border rounded-md p-2 w-fit mx-auto">
@@ -87,7 +77,7 @@ export function SystemVisualization({
                     </div>
                     ))}
                 </div>
-                 <p className="text-xs text-muted-foreground mt-4 text-center max-w-md mx-auto">
+                 <p className="text-xs text-muted-foreground mt-4 text-center">
                     للوصول إلى التيار المطلوب، نقوم بتوصيل <span className="font-bold text-primary">{parallelStrings}</span> سلاسل على <span className="font-bold">التوازي</span>. هذا يجمع التيار (A) ويبقي الجهد (V) ثابتًا.
                  </p>
                  <div className="text-center mt-2 text-sm font-code bg-background/50 border rounded-md p-2 w-fit mx-auto">
